@@ -173,6 +173,13 @@ class TreeCountersTest extends TestCase
         }
     }
 
+    /** Omitting the setting must fail explicitly instead of repeatedly rebuilding an enabled cache. */
+    public function testCacheReaderRequiresTheCounterSetting(): void
+    {
+        $this->expectException(\ArgumentCountError::class);
+        loadTreeStrategy(0, 99, 0);
+    }
+
     /** HTTP adapters use fresh settings, never the client-supplied pagination snapshot. */
     public function testHttpAdaptersPassTheCurrentSetting(): void
     {

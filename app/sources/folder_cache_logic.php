@@ -3,13 +3,6 @@
 declare(strict_types=1);
 
 /**
- * TeamPass - a collaborative passwords manager.
- * Copyright (c) 2009-2026 Teampass.net.
- * Licensed under the GNU General Public License, version 3 or later.
- * See <https://www.gnu.org/licenses/>.
- */
-
-/**
  * Folder-cache decisions shared by the web/API adapters and their unit tests.
  * This module deliberately has no database, session or clock dependency.
  */

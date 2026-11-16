@@ -454,6 +454,7 @@ function handleNode(
     array &$ret_json = array()
 )
 {
+    $treeCounters = (int) ($SETTINGS['tree_counters'] ?? 0) === 1;
     // Keep the shared snapshot encoded: other renderers must decode its titles only once.
     $currentNode = clone $currentNode;
 
@@ -473,7 +474,7 @@ function handleNode(
         (int) $nbItemsInFolder,
         (int) $nbItemsInSubfolders,
         (int) $nbSubfolders,
-        isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0,
+        $treeCounters ? 1 : 0,
         (bool) $inputData['userReadOnly'],
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
@@ -550,6 +551,7 @@ function prepareNodeJson(
     array $SETTINGS
 ): array
 {
+    $treeCounters = (int) ($SETTINGS['tree_counters'] ?? 0) === 1;
     $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -573,7 +575,7 @@ function prepareNodeJson(
             $ret_json,
             array(
                 'id' => 'li_' . $nodeId,
-                'data' => ['tree_counters' => (int) ($SETTINGS['tree_counters'] ?? 0) === 1],
+                'data' => ['tree_counters' => $treeCounters],
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
                 'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.$text.htmlspecialchars($currentNode->title).$nodeData['html'],
                 'li_attr' => array(
@@ -600,7 +602,7 @@ function prepareNodeJson(
             $ret_json,
             array(
                 'id' => 'li_' . $nodeId,
-                'data' => ['tree_counters' => (int) ($SETTINGS['tree_counters'] ?? 0) === 1],
+                'data' => ['tree_counters' => $treeCounters],
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
                 'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.htmlspecialchars($currentNode->title).$nodeData['html'],
                 'li_attr' => array(
@@ -846,7 +848,7 @@ function loadTreeStrategy(
     int $lastTreeChange,
     int $userId,
     int $forceRefresh,
-    bool $treeCounters = false
+    bool $treeCounters
 ): array
 {
     // Case when refresh is EXPECTED / MANDATORY
