@@ -1550,7 +1550,10 @@ switch ($post_type) {
         }
 
         // prepare data
-        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // HTML special characters are escaped; accented letters are kept as typed, not stored
+        // as named entities (FILTER_SANITIZE_FULL_SPECIAL_CHARS turned "é" into "&eacute;").
+        require_once __DIR__ . '/setting_value_logic.php';
+        $post_value = tpEncodeSettingValue($dataReceived['value']);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 

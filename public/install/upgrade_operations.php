@@ -95,7 +95,7 @@ if ($db_link) {
 // single-pass operations that need no nb/start input are accepted there.
 if (PHP_SAPI === 'cli') {
     $post_operation = (string) ($argv[1] ?? '');
-    if (in_array($post_operation, ['sanitize_legacy_fa_icons', 'sanitize_directory_user_fields', 'sanitize_imported_folder_titles'], true) === false) {
+    if (in_array($post_operation, ['sanitize_legacy_fa_icons', 'sanitize_directory_user_fields', 'sanitize_imported_folder_titles', 'sanitize_legacy_setting_entities'], true) === false) {
         echo '[{"finish":"1", "next":"", "error":"Operation not available from the command line"}]';
         exit();
     }
@@ -188,6 +188,8 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         $finish = sanitizeDirectoryUserFields($pre);
     } elseif ($post_operation === 'sanitize_imported_folder_titles') {
         $finish = sanitizeImportedFolderTitles($pre);
+    } elseif ($post_operation === 'sanitize_legacy_setting_entities') {
+        $finish = sanitizeLegacySettingEntities($pre);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -471,6 +473,28 @@ function sanitizeImportedFolderTitles(string $pre): int
         if (mysqli_error($db_link)) {
             error_log('TEAMPASS Error - sanitizeImportedFolderTitles update failed: ' . mysqli_error($db_link));
         }
+    }
+
+    return 1;
+}
+
+/**
+ * 3.2.4 - Repair the admin settings whose accented letters were stored as named entities
+ * ("Soci&eacute;t&eacute;" instead of "Société"). See tpRepairLegacySettingEntities().
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
+ */
+function sanitizeLegacySettingEntities(string $pre): int
+{
+    global $db_link;
+
+    require_once __DIR__ . '/setting_entities_migration.php';
+
+    try {
+        tpRepairLegacySettingEntities($db_link, $pre . 'misc');
+    } catch (Throwable $e) {
+        error_log('TEAMPASS Error - sanitizeLegacySettingEntities failed: ' . $e->getMessage());
     }
 
     return 1;
