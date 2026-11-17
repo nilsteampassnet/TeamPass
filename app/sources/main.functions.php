@@ -10592,10 +10592,10 @@ function userHasAccessToBackupFile(int $userId, string $file, string $key, strin
     DB::queryFirstRow(
         'SELECT f.id
         FROM ' . prefixTable('log_system') . ' as f
-        WHERE f.type = %s AND f.label = %s AND f.qui = %i AND f.field_1 = %s',
+        WHERE f.type = %s AND f.label = %s AND f.qui = %s AND f.field_1 = %s',
         'admin_action',
         'dataBase backup',
-        $userId,
+        (string) $userId,
         $file
     );
     if (DB::count() === 0) {

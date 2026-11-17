@@ -3657,8 +3657,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
             WHERE process_type LIKE %ss OR arguments LIKE %ss
             ORDER BY created_at DESC
             LIMIT 10',
-            '%backup%',
-            '%backup%'
+            'backup',
+            'backup'
         );
         foreach ($rows as $r) {
             $tasks[] = array(
@@ -3686,8 +3686,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
             WHERE job LIKE %ss OR job LIKE %ss
             ORDER BY created_at DESC
             LIMIT 20',
-            '%backup%',
-            '%bck%'
+            'backup',
+            'bck'
         );
         foreach ($rows as $r) {
             $taskLogs[] = array(
