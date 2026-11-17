@@ -187,7 +187,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </small>
                                     </div>
                                     <div class="col-3 d-flex justify-content-end">
-                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="ga_website_name" value="<?php echo isset($SETTINGS['ga_website_name']) === true ? $SETTINGS['ga_website_name'] : ''; ?>">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="ga_website_name" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['ga_website_name'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                 </div>
 
