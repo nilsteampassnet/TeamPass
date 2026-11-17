@@ -1457,15 +1457,19 @@ curl -X DELETE "https://your-teampass.com/api/index.php/folder/delete?id=57" \
 
 ## Secure Send Endpoints {#secure-send-endpoints}
 
-> 📋 Create limited-view, expiring links to an item for someone who has no TeamPass account
+> 📋 Create limited-view, expiring links to an item or a note for someone who has no TeamPass account
 
 | Endpoint | Method | Description |
 | -------- | ------ | ----------- |
 | `secureSend/policy` | GET | Limits and options of the instance, to build the form |
-| `secureSend/create` | POST | Creates a link for an item the user can read |
+| `secureSend/create` | POST | Creates a link for an item the user can read, or for a note |
+| `secureSend/list` | GET | Lists the user's links that can still be opened |
+| `secureSend/revoke` | DELETE | Revokes one of the user's links |
 
-Both need the **read** right, **User can propose One-Time-View links** and **Allow Secure Send
-from API clients** (Settings → API, off by default). The returned link is a secret. See
+All four need the **read** right. Creating a link also needs **User can propose One-Time-View
+links** and **Allow Secure Send from API clients** (Settings → API, off by default), and
+**Allow sending ad-hoc notes/secrets** for a note; listing and revoking do not depend on *Allow
+Secure Send from API clients*. The returned link is a secret. See
 [Secure Send through the API](secure-send.md) for the payloads, the error codes and the rules
 every client must follow.
 

@@ -4267,6 +4267,6 @@ return array(
     'logs_purge_secure_send_retention' => 'The Secure Send journal cannot be purged from this page. Its events are deleted by the retention set in Options > Collaborative & advanced features > Secure sharing.',
     'at_secure_send_view' => 'Viewed through Secure Send',
     'secure_send_api_enabled' => 'Allow Secure Send from API clients',
-    'secure_send_api_enabled_tip' => 'Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, with the same limits as the web interface. Also requires "User can propose One-Time-View links" (Options > Collaborative & advanced features > Secure sharing).',
+    'secure_send_api_enabled_tip' => 'Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, and for notes when notes are allowed, with the same limits as the web interface. Also requires "User can propose One-Time-View links" (Options > Collaborative & advanced features > Secure sharing).',
 
 );

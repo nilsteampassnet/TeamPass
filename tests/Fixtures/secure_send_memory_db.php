@@ -197,6 +197,11 @@ class DB
     {
         // Email delivery has its own SQL-backed fixture; these legacy links were copied to the clipboard.
         if (str_contains($sql, prefixTable('secure_send_email'))) { return []; }
+        // Personal inventory: the sender's still-readable source items (secureSendActiveLinks()).
+        if (str_contains($sql, 'FROM ' . prefixTable('items') . ' i WHERE')) {
+            return self::$access && !str_contains($sql, '(1 = 0)') && in_array(123, $args[0], true)
+                && self::$item['inactif'] === 0 && self::$item['deleted_at'] === null ? [self::$item] : [];
+        }
         self::$affected = 0;
         if (str_contains($sql, 'ORDER BY id ASC LIMIT 100 FOR UPDATE')) {
             if (self::$failCleanupQuery) {
@@ -207,12 +212,13 @@ class DB
                     && (int) $row['id'] > 0 && (int) $row['originator'] > 0)), 0, 100);
         }
         if (str_contains($sql, 'u ON u.id = o.originator')) {
-            return array_values(array_map(
+            // Honour the production ORDER BY o.id DESC (newest first).
+            return array_reverse(array_map(
                 static fn (array $row): array => $row + ['sender_admin' => self::$admin ? 1 : 0],
                 array_filter(self::$links, static fn (array $row): bool => self::$activeUser
                     && (int) $row['originator'] === $args[1]
                     && secureSendIsAvailable($row, ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1], $args[0]))
-            ));
+            ), false);
         }
         if (str_contains($sql, 'SET views = views + 1')) {
             $id = $args[0];
