@@ -265,6 +265,7 @@ require __DIR__ . '/icon.picker.js.php';
         selectedFolderId = false,
         itemClipboard,
         startedItemsListQuery = false,
+        treeCountersRefreshPending = false,
         itemStorageInformation = '',
         applicationVars,
         initialPageLoad = true,
@@ -999,7 +1000,7 @@ require __DIR__ . '/icon.picker.js.php';
         );
         
         // Prepare list of items
-        if (startedItemsListQuery === false) {
+        if (startedItemsListQuery === false && treeCountersRefreshPending === false) {
             startedItemsListQuery = true;
             ListerItems(selectedFolderId, '', 0, 0, true);
         }
@@ -6309,9 +6310,39 @@ require __DIR__ . '/icon.picker.js.php';
         return true;
     }
 
-    /**
-     * 
-     */
+    /** Keep tree badges consistent with the current server setting and their three-part format. */
+    function updateFolderTreeCounter(folderId, counter, enabled) {
+        const tree = $('#jstree').jstree(true);
+        const node = tree ? tree.get_node('li_' + folderId) : false;
+        if (enabled !== 1) {
+            $('#jstree .items_count').remove();
+        }
+        if (node && (!node.data || node.data.tree_counters !== (enabled === 1))) {
+            // An already open page learns about an admin change on its next item load.
+            if (treeCountersRefreshPending === true) return;
+            // Pagination resets startedItemsListQuery while jsTree is still restoring selection.
+            treeCountersRefreshPending = true;
+            $('#jstree').one('refresh.jstree', function() {
+                treeCountersRefreshPending = false;
+            });
+            tree.refresh();
+            return;
+        }
+        if (enabled !== 1 || !Number.isInteger(counter) || counter < 0) return;
+
+        // Only the tree renderer creates badges: a list count cannot reconstruct a triplet.
+        const $badge = $('#itcount_' + folderId);
+        if ($badge.length === 0) return;
+        const counts = $badge.text().split('/');
+        if (counts.length === 3) {
+            counts[0] = counter;
+            $badge.text(counts.join('/'));
+        } else {
+            $badge.text(counter);
+        }
+    }
+
+    /** List the items accessible in the selected folder. */
     function ListerItems(groupe_id, restricted, start, stop_listing_current_folder = 0, showToastr = false) {
         var me = $(this);
         stop_listing_current_folder = stop_listing_current_folder || '0';
@@ -6614,20 +6645,9 @@ require __DIR__ . '/icon.picker.js.php';
                         // show items
                         sList(data.html_json);
 
-                        // Sync the jstree badge for this read-only folder
                         if (data.counter_full !== undefined) {
                             $('#count-items-badge').text(data.counter_full);
-                            const $badge = $('#itcount_' + groupe_id)
-                            if ($badge.length > 0) {
-                                $badge.text(data.counter_full)
-                            } else {
-                                const $link = $('#fld_' + groupe_id)
-                                if ($link.length > 0) {
-                                    $link.append(
-                                        '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' + groupe_id + '">' + data.counter_full + '</span>'
-                                    )
-                                }
-                            }
+                            updateFolderTreeCounter(groupe_id, data.counter_full, data.tree_counters);
                         }
 
                         if (call_to_be_continued === true) {
@@ -6667,19 +6687,7 @@ require __DIR__ . '/icon.picker.js.php';
                         sList(data.html_json);
                         if (data.counter_full !== undefined) {
                             $('#count-items-badge').text(data.counter_full);
-                            // Sync the jstree badge for the current folder (covers read-only folders
-                            // whose badge may be absent from the server-side cached tree HTML)
-                            const $badge = $('#itcount_' + groupe_id)
-                            if ($badge.length > 0) {
-                                $badge.text(data.counter_full)
-                            } else {
-                                const $link = $('#fld_' + groupe_id)
-                                if ($link.length > 0) {
-                                    $link.append(
-                                        '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' + groupe_id + '">' + data.counter_full + '</span>'
-                                    )
-                                }
-                            }
+                            updateFolderTreeCounter(groupe_id, data.counter_full, data.tree_counters);
                         }
 
                         // Prepare next iteration if needed
