@@ -4872,7 +4872,8 @@ function teampassExtractClientIpv4FromHeader(string $headerValue, array $trusted
     if (count($parts) > 100) {
         return null;
     }
-    foreach (array_reverse($parts) as $part) {
+    $reversed = array_reverse($parts);
+    foreach ($reversed as $part) {
         // Never skip an invalid hop to accept an earlier, potentially forged address.
         if (teampassIsValidIpv4($part) === false) {
             return null;
@@ -4882,7 +4883,8 @@ function teampassExtractClientIpv4FromHeader(string $headerValue, array $trusted
         }
     }
 
-    return null;
+    // Every hop is trusted: the nearest entry was written by the trusted peer itself.
+    return $reversed[0];
 }
 
 /**

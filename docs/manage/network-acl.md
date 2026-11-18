@@ -53,6 +53,11 @@ TeamPass needs to determine the real client IP. Two modes are available:
 
 In reverse proxy mode, the proxy header is only trusted when `REMOTE_ADDR` matches one of the configured **trusted proxies**. This prevents header spoofing from untrusted clients.
 
+**Compatibility:** changing forwarded-address parsing in reverse proxy mode also
+changes the address used for brute-force counters, audit logging and device-pairing
+rate limits, even when both ACL lists are disabled. Verify the detected address
+and trusted proxy configuration before updating.
+
 ---
 
 ## Configuration
@@ -141,16 +146,22 @@ List all proxy IPs or their CIDR in **Trusted proxies**, one per line:
 ```
 10.0.0.1
 10.0.0.2
-172.16.0.0/12
+192.0.2.10
 ```
 
 TeamPass reads `X-Forwarded-For` from right to left, skips declared trusted
 proxies and uses the first non-trusted address. Values before that address
 cannot select the client IP. Declare intermediary proxies only, never an
-entire client network. A missing header, an invalid hop encountered during
-resolution or a chain containing only trusted proxies yields no usable client
-address: an enabled ACL then refuses access rather than treating the proxy
-itself as the client. `X-Real-IP` accepts one IPv4 address, not a chain.
+entire client network. Include the outgoing ranges published by your CDN or WAF
+provider too; otherwise that undeclared intermediary becomes the detected client
+and clients behind it share its address for filtering and rate limits.
+
+If every hop is declared trusted, TeamPass uses the rightmost header entry,
+written by the trusted peer itself. Earlier client-supplied entries cannot choose
+this fallback. Prefer specific proxy addresses to broad ranges that include users.
+A missing header or an invalid/IPv6 hop encountered during resolution yields no
+usable client address: an enabled ACL then refuses access rather than using
+`REMOTE_ADDR` as the client. `X-Real-IP` accepts one IPv4 address, not a chain.
 
 At a single Internet-facing Nginx proxy, overwrite client-supplied headers:
 

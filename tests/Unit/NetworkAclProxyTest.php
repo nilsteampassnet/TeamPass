@@ -38,7 +38,10 @@ class NetworkAclProxyTest extends TestCase
         yield 'invalid nearest client' => ['192.168.6.10, invalid', null];
         yield 'empty nearest client' => ['192.168.6.10,', null];
         yield 'IPv6 nearest client' => ['192.168.6.10, 2001:db8::66', null];
-        yield 'all hops are proxies' => ['192.0.2.12, 192.0.2.11', null];
+        yield 'all hops are proxies' => ['192.0.2.12, 192.0.2.11', '192.0.2.11'];
+        yield 'single trusted client' => ['192.0.2.12', '192.0.2.12'];
+        yield 'invalid earlier trusted chain' => ['invalid, 192.0.2.11', null];
+        yield 'IPv6 earlier trusted chain' => ['2001:db8::66, 192.0.2.11', null];
         yield 'oversized header' => [str_repeat(' ', 8193) . '203.0.113.66', null];
         yield 'excessive hops' => [str_repeat('192.0.2.11,', 101) . '203.0.113.66', null];
     }
@@ -60,6 +63,17 @@ class NetworkAclProxyTest extends TestCase
                 'network_trusted_proxies' => '192.0.2.0/24']);
             self::assertSame('203.0.113.66', $context['detected_ip']);
             self::assertFalse($context['trusted_proxy_used']);
+        }
+    }
+
+    /** Broad proxy ranges must not collapse distinct clients into an unknown IP identity. */
+    public function testAllTrustedChainsKeepDistinctClientIdentitiesWithoutAclFiltering(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '192.0.2.10';
+        $settings = ['network_security_mode' => 'reverse_proxy', 'network_trusted_proxies' => '192.0.2.0/24'];
+        foreach (['192.0.2.11', '192.0.2.12'] as $client) {
+            $_SERVER['HTTP_X_FORWARDED_FOR'] = '192.0.2.99, ' . $client;
+            self::assertSame($client, teampassGetClientIpForSecurity($settings)['detected_ip']);
         }
     }
 
