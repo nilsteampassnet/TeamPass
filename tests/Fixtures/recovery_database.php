@@ -131,6 +131,11 @@ try {
         DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
     }
     $settings = ['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'];
+    if ($scenario === 'classic') {
+        foreach (['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'] as $name => $value) {
+            DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
+        }
+    }
     // Exercise byte fidelity through the real dump, authenticated archive and SQL import.
     $backupBytes = implode('', array_map('chr', range(0, 255))) . "\nR&D O'Brien \"<>\"\r\nliteral\\n";
     DB::query('CREATE TABLE ' . prefixTable('backup_bytes') . ' (payload LONGBLOB NOT NULL) ENGINE=InnoDB');
@@ -195,6 +200,14 @@ try {
     $kit = tpCreateRecoveryPackage($settings, 'synthetic-recovery-password', ['output_dir' => $fixture]);
     if (!$backup['success'] || !$kit['success']) {
         throw new RuntimeException('Fixture package creation failed');
+    }
+    if ($scenario === 'classic') {
+        require_once __DIR__ . '/backup_classic_database.php';
+        tpTestClassicBackupRestore($root, $fixture, $backup,
+            ['host' => '127.0.0.1', 'user' => $dbUser, 'password' => $dbPassword, 'database' => $source, 'port' => $port],
+            $settings, $backupBytes);
+        echo "OK: real encrypted backup restored through the production classic CLI\n";
+        return;
     }
     if ($scenario === 'upgrade') {
         tpRecoveryDecrypt($backup['filepath'], $fixture . '/old.zip', 'synthetic-backup-password');
