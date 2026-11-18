@@ -582,7 +582,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                             }
 
                             // Escape and keep newlines
-                            $value = addslashes(preg_replace("/\n/", '\\n', $value));
+                            $value = tpBackupEscapeSqlString($value);
                             $values[] = '"' . $value . '"';
                         }
 
@@ -728,6 +728,13 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             'message' => '',
         ];
 }
+/** Escape MySQL string bytes once, preserving actual newlines and literal backslashes. */
+function tpBackupEscapeSqlString(string $value): string
+{
+    return strtr($value, ["\\" => "\\\\", "\0" => "\\0", "\n" => "\\n",
+        "\r" => "\\r", "\x1a" => "\\Z", '"' => '\\"', "'" => "\\'"]);
+}
+
 
 
 // -----------------------------------------------------------------------------
