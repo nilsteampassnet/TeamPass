@@ -700,7 +700,7 @@ $recoveryPackageInformation = tpRecoveryPackageGetDisplayInformation($SETTINGS, 
                                                     <div class="col-9">
                                                         <?php echo $lang->get('bck_externalized_run_after_scheduled'); ?>
                                                         <small class="form-text text-muted">
-                                                            <?php echo $lang->get('bck_externalized_run_after_scheduled_help'); ?>
+                                                            <?php echo htmlspecialchars($lang->get('bck_externalized_scheduled_copy_hint'), ENT_QUOTES, 'UTF-8'); ?>
                                                         </small>
                                                     </div>
                                                     <div class="col-3 d-flex justify-content-end align-items-start">

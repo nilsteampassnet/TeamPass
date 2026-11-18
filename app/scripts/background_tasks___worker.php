@@ -424,6 +424,7 @@ class TaskWorker {
                         'scheduled_backup_file' => (string) ($this->taskData['backup_file'] ?? ''),
                         'scheduled_backup_size_bytes' => (int) ($this->taskData['backup_size_bytes'] ?? 0),
                         'scheduled_backup_output_dir' => (string) ($this->taskData['output_dir'] ?? ''),
+                        'scheduled_backup_sha256' => tpBackupFileSha256(rtrim((string) ($this->taskData['output_dir'] ?? ''), '/\\') . '/' . (string) ($this->taskData['backup_file'] ?? '')),
                         'scheduled_backup_format' => (string) ($this->taskData['backup_format'] ?? ''),
                         'scheduled_backup_include_documents' => (int) ($this->taskData['include_documents'] ?? 0),
                         'scheduled_backup_retention_days' => (int) $this->getMiscSetting('bck_scheduled_retention_days', '30'),
@@ -464,6 +465,7 @@ class TaskWorker {
 
         $this->upsertMiscSetting('bck_externalized_last_run_at', (string)time());
         $this->updateExternalizedState('running', 'Externalized backup started');
+        $copyScheduled = (string) ($taskData['source'] ?? '') === 'scheduled_post_backup';
 
         $destinationType = !empty($taskData['destination_type']) && is_string($taskData['destination_type'])
             ? (string) $taskData['destination_type']
@@ -482,20 +484,26 @@ class TaskWorker {
         $this->taskData['retry_attempts'] = $maxAttempts;
 
         // Use the resolved clear backup key and self-heal empty values on impacted instances.
-        $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($this->settings, true);
+        $resolvedBackupScriptPasskey = $copyScheduled ? ['success' => true, 'clear_key' => ''] : tpResolveBackupScriptPasskey($this->settings, true);
         $encryptionKey = !empty($resolvedBackupScriptPasskey['success'])
             ? (string) $resolvedBackupScriptPasskey['clear_key']
             : '';
-        if ($encryptionKey === '') {
+        if (!$copyScheduled && $encryptionKey === '') {
             throw new Exception('Missing encryption key (bck_script_passkey).');
         }
 
-        $this->disconnectConnectedUsersBeforeBackup((int) ($taskData['initiator_user_id'] ?? 0));
+        if (!$copyScheduled) {
+            $this->disconnectConnectedUsersBeforeBackup((int) ($taskData['initiator_user_id'] ?? 0));
+        }
 
         $includeDocuments = ((int)($taskData['include_documents'] ?? $this->getMiscSetting('bck_externalized_include_documents', '0')) === 1);
         $backupFormat = tpBackupNormalizeRequestedFormat((string)($taskData['backup_format'] ?? $this->getMiscSetting('bck_externalized_format', tpBackupGetPackageExtension())));
         if ($includeDocuments === true) {
             $backupFormat = tpBackupGetPackageExtension();
+        }
+        if ($copyScheduled) {
+            $backupFormat = tpBackupNormalizeRequestedFormat((string) ($taskData['scheduled_backup_format'] ?? 'sql'));
+            $includeDocuments = (int) ($taskData['scheduled_backup_include_documents'] ?? 0) === 1;
         }
 
         $res = [];
@@ -542,7 +550,11 @@ class TaskWorker {
                         $attemptOutputDir = $targetDir;
                     }
 
-                    if ($backupFormat === tpBackupGetPackageExtension()) {
+                    if ($copyScheduled) {
+                        $res = tpBackupCopyScheduledArchive((string) ($taskData['scheduled_backup_output_dir'] ?? ''),
+                            (string) ($taskData['scheduled_backup_file'] ?? ''), $attemptOutputDir,
+                            (string) ($taskData['scheduled_backup_sha256'] ?? ''), $this->settings);
+                    } elseif ($backupFormat === tpBackupGetPackageExtension()) {
                         $res = tpCreateBackupPackage($this->settings, $encryptionKey, [
                             'output_dir' => $attemptOutputDir,
                             'filename_prefix' => 'externalized-',

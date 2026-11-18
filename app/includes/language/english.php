@@ -2184,6 +2184,7 @@ return array(
     'bck_restore_other_key_help' => 'To be used only if the backup was encrypted on another TeamPass instance (migration).',
     'bck_restore_key_use' => 'Use this key',
     'bck_externalized_sftp_host_key' => 'Server host key fingerprint (SHA256)',
+    'bck_externalized_scheduled_copy_hint' => 'After a scheduled backup, copy that exact encrypted archive, using its format and document selection. The externalized format and document options apply to manual and independent scheduled runs.',
     'bck_externalized_sftp_host_key_help' => 'Obtain the OpenSSH SHA256 fingerprint from the server administrator through a trusted channel. A missing or changed key blocks authentication.',
     'bck_externalized_sftp_host_key_required' => 'Enter the trusted server fingerprint in OpenSSH SHA256 format before using SFTP.',
     'bck_externalized_sftp_host_key_mismatch' => 'The SFTP server identity could not be verified. No authentication was attempted. Check its host key with the server administrator.',

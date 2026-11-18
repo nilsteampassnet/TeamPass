@@ -180,6 +180,14 @@ You can enable email reports for scheduled backups:
 
 When externalized backups are configured to run after scheduled backups, Teampass sends a single consolidated report after the externalized step completes. No separate scheduled-only email is sent for that run.
 
+The externalized step copies that exact encrypted archive and verifies its SHA256
+digest while staging; it does not run another database dump or disconnect users
+again. Retries use the same archive. Its format and document selection come from
+the scheduled backup, regardless of the independent externalized format options.
+Those options still apply to manual or independently scheduled externalized runs.
+Previously queued post-backup jobs without a source digest fail safely after an
+upgrade: run a new scheduled backup to queue a verified copy.
+
 When the in-app notification centre is enabled, every active administrator also receives a durable alert if a scheduled backup fails, an externalized backup exhausts its retries, or a successful scheduled backup cannot queue its configured externalization. These alerts are independent of the optional email report settings and link directly to the Backups page. Successful backups do not generate in-app alerts.
 
 ### Buttons

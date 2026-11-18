@@ -1414,6 +1414,7 @@ return array(
     'bck_restore_other_key_help' => 'À utiliser uniquement si la sauvegarde a été chiffrée sur une autre instance TeamPass (migration).',
     'bck_restore_key_use' => 'Utiliser cette clé',
     'bck_externalized_sftp_host_key' => 'Empreinte de la clé du serveur (SHA256)',
+    'bck_externalized_scheduled_copy_hint' => 'Après une sauvegarde planifiée, copier cette archive chiffrée à l’identique, avec son format et sa sélection de documents. Les options de format et de documents externes concernent les lancements manuels et la planification indépendante.',
     'bck_externalized_sftp_host_key_help' => 'Obtenez l’empreinte OpenSSH SHA256 auprès de l’administrateur du serveur par un canal de confiance. Une clé absente ou différente bloque l’authentification.',
     'bck_externalized_sftp_host_key_required' => 'Saisissez l’empreinte de confiance du serveur au format OpenSSH SHA256 avant d’utiliser SFTP.',
     'bck_externalized_sftp_host_key_mismatch' => 'L’identité du serveur SFTP n’a pas pu être vérifiée. Aucune authentification tentée. Vérifiez sa clé auprès de son administrateur.',

@@ -38,6 +38,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/runtime_files.functions.php';
 require_once __DIR__ . '/backup_capture.php';
 require_once __DIR__ . '/backup_restore.php';
+require_once __DIR__ . '/backup_copy.php';
 require_once __DIR__ . '/recovery_package_logic.php';
 require_once __DIR__ . '/recovery_package_state.functions.php';
 
@@ -478,6 +479,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // Best effort: a fatal error cannot run the normal cleanup path, so the
         // next backup invocation removes only stale temporary dumps.
         tpBackupPurgeStaleDatabasePartFiles((string) $outputDir);
+        tpBackupPurgeOldTemporaryDirectories((string) $outputDir);
 
         // Generate filename
         $token = GenerateCryptKey(20, false, true, true, false, true);
