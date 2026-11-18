@@ -119,8 +119,10 @@ function tpBackupInspectRestoreSql(
     $sourceVersion = $settings['teampass_version_full'] ?? $settings['teampass_version'] ?? '';
     $releaseLine = static fn (string $version): string => implode('.', array_slice(explode('.', $version), 0, 3));
     $embeddedSchema = $settings['teampass_schema_level'] ?? ($manifest['teampass']['schema_level'] ?? '');
-    if ($sourceVersion === '' || ($embeddedSchema === '' && $releaseLine($sourceVersion) !== $releaseLine($expectedVersion))
-        || ($manifest !== [] && $releaseLine((string) ($manifest['teampass']['files_version'] ?? '')) !== $releaseLine($sourceVersion))) {
+    // Database release markers record the last migration, not necessarily the files
+    // that created this archive. The authenticated schema is the boundary when present.
+    if ($sourceVersion === '' || ($embeddedSchema === ''
+        && $releaseLine($settings['teampass_version'] ?? $sourceVersion) !== $releaseLine($expectedVersion))) {
         throw new TeamPassRecoveryException('DATABASE_VERSION_METADATA_MISMATCH');
     }
     if ($embeddedSchema !== '' && $embeddedSchema !== $expectedSchema) {

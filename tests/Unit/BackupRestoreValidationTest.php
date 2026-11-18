@@ -76,6 +76,14 @@ final class BackupRestoreValidationTest extends TestCase
         tpBackupInspectRestoreSql($this->path, 'fixture_', '100', '3.2.4.3', [], static fn (): bool => false, 99);
     }
 
+    public function testLastMigrationReleaseMayDifferFromTheBackupFilesWithTheSameSchema(): void
+    {
+        file_put_contents($this->path, str_replace('3.2.4.2', '3.2.2.7', $this->dump()));
+        $inventory = tpBackupInspectRestoreSql($this->path, 'fixture_', '100', '3.2.4.3',
+            ['teampass' => ['schema_level' => '100', 'files_version' => '3.2.4.3']]);
+        self::assertCount(6, $inventory['tables']);
+    }
+
     public function testReplacingAnAuthorizedFileWithoutChangingItsPathOrSizeIsRefused(): void
     {
         file_put_contents($this->path, 'first archive');
