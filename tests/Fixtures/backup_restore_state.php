@@ -24,7 +24,7 @@ namespace {
         public static function query(string $sql, ...$args): array {
             self::$operations[] = [$sql, $args];
             return $sql === 'SHOW TABLES' ? array_map(static fn ($table): array => ['name' => 'fixture_' . $table],
-                ['users', 'misc', 'api_sessions', 'api_tokens', 'device_pairings', 'tokens', 'websocket_tokens',
+                ['users', 'misc', 'api', 'api_sessions', 'api_tokens', 'device_pairings', 'tokens', 'websocket_tokens',
                     'websocket_connections', 'background_subtasks', 'background_tasks', 'api_idempotency']) : [];
         }
         /** Record configuration invalidations. */

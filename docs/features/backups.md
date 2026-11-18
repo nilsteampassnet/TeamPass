@@ -112,8 +112,9 @@ the [disaster-recovery procedure](../install/disaster-recovery.md).
 The CLI refuses to start while a backup or background handler is running. During
 import a persistent hold blocks web/API access and scheduled processing even
 while configuration tables are replaced. After successful import it invalidates
-web/API credentials, pairing and temporary tokens, queued tasks, idempotency
-results and Secure Send links (with lifecycle audit), and resets offline sync's
+web/API credentials (including legacy API keys and session material), pairing and
+temporary tokens, queued tasks, idempotency results and Secure Send links (with
+lifecycle audit), and resets offline sync's
 generation. Backup schedules and LAPR are disabled; maintenance remains enabled.
 Review decryption, documents, permissions and authentication before reopening,
 issuing new API tokens, pairing devices and enabling schedules deliberately.

@@ -115,6 +115,10 @@ try {
             'purpose' => 'external_device', 'wrapped_private_key' => 'synthetic', 'salt' => 'synthetic',
             'created_at' => 1, 'revoked_at' => $revokedAt]);
     }
+    DB::update(prefixTable('users'), ['api_key' => 'synthetic-historical-api-key'], 'id=%i', TP_USER_ID);
+    DB::insert(prefixTable('api'), ['type' => 'user', 'user_id' => TP_USER_ID, 'timestamp' => '1',
+        'encrypted_private_key' => 'synthetic', 'session_key_salt' => 'synthetic',
+        'session_key' => 'synthetic-session', 'session_aes_key' => 'synthetic']);
     DB::insert(prefixTable('device_pairings'), ['id' => str_repeat('a', 32), 'user_id' => TP_USER_ID,
         'server_url' => 'https://old.example.test', 'owner_binding' => str_repeat('b', 64),
         'session_marker' => str_repeat('c', 64), 'user_key_fingerprint' => str_repeat('d', 64),
@@ -291,7 +295,9 @@ try {
     $restoredSettings = array_column($targetDb->query("SELECT intitule,valeur FROM recovery_misc WHERE type='admin'")->fetch_all(MYSQLI_ASSOC), 'valeur', 'intitule');
     if ($restoredSettings['teampass_version_full'] !== TP_VERSION . '.' . TP_VERSION_MINOR
         || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_api_tokens')->fetch_row()[0] !== 0
-        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_device_pairings')->fetch_row()[0] !== 0) {
+        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_device_pairings')->fetch_row()[0] !== 0
+        || (int) $targetDb->query("SELECT COUNT(*) FROM recovery_users WHERE api_key<>''")->fetch_row()[0] !== 0
+        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_api WHERE session_key IS NOT NULL OR session_aes_key IS NOT NULL OR encrypted_private_key IS NOT NULL')->fetch_row()[0] !== 0) {
         throw new RuntimeException('Restored release metadata or device credential invalidation was incorrect');
     }
     if ($restoredSettings['favicon'] !== $restoredSettings['cpassman_url'] . '/favicon.ico'

@@ -171,7 +171,12 @@ function tpBackupInvalidateRestoredState(): void
                 DB::query('DELETE FROM %b', prefixTable($table));
             }
         }
-        DB::query('UPDATE %b SET key_tempo=%s, session_end=%s', prefixTable('users'), '', '0');
+        if (in_array(prefixTable('api'), $tables, true)) {
+            // A JWT without a per-token session can still fall back to this legacy row.
+            DB::update(prefixTable('api'), ['encrypted_private_key' => null, 'session_key_salt' => null,
+                'session_key' => null, 'session_aes_key' => null, 'timestamp' => ''], '1=1');
+        }
+        DB::query('UPDATE %b SET key_tempo=%s, session_end=%s, api_key=%s', prefixTable('users'), '', '0', '');
         DB::delete(prefixTable('misc'), 'type IN %ls', ['restore_authorization_cli', 'temp_file']);
         foreach (['maintenance_mode' => '1', 'lapr_enabled' => '0', 'bck_scheduled_enabled' => '0',
             'bck_externalized_enabled' => '0', 'recovery_generation' => bin2hex(random_bytes(16))] as $name => $value) {

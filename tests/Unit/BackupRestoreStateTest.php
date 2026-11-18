@@ -20,11 +20,19 @@ final class BackupRestoreStateTest extends TestCase
         $operations = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
         $deleted = [];
         $settings = [];
+        $legacySession = [];
+        $userCredentialsReset = false;
         foreach ($operations as $operation) {
             if ($operation[0] === 'DELETE FROM %b') {
                 $deleted[] = $operation[1][0];
             } elseif ($operation[0] === 'update') {
-                $settings[$operation[1][3][1]] = [$operation[1][3][0], $operation[1][1]['valeur']];
+                if ($operation[1][0] === 'fixture_api') {
+                    $legacySession = $operation[1][1];
+                } else {
+                    $settings[$operation[1][3][1]] = [$operation[1][3][0], $operation[1][1]['valeur']];
+                }
+            } elseif ($operation[0] === 'UPDATE %b SET key_tempo=%s, session_end=%s, api_key=%s') {
+                $userCredentialsReset = $operation[1] === ['fixture_users', '', '0', ''];
             }
         }
         foreach (['api_tokens', 'api_sessions', 'device_pairings', 'background_tasks', 'api_idempotency', 'tokens'] as $table) {
@@ -34,6 +42,9 @@ final class BackupRestoreStateTest extends TestCase
         self::assertSame(['settings', '0'], $settings['bck_externalized_enabled']);
         self::assertSame(['admin', '1'], $settings['maintenance_mode']);
         self::assertSame(['admin', '0'], $settings['lapr_enabled']);
+        self::assertSame(['encrypted_private_key' => null, 'session_key_salt' => null,
+            'session_key' => null, 'session_aes_key' => null, 'timestamp' => ''], $legacySession);
+        self::assertTrue($userCredentialsReset);
         self::assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $settings['recovery_generation'][1]);
         self::assertSame('commit', end($operations)[0]);
     }

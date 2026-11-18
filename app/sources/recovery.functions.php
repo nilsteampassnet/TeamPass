@@ -478,7 +478,11 @@ function tpRecoveryRun(string $id, int $verificationTimeout = 1800): array
                     $db->query('DELETE FROM `' . $prefix . $ephemeral . '`');
                 }
             }
-            $db->query('UPDATE `' . $prefix . "users` SET key_tempo='', session_end='0'");
+            if (in_array($prefix . 'api', $tables, true)) {
+                $db->query('UPDATE `' . $prefix . "api` SET encrypted_private_key=NULL, session_key_salt=NULL,
+                    session_key=NULL, session_aes_key=NULL, timestamp=''");
+            }
+            $db->query('UPDATE `' . $prefix . "users` SET key_tempo='', session_end='0', api_key=''");
             $job['status'] = 'verifying';
             tpRecoverySaveJob($job);
         }

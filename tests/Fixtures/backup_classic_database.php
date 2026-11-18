@@ -36,7 +36,10 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
         }
         if (tpBackupRestoreIsInProgress() || DB::queryFirstField('SELECT payload FROM ' . prefixTable('backup_bytes')) !== $bytes
             || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) !== 0
-            || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('device_pairings')) !== 0) {
+            || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('device_pairings')) !== 0
+            || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE api_key<>%s', '') !== 0
+            || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api')
+                . ' WHERE session_key IS NOT NULL OR session_aes_key IS NOT NULL OR encrypted_private_key IS NOT NULL') !== 0) {
             throw new RuntimeException('Classic restore lost bytes, retained old credentials or left its hold active.');
         }
         foreach (['bck_scheduled_enabled', 'bck_externalized_enabled'] as $name) {
