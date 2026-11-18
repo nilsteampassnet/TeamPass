@@ -1157,7 +1157,7 @@ function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '
     $csv = stream_get_contents($buffer);
     fclose($buffer);
 
-    return $csv;
+    return $csv === false ? '' : $csv;
 }
 
 
