@@ -292,6 +292,18 @@ class ImportFormatTest extends TestCase
         $this->assertSame('Databases', $item['folder']);
     }
 
+    public function testKeepassxcPasswordEndingInBackslash(): void
+    {
+        $csv = "\"Group\",\"Title\",\"Username\",\"Password\",\"URL\",\"Notes\"\n"
+             . "\"Root\",\"NAS\",\"admin\",\"Xk9#q2\\\",\"https://nas.local\",\"share at \\\\nas\\backup\"\n";
+
+        $item = ImportFormat::parseKeepassxc($csv)['items'][0];
+
+        $this->assertSame('Xk9#q2\\', $item['pwd']);
+        $this->assertSame('https://nas.local', $item['url']);
+        $this->assertSame('share at \\\\nas\\backup', $item['description']);
+    }
+
     public function testKeepassxcBareRootBecomesEmptyFolder(): void
     {
         $csv = "\"Group\",\"Title\",\"Username\",\"Password\",\"URL\",\"Notes\"\n"
