@@ -205,7 +205,7 @@ class ImportFormat
         foreach ($rows as $row) {
             $url = self::pick($row, ['url']);
             // LastPass marks secure notes with the "http://sn" sentinel URL.
-            if (strcasecmp($url, 'http://sn') === 0) {
+            if (strcasecmp(trim($url), 'http://sn') === 0) {
                 $url = '';
             }
 
@@ -436,21 +436,31 @@ class ImportFormat
     }
 
     /**
-     * Return the first non-empty value among the given candidate keys.
+     * Return the value of the first candidate key that is not blank.
+     *
+     * The value is returned untrimmed: a password may start or end with spaces,
+     * so trimming is left to row() for the fields where it is safe. When every
+     * candidate is blank, the first one present is returned as is, which keeps
+     * a password made only of spaces.
      *
      * @param array<string,string> $row  The associative row.
      * @param array<int,string>    $keys Candidate keys (already lower-case).
      *
-     * @return string The trimmed value or '' when none match.
+     * @return string The raw value or '' when none is present.
      */
     private static function pick(array $row, array $keys): string
     {
+        $fallback = null;
         foreach ($keys as $key) {
-            if (isset($row[$key]) && trim($row[$key]) !== '') {
-                return trim($row[$key]);
+            if (!isset($row[$key])) {
+                continue;
             }
+            if (trim($row[$key]) !== '') {
+                return $row[$key];
+            }
+            $fallback ??= $row[$key];
         }
-        return '';
+        return $fallback ?? '';
     }
 
     /**

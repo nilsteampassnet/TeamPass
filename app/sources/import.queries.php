@@ -505,6 +505,10 @@ switch ($inputData['type']) {
         $uniqueFolders = [];
         $items_number = 0;
         foreach ($parsed['items'] as $row) {
+            // Keep the password verbatim, as the CSV import does: it is stored
+            // encrypted and never output as HTML, so sanitizing it corrupts it.
+            $rawPassword = (string) ($row['pwd'] ?? '');
+
             // Sanitize row data to prevent XSS
             $row = secureStringWithAntiXss($row, $antiXss);
 
@@ -513,7 +517,7 @@ switch ($inputData['type']) {
                 continue;
             }
             $login    = cleanInput($row['login'] ?? '');
-            $pwd      = cleanInput($row['pwd'] ?? '');
+            $pwd      = $rawPassword;
             $url      = cleanInput($row['url'] ?? '');
             $comments = cleanInput($row['description'] ?? '');
             $folder   = $userCanManageFolders === 1 ? cleanInput($row['folder'] ?? '') : '';

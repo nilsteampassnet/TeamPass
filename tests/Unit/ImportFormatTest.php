@@ -20,8 +20,9 @@ use TeampassClasses\ImportFormat\ImportFormat;
  *   - parseLastpass(): header mapping, nested folders, secure-note URL sentinel.
  *   - parseOnePassword(): title/login mapping, tag-as-folder, header reordering.
  *   - parseKeepassxc(): "Root/" stripping, group path, field mapping.
- *   - CSV robustness: BOM stripping, quoted embedded newlines.
+ *   - CSV robustness: BOM stripping, quoted embedded newlines, trailing backslashes.
  *   - Rows without a label are dropped.
+ *   - Passwords keep their surrounding spaces; the other fields are trimmed.
  */
 class ImportFormatTest extends TestCase
 {
@@ -335,6 +336,39 @@ class ImportFormatTest extends TestCase
         $result = ImportFormat::parseOnePassword($csv);
         $this->assertCount(1, $result['items']);
         $this->assertSame('Has label', $result['items'][0]['label']);
+    }
+
+    public function testPasswordSurroundingSpacesAreKept(): void
+    {
+        $csv = "\"Group\",\"Title\",\"Username\",\"Password\",\"URL\",\"Notes\"\n"
+             . "\"Root\",\" Spaced \",\" admin \",\"  pass word  \",\" https://x.example \",\"n\"\n";
+
+        $item = ImportFormat::parseKeepassxc($csv)['items'][0];
+
+        $this->assertSame('  pass word  ', $item['pwd']);
+        $this->assertSame('Spaced', $item['label']);
+        $this->assertSame('admin', $item['login']);
+        $this->assertSame('https://x.example', $item['url']);
+    }
+
+    public function testPasswordMadeOfSpacesIsKept(): void
+    {
+        $csv = "Title,Url,Username,Password,Notes\n"
+             . "Blank,https://x.example,u,\"   \",n\n";
+
+        $item = ImportFormat::parseOnePassword($csv)['items'][0];
+
+        $this->assertSame('   ', $item['pwd']);
+    }
+
+    public function testBlankCandidateDoesNotHideTheNextOne(): void
+    {
+        $csv = "Title,Name,Url,Username,Password,Notes\n"
+             . "\"  \",Real name,https://x.example,u,p,n\n";
+
+        $item = ImportFormat::parseOnePassword($csv)['items'][0];
+
+        $this->assertSame('Real name', $item['label']);
     }
 
     public function testCsvBomIsStripped(): void
