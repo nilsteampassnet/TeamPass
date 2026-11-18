@@ -398,7 +398,9 @@ class ImportFormat
         fwrite($stream, $content);
         rewind($stream);
 
-        $header = fgetcsv($stream, 0, ',', '"', '\\');
+        // No backslash escape: the exporters only double quotes (RFC 4180), and a value
+        // ending in \ would otherwise swallow the next field.
+        $header = fgetcsv($stream, 0, ',', '"', '');
         if ($header === false || $header === null || $header === [null]) {
             fclose($stream);
             return null;
@@ -412,7 +414,7 @@ class ImportFormat
         $colCount = count($keys);
 
         $rows = [];
-        while (($data = fgetcsv($stream, 0, ',', '"', '\\')) !== false) {
+        while (($data = fgetcsv($stream, 0, ',', '"', '')) !== false) {
             // Skip fully empty lines.
             if ($data === [null]) {
                 continue;
