@@ -47,8 +47,19 @@ class NetworkAclAccessTest extends TestCase
         $decision = teampassGetNetworkAccessDecision([]);
         self::assertTrue($decision['allowed']);
         self::assertFalse($decision['checked']);
+        self::assertNull($decision['context']);
         self::assertTrue(teampassEvaluateNetworkAclAccess([], null, [])['allowed']);
         self::assertSame(0, DB::$queries);
+    }
+
+    /** A required load performs one metadata check and one rules read, without a second check. */
+    public function testEnabledPolicyChecksStorageOnlyOnce(): void
+    {
+        DB::$rules = [['type' => 'whitelist', 'rule_definition' => '192.168.7.0/24', 'enabled' => 1]];
+        $decision = teampassGetNetworkAccessDecision(['network_whitelist_enabled' => 1]);
+        self::assertTrue($decision['allowed']);
+        self::assertSame('192.168.7.66', $decision['context']['detected_ip']);
+        self::assertSame(2, DB::$queries);
     }
 
     /** @return iterable<string, array{array, string}> */

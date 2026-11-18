@@ -5028,10 +5028,11 @@ function teampassLoadNetworkAclRules(bool $onlyEnabled = false, bool $required =
  * @param array       $settings Settings.
  * @param string|null $clientIp Client IP.
  * @param array       $rules    ACL rules.
+ * @param bool        $storageVerified Whether a required rule load already verified storage.
  *
  * @return array<string, mixed>
  */
-function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, array $rules): array
+function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, array $rules, bool $storageVerified = false): array
 {
     $blacklistEnabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1;
     $whitelistEnabled = (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
@@ -5046,7 +5047,7 @@ function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, ar
         return $result;
     }
 
-    if (teampassNetworkAclTableExists() === false) {
+    if ($storageVerified === false && teampassNetworkAclTableExists() === false) {
         $result['allowed'] = false;
         $result['reason'] = 'acl_unavailable';
         return $result;
@@ -5097,21 +5098,21 @@ function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, ar
  * Resolve the current network policy without allowing storage failures to disable it.
  *
  * @param array $settings Current administrator settings.
- * @return array<string, mixed> Decision and the client context used for the request.
+ * @return array<string, mixed> Decision and the client context, null when filtering is disabled.
  */
 function teampassGetNetworkAccessDecision(array $settings): array
 {
-    $context = teampassGetClientIpForSecurity($settings);
     $enabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1
         || (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
     if ($enabled === false) {
         return ['checked' => false, 'allowed' => true, 'reason' => 'allowed',
-            'matched_rule' => null, 'context' => $context];
+            'matched_rule' => null, 'context' => null];
     }
 
+    $context = teampassGetClientIpForSecurity($settings);
     try {
         $rules = teampassLoadNetworkAclRules(true, true);
-        return teampassEvaluateNetworkAclAccess($settings, $context['detected_ip'], $rules)
+        return teampassEvaluateNetworkAclAccess($settings, $context['detected_ip'], $rules, true)
             + ['context' => $context];
     } catch (Throwable $e) {
         // Database exceptions can contain SQL or connection details; never expose their message.
