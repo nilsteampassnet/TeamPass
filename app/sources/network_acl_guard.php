@@ -81,7 +81,8 @@ function teampassEnforceNetworkAccess(array $settings): void
     } else {
         header('Content-Type: text/html; charset=utf-8');
         $title = htmlspecialchars((string) $language->getShipped('network_security_access_denied_title'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+        $htmlLanguage = htmlspecialchars((string) ($session->get('user-language') ?? 'en'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        echo '<!DOCTYPE html><html lang="' . $htmlLanguage . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
         echo '<title>' . $title . '</title></head><body><main style="max-width:760px;margin:80px auto;padding:24px;font-family:Arial,Helvetica,sans-serif">';
         echo '<h1>' . $title . '</h1><p>' . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p></main></body></html>';
     }
