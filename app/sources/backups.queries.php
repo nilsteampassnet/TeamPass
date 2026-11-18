@@ -3136,10 +3136,10 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         $packageRet = tpBackupPreparePackageSqlForRestore($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS, true, true);
 
                         if (empty($packageRet['success'])) {
-                            @unlink($tmpDecryptedSql);
+                            tpBackupCleanupRestoreFile($tmpDecryptedSql);
                             $cleanupRestoreStage();
                             if (!empty($packageRet['decrypted_package_path']) && is_string($packageRet['decrypted_package_path'])) {
-                                @unlink($packageRet['decrypted_package_path']);
+                                tpBackupCleanupRestoreFile($packageRet['decrypted_package_path']);
                             }
                             $packageErrorCode = (string) ($packageRet['error_code'] ?? 'TPBACKUP_INVALID');
                             $message = $lang->get('bck_restore_tpbackup_invalid');
@@ -3170,9 +3170,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                             if (($documents['included'] ?? false) === true) {
                                 $docDryRun = tpBackupRestorePackageDocumentsFromZip($tmpPackageZipForDryRun, $packageManifestForDryRun, $SETTINGS, true, true);
                                 if (empty($docDryRun['success'])) {
-                                    @unlink($tmpDecryptedSql);
+                                    tpBackupCleanupRestoreFile($tmpDecryptedSql);
                                     $cleanupRestoreStage();
-                                    @unlink($tmpPackageZipForDryRun);
+                                    tpBackupCleanupRestoreFile($tmpPackageZipForDryRun);
                                     echo prepareExchangedData(
                                         [
                                             'error' => true,
@@ -3185,14 +3185,14 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                                     break;
                                 }
                             }
-                            @unlink($tmpPackageZipForDryRun);
+                            tpBackupCleanupRestoreFile($tmpPackageZipForDryRun);
                         }
                     } else {
                         // Try to decrypt with the available keys
                         $decRet = tpDefuseDecryptWithCandidates($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS);
 
                         if (empty($decRet['success'])) {
-                            @unlink($tmpDecryptedSql);
+                            tpBackupCleanupRestoreFile($tmpDecryptedSql);
                             $cleanupRestoreStage();
                             echo prepareExchangedData(
                                 [
@@ -3214,7 +3214,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                             'message' => $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RESTORE_PREFLIGHT_FAILED'], 'encode');
                         break;
                     } finally {
-                        @unlink($tmpDecryptedSql);
+                        tpBackupCleanupRestoreFile($tmpDecryptedSql);
                     }
 // Create authorization token in DB (teampass_misc)
                     $compat = [

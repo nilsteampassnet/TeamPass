@@ -84,6 +84,9 @@ function purgeTemporaryFiles(): void
             //delete file FILES
             while (false !== ($f = readdir($dir))) {
                 if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
+                    if (tpBackupIsPersistentArchiveFilename($f)) {
+                        continue;
+                    }
                     $filePath = $SETTINGS['path_to_files_folder'] . '/' . $f;
                     if (file_exists($filePath) && ((time() - filectime($filePath)) > 604800)) {
                         fileDelete($filePath, $SETTINGS);
@@ -118,6 +121,7 @@ function purgeTemporaryFiles(): void
     // Nominal restore paths clean themselves; this catches interrupted CLI runs.
     if (function_exists('tpBackupPurgeOldTemporaryDirectories')) {
         tpBackupPurgeOldTemporaryDirectories((string) sys_get_temp_dir(), 86400);
+        tpBackupPurgeSensitiveTemporaryFiles((string) sys_get_temp_dir(), 86400);
     }
 
     // Purge database dump fragments left by fatal errors or terminated PHP-FPM

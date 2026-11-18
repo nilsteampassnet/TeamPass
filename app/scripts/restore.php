@@ -455,7 +455,7 @@ if ($tmpSql === '') {
 if (tpBackupIsPackageFilename($file) === true) {
     $packageRestore = tpBackupPreparePackageSqlForRestore($file, $tmpSql, $keysToTry, $SETTINGS, true, true);
     if (empty($packageRestore['success'])) {
-        @unlink($tmpSql);
+        tpBackupCleanupRestoreFile($tmpSql);
         $errorCode = (string) ($packageRestore['error_code'] ?? 'package_invalid');
         $log('ERROR', 'Package restore preparation failed: ' . $errorCode . ' - ' . (string) ($packageRestore['message'] ?? ''));
         $payload['status'] = 'failed';
@@ -472,7 +472,7 @@ if (tpBackupIsPackageFilename($file) === true) {
 } else {
     $dec = tpDefuseDecryptWithCandidates($file, $tmpSql, $keysToTry, $SETTINGS);
     if (empty($dec['success'])) {
-        @unlink($tmpSql);
+        tpBackupCleanupRestoreFile($tmpSql);
         $log('ERROR', 'Decrypt failed: ' . (string) $dec['message']);
         $payload['status'] = 'failed';
         $payload['finished_at'] = time();
@@ -605,9 +605,9 @@ try {
     $log('ERROR', 'Restore failed: ' . $payload['error']);
     $exitCode = 50;
 } finally {
-    @unlink($tmpSql);
+    tpBackupCleanupRestoreFile($tmpSql);
     if ($tmpPackageZip !== '') {
-        @unlink($tmpPackageZip);
+        tpBackupCleanupRestoreFile($tmpPackageZip);
     }
     tpBackupCleanupExternalizedRestoreStage($restoreStage);
 

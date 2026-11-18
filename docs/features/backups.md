@@ -24,6 +24,13 @@ Temporary decrypted restore files and SQL extracted from packages also request
 owner-only `0600` permissions before writing. Failed decryption attempts remove
 their temporary output before trying another key.
 
+New decrypted restore files also live in private `0700` staging directories,
+removed after use. Maintenance removes abandoned staging and old flat restore
+remnants after a day, and expired, abandoned recovery downloads after a day.
+Recovery Package downloads are created with owner-only `0600` permissions.
+Persistent archives and their metadata are excluded from the generic seven-day
+files-directory purge; the configured backup retention is responsible for them.
+
 Existing backup archives are not changed automatically. The System Health file
 integrity permission repair plan can restrict them; the CLI option
 `--deep-permissions` also checks the contents of `storage/backups`.

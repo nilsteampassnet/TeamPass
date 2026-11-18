@@ -17,6 +17,12 @@ use Symfony\Component\Process\Process;
 
 final class RecoveryPackageTrackingTest extends TestCase
 {
+    public function testGeneratedRecoveryDownloadUsesOwnerOnlyPermissions(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') { self::markTestSkipped('POSIX modes required.'); }
+        self::assertSame(0600, $this->probe('create')['archive_mode']);
+    }
+
     /** @return iterable<string,array{string,bool,string}> */
     public static function scenarios(): iterable
     {

@@ -126,9 +126,9 @@ function tpBackupOpenProtectedFile(string $path, string $mode = 'x+b', bool $own
  *
  * @return array{success: bool, message: string}
  */
-function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, string $encryptionKey): array
+function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, string $encryptionKey, bool $ownerOnly = false): array
 {
-    $handle = tpBackupOpenProtectedFile($destFile);
+    $handle = tpBackupOpenProtectedFile($destFile, 'x+b', $ownerOnly);
     if ($handle === false) {
         return ['success' => false, 'message' => 'Could not create or protect temporary encrypted backup file.'];
     }
@@ -139,7 +139,7 @@ function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, stri
         return $result;
     }
 
-    $handle = tpBackupOpenProtectedFile($destFile, 'r+b');
+    $handle = tpBackupOpenProtectedFile($destFile, 'r+b', $ownerOnly);
     if ($handle === false) {
         return ['success' => false, 'message' => 'Could not verify encrypted backup file protection.'];
     }
@@ -260,6 +260,9 @@ function tpBackupMapLegacyScheduledOutputDir(string $requestedDir, array $SETTIN
 
 function tpBackupResolveDirectoryCreationPath(string $path): string
 {
+    if (str_contains($path, '://') || preg_match('#(?:^|[\\\\/])\.\.(?:[\\\\/]|$)#', $path) === 1) {
+        return '';
+    }
     $path = rtrim($path, '/\\');
     if ($path === '') {
         return '';
@@ -354,6 +357,13 @@ function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS
 
     $dirReal = realpath($outputDir);
     if ($dirReal === false || !is_dir($dirReal)) {
+        return ['success' => false, 'path' => ''];
+    }
+    $insideAllowedBase = false;
+    foreach ($allowedBaseDirs as $base) {
+        $insideAllowedBase = $insideAllowedBase || tpBackupIsResolvedPathInsideDirectory($dirReal, (string) $base);
+    }
+    if (!$insideAllowedBase) {
         return ['success' => false, 'path' => ''];
     }
 
@@ -1223,7 +1233,7 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
         $filepath = rtrim($outputDir, '/\\') . DIRECTORY_SEPARATOR . $filename;
         $encryptedTmpPath = $workDir . DIRECTORY_SEPARATOR . 'recovery.encrypted';
 
-        $encryptResult = tpPrepareFileWithDefuseNormalized('encrypt', $zipPath, $encryptedTmpPath, $passphrase);
+        $encryptResult = tpBackupEncryptProtectedFile($zipPath, $encryptedTmpPath, $passphrase, true);
         if ($encryptResult['success'] !== true || is_file($encryptedTmpPath) === false) {
             return [
                 'success' => false,
@@ -4023,6 +4033,9 @@ function tpBackupCreateTemporaryDirectory(string $baseDir): string
  */
 function tpBackupRemoveTemporaryDirectory(string $path): bool
 {
+    if (is_link($path)) {
+        return false;
+    }
     $real = realpath($path);
     if ($real === false || is_dir($real) === false) {
         return true;
@@ -4099,6 +4112,9 @@ function tpBackupPurgeOldTemporaryDirectories(string $baseDir, int $olderThanSec
         }
 
         $candidate = $baseReal . DIRECTORY_SEPARATOR . $entry;
+        if (is_link($candidate)) {
+            continue;
+        }
         $candidateReal = realpath($candidate);
         if (
             $candidateReal === false
@@ -5441,9 +5457,14 @@ function tpDefuseDecryptWithCandidates(
  */
 function tpBackupRestoreTempPath(string $extension): string
 {
+        $privateDir = tpBackupCreateTemporaryDirectory((string) sys_get_temp_dir());
+        if ($privateDir === '') {
+            return '';
+        }
         $extension = trim($extension, ". \t\n\r\0\x0B");
-        if ($extension === '') {
-            $extension = 'tmp';
+        if (preg_match('/^[A-Za-z0-9]{1,10}$/D', $extension) !== 1) {
+            tpBackupRemoveTemporaryDirectory($privateDir);
+            return '';
         }
 
         for ($i = 0; $i < 10; $i++) {
@@ -5453,14 +5474,64 @@ function tpBackupRestoreTempPath(string $extension): string
                 $token = str_replace('.', '', uniqid('', true));
             }
 
-            $path = rtrim((string) sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR
+            $path = $privateDir . DIRECTORY_SEPARATOR
                 . 'tpbackup_restore_' . getmypid() . '_' . time() . '_' . $token . '.' . $extension;
             if (file_exists($path) === false) {
                 return $path;
             }
         }
 
+        tpBackupRemoveTemporaryDirectory($privateDir);
         return '';
+}
+
+/** Remove only a private restore staging file and its now-empty generated directory. */
+function tpBackupCleanupRestoreFile(string $path): bool
+{
+    $directory = dirname($path);
+    $base = realpath((string) sys_get_temp_dir());
+    $parent = realpath(dirname($directory));
+    if ($base === false || $parent === false || is_link($directory)
+        || tpBackupNormalizePathForCompare($base) !== tpBackupNormalizePathForCompare($parent)
+        || preg_match('/^tpbackup_tmp_[a-f0-9]{16}$/D', basename($directory)) !== 1
+        || !str_starts_with(basename($path), 'tpbackup_restore_')) {
+        return false;
+    }
+    $removed = !file_exists($path) || @unlink($path);
+    if ($removed && is_dir($directory)) {
+        @rmdir($directory);
+    }
+    return $removed;
+}
+
+/** Keep persistent archives and sidecars outside the generic seven-day temporary-file purge. */
+function tpBackupIsPersistentArchiveFilename(string $name): bool
+{
+    return preg_match('/^(?:scheduled-|externalized-|pre-upgrade-|[0-9]{9,}-)[A-Za-z0-9._-]+\.(?:sql|tpbackup)(?:\.meta\.json)?$/D', $name) === 1;
+}
+
+/** Purge old flat restore remnants and abandoned recovery downloads from previous releases. */
+function tpBackupPurgeSensitiveTemporaryFiles(string $directory, int $age = 86400): array
+{
+    $stats = ['deleted' => 0, 'failed' => 0];
+    $base = realpath($directory);
+    if ($base === false || !is_dir($base)) {
+        return $stats;
+    }
+    foreach (scandir($base) ?: [] as $name) {
+        if (preg_match('/^(?:(?:tpbackup|defuse_temp)_restore_[A-Za-z0-9_.-]+\.(?:sql|zip|tmp)|recovery-[A-Za-z0-9_-]+\.tprecovery)$/D', $name) !== 1) {
+            continue;
+        }
+        $path = $base . DIRECTORY_SEPARATOR . $name;
+        if (is_link($path) || !is_file($path)) {
+            continue;
+        }
+        $mtime = filemtime($path);
+        if ($mtime !== false && $mtime < time() - max(3600, $age)) {
+            $stats[@unlink($path) ? 'deleted' : 'failed']++;
+        }
+    }
+    return $stats;
 }
 
 /**
@@ -5718,7 +5789,7 @@ function tpBackupPreparePackageSqlForRestore(
 
         $dec = tpDefuseDecryptWithCandidates($packagePath, $tmpZip, $candidateKeys, $SETTINGS);
         if (empty($dec['success'])) {
-            @unlink($tmpZip);
+            tpBackupCleanupRestoreFile($tmpZip);
             return [
                 'success' => false,
                 'error_code' => 'DECRYPT_FAILED',
@@ -5740,7 +5811,7 @@ function tpBackupPreparePackageSqlForRestore(
             return $validated;
         } finally {
             if ($shouldKeepTmpZip === false) {
-                @unlink($tmpZip);
+                tpBackupCleanupRestoreFile($tmpZip);
             }
         }
 }
