@@ -21,18 +21,24 @@ final class BackupRestoreStateTest extends TestCase
         $deleted = [];
         $settings = [];
         $legacySession = [];
+        $legacyApiKeyReset = false;
         $userCredentialsReset = false;
         foreach ($operations as $operation) {
             if ($operation[0] === 'DELETE FROM %b') {
                 $deleted[] = $operation[1][0];
             } elseif ($operation[0] === 'update') {
                 if ($operation[1][0] === 'fixture_api') {
-                    $legacySession = $operation[1][1];
+                    if (array_key_exists('session_key', $operation[1][1])) {
+                        $legacySession = $operation[1][1];
+                    } else {
+                        $legacyApiKeyReset = $operation[1][1] === ['value' => '']
+                            && $operation[1][2] === 'type=%s' && $operation[1][3] === ['user'];
+                    }
                 } else {
                     $settings[$operation[1][3][1]] = [$operation[1][3][0], $operation[1][1]['valeur']];
                 }
-            } elseif ($operation[0] === 'UPDATE %b SET key_tempo=%s, session_end=%s, api_key=%s') {
-                $userCredentialsReset = $operation[1] === ['fixture_users', '', '0', ''];
+            } elseif ($operation[0] === 'UPDATE %b SET key_tempo=%s, session_end=%s') {
+                $userCredentialsReset = $operation[1] === ['fixture_users', '', '0'];
             }
         }
         foreach (['api_tokens', 'api_sessions', 'device_pairings', 'background_tasks', 'api_idempotency', 'tokens'] as $table) {
@@ -45,6 +51,7 @@ final class BackupRestoreStateTest extends TestCase
         self::assertSame(['encrypted_private_key' => null, 'session_key_salt' => null,
             'session_key' => null, 'session_aes_key' => null, 'timestamp' => ''], $legacySession);
         self::assertTrue($userCredentialsReset);
+        self::assertTrue($legacyApiKeyReset);
         self::assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $settings['recovery_generation'][1]);
         self::assertSame('commit', end($operations)[0]);
     }
