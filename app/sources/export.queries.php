@@ -1145,7 +1145,7 @@ if (null !== $post_type) {
  *
  * @return string
  */
-function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '\\')
+function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '')
 {
     $buffer = fopen('php://temp', 'r+');
     if ($buffer === false) {
@@ -1153,10 +1153,11 @@ function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '
     }
     fputcsv($buffer, $fields, $delimiter, $enclosure, $escape_char);
     rewind($buffer);
-    $csv = fgets($buffer);
+    // The whole record: a quoted field can hold line breaks, so it may span lines
+    $csv = stream_get_contents($buffer);
     fclose($buffer);
 
-    return $csv;
+    return $csv === false ? '' : $csv;
 }
 
 
