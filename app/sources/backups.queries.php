@@ -2049,7 +2049,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $isPackage = tpBackupIsPackageFilename($bn);
                 $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
                 $restoreSupported = ($isRemote === false || tpBackupExternalizedDestinationTypeSupportsFileOperations($destinationType) === true)
-                    && ($isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true);
+                    && ($isPackage === false || $backupType === '' || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true);
                 $tpFilesVersion = null;
                 if (is_scalar($meta['tp_files_version'] ?? null) && (string) $meta['tp_files_version'] !== '') {
                     $tpFilesVersion = (string) $meta['tp_files_version'];
