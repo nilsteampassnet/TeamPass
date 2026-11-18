@@ -56,13 +56,26 @@ function teampassEnforceNetworkAccess(array $settings): void
     $session = \TeampassClasses\SessionManager\SessionManager::getSession();
     $language = new \TeampassClasses\Language\Language($session->get('user-language') ?? ($settings['default_language'] ?? 'english'));
     $message = (string) $language->getShipped('network_security_access_denied_message');
-    http_response_code($decision['reason'] === 'acl_unavailable' ? 503 : 403);
+    $status = $decision['reason'] === 'acl_unavailable' ? 503 : 403;
+    http_response_code($status);
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
     $entry = str_replace('\\', '/', (string) realpath($entryScript));
     $webRoot = str_replace('\\', '/', (string) realpath(TEAMPASS_ROOT . '/public'));
-    $json = str_starts_with($entry, $webRoot . '/sources/') || str_starts_with($entry, $webRoot . '/api/');
-    if ($json === true) {
+    $api = str_starts_with($entry, $webRoot . '/api/');
+    if ($api === true) {
+        // Preserve the API error contract before BaseController is available.
+        header_remove('Set-Cookie');
+        header('Content-Type: application/problem+json; charset=UTF-8');
+        echo json_encode([
+            'type' => 'about:blank',
+            'title' => $status === 503 ? 'Service Unavailable' : 'Forbidden',
+            'status' => $status,
+            'detail' => $message,
+            'error' => $message,
+            'code' => 'network_access_denied',
+        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    } elseif (str_starts_with($entry, $webRoot . '/sources/')) {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => $message, 'code' => 'network_access_denied'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     } else {

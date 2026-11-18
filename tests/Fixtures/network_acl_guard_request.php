@@ -12,9 +12,27 @@ define('TEAMPASS_FUNCTIONS_ONLY', true);
 define('DB_PREFIX', 'acl_fixture_');
 require_once __DIR__ . '/../../app/vendor/autoload.php';
 require_once __DIR__ . '/network_acl_db.php';
-require_once __DIR__ . '/../../app/sources/main.functions.php';
+if (PHP_SAPI === 'cli') {
+    require_once __DIR__ . '/../../app/sources/main.functions.php';
+} else {
+    // Header-contract tests isolate the guard from installation/bootstrap dependencies.
+    define('TEAMPASS_ROOT', dirname(__DIR__, 2));
+    define('TEAMPASS_APP', TEAMPASS_ROOT . '/app');
+    define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
+    require_once TEAMPASS_APP . '/sources/network_acl_guard.php';
+    $sessionProperty = new ReflectionProperty(\TeampassClasses\SessionManager\SessionManager::class, 'session');
+    $sessionProperty->setValue(null, new \Symfony\Component\HttpFoundation\Session\Session(
+        new \Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage()
+    ));
 
-$input = json_decode((string) ($argv[1] ?? ''), true, 32, JSON_THROW_ON_ERROR);
+    /** Supply the two policy refusals already covered by the real-policy CLI tests. */
+    function teampassGetNetworkAccessDecision(array $settings): array
+    {
+        return ['allowed' => false, 'reason' => DB::$tableExists ? 'whitelist_no_match' : 'acl_unavailable'];
+    }
+}
+
+$input = json_decode((string) ($argv[1] ?? $_GET['input'] ?? ''), true, 32, JSON_THROW_ON_ERROR);
 $routes = [
     'login' => '/public/index.php',
     'identify' => '/public/sources/identify.php',
@@ -49,7 +67,11 @@ ob_start();
 register_shutdown_function(static function () use ($log): void {
     $body = (string) ob_get_clean();
     unlink($log);
-    echo json_encode(['status' => http_response_code() ?: 200, 'body' => $body], JSON_THROW_ON_ERROR);
+    echo PHP_SAPI === 'cli'
+        ? json_encode(['status' => http_response_code() ?: 200, 'body' => $body], JSON_THROW_ON_ERROR)
+        : $body;
 });
+// Verify API refusals remove every cookie, including one set before the guard.
+header('Set-Cookie: acl_fixture=synthetic; HttpOnly', false);
 teampassEnforceNetworkAccess(['network_whitelist_enabled' => ($input['disabled'] ?? false) ? 0 : 1]);
 echo 'ACTION_REACHED';

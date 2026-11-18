@@ -13,6 +13,75 @@ use PHPUnit\Framework\TestCase;
 
 class NetworkAclGuardTest extends TestCase
 {
+    /** Exercise real HTTP headers that are unavailable under the CLI SAPI. */
+    private function httpRequest(array $input): array
+    {
+        $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $error);
+        self::assertIsResource($socket, $error);
+        $address = stream_socket_get_name($socket, false);
+        fclose($socket);
+        $log = tempnam(sys_get_temp_dir(), 'tp-acl-http-');
+        $server = proc_open([PHP_BINARY, '-S', $address, '-t', __DIR__ . '/../Fixtures'],
+            [0 => ['pipe', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $pipes);
+        self::assertIsResource($server);
+        fclose($pipes[0]);
+        try {
+            $ready = false;
+            for ($attempt = 0; $attempt < 100; ++$attempt) {
+                $connection = @stream_socket_client('tcp://' . $address, $errno, $error, 0.1);
+                if (is_resource($connection)) {
+                    fclose($connection);
+                    $ready = true;
+                    break;
+                }
+                usleep(20000);
+            }
+            self::assertTrue($ready, (string) file_get_contents($log));
+            $body = file_get_contents('http://' . $address . '/network_acl_guard_request.php?'
+                . http_build_query(['input' => json_encode($input, JSON_THROW_ON_ERROR)]), false,
+                stream_context_create(['http' => ['ignore_errors' => true, 'timeout' => 10]]));
+            self::assertIsString($body);
+            self::assertJson($body, (string) file_get_contents($log));
+            return ['headers' => $http_response_header, 'body' => json_decode($body, true, 32, JSON_THROW_ON_ERROR)];
+        } finally {
+            proc_terminate($server);
+            proc_close($server);
+            unlink($log);
+        }
+    }
+
+    /** @return iterable<string, array{string, bool, int}> */
+    public static function refusalResponses(): iterable
+    {
+        yield 'API denied' => ['api', false, 403];
+        yield 'API unavailable' => ['api', true, 503];
+        yield 'AJAX denied' => ['identify', false, 403];
+    }
+
+    /** API errors retain Problem Details and never issue a session cookie; AJAX stays compatible. */
+    #[DataProvider('refusalResponses')]
+    public function testHttpRefusalContracts(string $route, bool $unavailable, int $status): void
+    {
+        $result = $this->httpRequest(['route' => $route, 'storage_failure' => $unavailable]);
+        $headers = strtolower(implode("\n", $result['headers']));
+        self::assertStringContainsString(' ' . $status . ' ', $result['headers'][0]);
+        self::assertSame('network_access_denied', $result['body']['code']);
+        if ($route === 'api') {
+            self::assertStringContainsString('content-type: application/problem+json', $headers);
+            self::assertStringNotContainsString('set-cookie:', $headers);
+            self::assertSame('about:blank', $result['body']['type']);
+            self::assertSame($status === 503 ? 'Service Unavailable' : 'Forbidden', $result['body']['title']);
+            self::assertSame($status, $result['body']['status']);
+            self::assertNotEmpty($result['body']['detail']);
+            self::assertSame($result['body']['detail'], $result['body']['error']);
+        } else {
+            self::assertStringContainsString('content-type: application/json', $headers);
+            self::assertSame(['error', 'code'], array_keys($result['body']));
+        }
+        self::assertStringNotContainsString('synthetic', $result['body']['error']);
+        self::assertStringNotContainsString('database-credential-canary', $result['body']['error']);
+    }
+
     /** Execute the terminating production guard in its own process. */
     private function request(array $input): array
     {
