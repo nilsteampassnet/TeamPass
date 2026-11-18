@@ -244,6 +244,29 @@ if ($cmp1 === '' || $cmp1 !== $cmp2) {
     exit(33);
 }
 
+// Bind authorization to bytes, not only a pathname that can be replaced after preparation.
+$expectedHash = (string) ($payload['file']['sha256'] ?? '');
+try {
+    tpBackupAssertRestoreFileUnchanged($file, $expectedHash);
+} catch (TeamPassRecoveryException $exception) {
+    $log('ERROR', 'RESTORE_INPUT_CHANGED: prepare a new restore authorization.');
+    exit(34);
+}
+$databaseLock = tpBackupDatabaseLockName();
+if ((string) DB::queryFirstField('SELECT GET_LOCK(%s, 0)', $databaseLock) !== '1') {
+    $log('ERROR', 'Another backup or database restore is running.');
+    exit(20);
+}
+register_shutdown_function(static function () use ($databaseLock): void {
+    try { DB::queryFirstField('SELECT RELEASE_LOCK(%s)', $databaseLock); } catch (Throwable $exception) {}
+});
+$authorizer = DB::queryFirstRow('SELECT admin, disabled, deleted_at FROM %b WHERE id=%i',
+    prefixTable('users'), (int) ($payload['initiator']['id'] ?? 0));
+if (!is_array($authorizer) || (int) ($authorizer['admin'] ?? 0) !== 1
+    || (int) ($authorizer['disabled'] ?? 0) !== 0 || ($authorizer['deleted_at'] ?? null) !== null) {
+    $log('ERROR', 'The authorizing administrator is no longer eligible.');
+    exit(35);
+}
 // Always disconnect the restore initiator right away (so the admin can safely run the CLI).
 $initiatorId = (int) (($payload['initiator']['id'] ?? 0));
 if ($initiatorId > 0) {
@@ -368,63 +391,6 @@ if (!empty($apiUsers) && $forceDisconnect === true) {
     }
 }
 
-// From this point, we consider the restore authorized to start.
-$payload['status'] = 'in_progress';
-$payload['started_at'] = time();
-tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
-// Maintenance mode toggle (best-effort)
-// Keep maintenance enabled at the end of the restore (same behavior as the legacy web restore),
-// because the SQL dump may restore maintenance_mode to 0.
-try {
-    $affected = DB::update(
-        prefixTable('misc'),
-        [
-            'valeur' => '1',
-            'updated_at' => time(),
-        ],
-        'intitule = %s AND type = %s',
-        'maintenance_mode',
-        'admin'
-    );
-    if ($affected === 0) {
-        DB::insert(
-            prefixTable('misc'),
-            [
-                'intitule' => 'maintenance_mode',
-                'type' => 'admin',
-                'valeur' => '1',
-                'updated_at' => time(),
-            ]
-        );
-    }
-} catch (Throwable $e) {
-    // Fallback without updated_at
-    try {
-        $affected = DB::update(
-            prefixTable('misc'),
-            [
-                'valeur' => '1',
-            ],
-            'intitule = %s AND type = %s',
-            'maintenance_mode',
-            'admin'
-        );
-        if ($affected === 0) {
-            DB::insert(
-                prefixTable('misc'),
-                [
-                    'intitule' => 'maintenance_mode',
-                    'type' => 'admin',
-                    'valeur' => '1',
-                ]
-            );
-        }
-    } catch (Throwable $e2) {
-        $log('WARN', 'Unable to enable maintenance mode: ' . $e2->getMessage());
-    }
-}
-
 $log('INFO', 'Starting restore from: ' . $file);
 $log('INFO', 'Log file: ' . $logFile);
 
@@ -519,152 +485,77 @@ if (tpBackupIsPackageFilename($file) === true) {
     $log('INFO', 'Decrypt OK. Importing SQL...');
 }
 
-// Restore SQL (chunked)
-$totalSize = filesize($tmpSql);
-if ($totalSize === false) {
-    $totalSize = 0;
-}
-$offset = 0;
-$batchSize = 500;
+// Complete validation precedes maintenance, the worker hold and every destructive SQL statement.
 $totalExecuted = 0;
-
-$handle = fopen($tmpSql, 'r');
-if ($handle === false) {
-    @unlink($tmpSql);
-    if ($tmpPackageZip !== '') {
-        @unlink($tmpPackageZip);
-    }
-    $log('ERROR', 'Unable to open decrypted SQL file.');
-    tpBackupCleanupExternalizedRestoreStage($restoreStage);
-    exit(42);
-}
-
+$restoreCompleted = false;
+$tasksLock = null;
 try {
-    while (true) {
-        if ($offset > 0) {
-            fseek($handle, $offset);
-        }
-
-        $query = '';
-        $executed = 0;
-        $inMultiLineComment = false;
-        $errors = [];
-
-        try {
-            DB::startTransaction();
-            DB::query("SET FOREIGN_KEY_CHECKS = 0");
-            DB::query("SET UNIQUE_CHECKS = 0");
-
-            while (!feof($handle) && $executed < $batchSize) {
-                $line = fgets($handle);
-                if ($line === false) {
-                    break;
-                }
-
-                $trimmedLine = trim($line);
-
-                // Skip empty lines or comments
-                if (
-                    $trimmedLine === ''
-                    || strpos($trimmedLine, '--') === 0
-                    || strpos($trimmedLine, '#') === 0
-                ) {
-                    continue;
-                }
-
-                // Handle multi-line comments
-                if (strpos($trimmedLine, '/*') === 0 && strpos($trimmedLine, '*/') === false) {
-                    $inMultiLineComment = true;
-                    continue;
-                }
-                if ($inMultiLineComment) {
-                    if (strpos($trimmedLine, '*/') !== false) {
-                        $inMultiLineComment = false;
-                    }
-                    continue;
-                }
-
-                $query .= $line;
-
-                // Execute query if it ends with semicolon
-                if (substr(rtrim($query), -1) === ';') {
-                    try {
-                        DB::query($query);
-                        $executed++;
-                        $totalExecuted++;
-                    } catch (Throwable $e) {
-                        $errors[] = $e->getMessage();
-                        $log('ERROR', 'SQL error: ' . $e->getMessage());
-                        // Stop early on first error
-                        break;
-                    }
-                    $query = '';
-                }
-            }
-
-            if (empty($errors)) {
-                DB::commit();
-            } else {
-                DB::rollback();
-            }
-        } catch (Throwable $e) {
-            try {
-                DB::query("SET FOREIGN_KEY_CHECKS = 1");
-                DB::query("SET UNIQUE_CHECKS = 1");
-            } catch (Throwable $ignored) {
-                // ignore
-            }
-            DB::rollback();
-            $errors[] = $e->getMessage();
-            $log('ERROR', 'Restore chunk failed: ' . $e->getMessage());
-        } finally {
-            try {
-                DB::query("SET FOREIGN_KEY_CHECKS = 1");
-                DB::query("SET UNIQUE_CHECKS = 1");
-            } catch (Throwable $ignored) {
-                // ignore
-            }
-        }
-
-        $newOffset = ftell($handle);
-        if ($newOffset === false) {
-            $newOffset = $offset;
-        }
-
-
-	    // Progress (single-line bar on STDERR to avoid flooding the terminal)
-	    if ($totalSize > 0) {
-	        $pct = (int) floor(($newOffset / $totalSize) * 100);
-	        if ($pct > 100) {
-	            $pct = 100;
-	        }
-	        tpCliProgressBar($pct, $totalExecuted, $interactive);
-
-	        // Log progress in file every 10%
-	        static $lastLoggedPct = -1;
-	        if ($pct !== $lastLoggedPct && ($pct % 10 === 0 || $pct === 100)) {
-	            $lastLoggedPct = $pct;
-	            @file_put_contents(
-	                $logFile,
-	                '[' . date('c') . '][INFO] Progress: ' . $pct . '% (statements executed: ' . $totalExecuted . ')' . PHP_EOL,
-	                FILE_APPEND
-	            );
-	        }
-	    }
-
-        if (!empty($errors)) {
-            throw new RuntimeException('SQL restore failed: ' . implode(' | ', $errors));
-        }
-
-        // End conditions
-        if (feof($handle) || $newOffset >= $totalSize) {
-            break;
-        }
-
-        // Continue with next offset
-        $offset = $newOffset;
+    $inventory = tpBackupPreflightRestoreSql($tmpSql, $packageManifest);
+    tpBackupAssertRestoreFileUnchanged($file, $expectedHash);
+    require_once __DIR__ . '/backgroundTaskLock.php';
+    $tasksLock = new BackgroundTaskLock(TASKS_LOCK_FILE);
+    if (!$tasksLock->acquire()) {
+        throw new TeamPassRecoveryException('BACKGROUND_TASKS_RUNNING');
     }
-
+    // This file survives a killed PHP process. Web traffic and cron stay closed even while misc is replaced.
+    $guard = tpBackupOpenProtectedFile(tpBackupRestoreGuardPath(), file_exists(tpBackupRestoreGuardPath()) ? 'c+b' : 'x+b', true);
+    if (!is_resource($guard)) {
+        throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+    }
+    $guardWritten = fwrite($guard, (string) getmypid()) !== false && fflush($guard);
+    fclose($guard);
+    if (!$guardWritten) {
+        throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+    }
+    DB::update(prefixTable('misc'), ['valeur' => '1'], 'type=%s AND intitule=%s', 'admin', 'maintenance_mode');
+    ConfigManager::invalidateCache();
+    $payload['status'] = 'in_progress';
+    $payload['started_at'] = time();
+    if (!tpRestoreAuthorizationUpdatePayload($authId, $payload)) {
+        throw new TeamPassRecoveryException('RESTORE_AUTHORIZATION_FAILED');
+    }
+    DB::query('SET SESSION sql_mode=%s', tpBackupRestoreSqlMode((string) DB::queryFirstField('SELECT @@SESSION.sql_mode')));
+    DB::query('SET SESSION FOREIGN_KEY_CHECKS=0');
+    $pendingInserts = 0;
+    try {
+        $statementCount = array_sum($inventory['rows']) + 2 * count($inventory['tables']);
+        foreach (tpRecoverySqlStatements($tmpSql) as $statement) {
+            $statementInfo = tpRecoverySqlStatementInfo($statement, prefixTable(''));
+            if ($statementInfo['type'] !== 'insert' && $pendingInserts > 0) {
+                DB::commit();
+                $pendingInserts = 0;
+            }
+            if ($statementInfo['type'] === 'insert' && $pendingInserts === 0) {
+                DB::startTransaction();
+            }
+            try {
+                DB::query($statement);
+            } catch (Throwable $exception) {
+                // Driver messages can contain archived SQL values. Never put them in logs or token payloads.
+                throw new TeamPassRecoveryException('SQL_IMPORT_FAILED');
+            }
+            if ($statementInfo['type'] === 'insert' && ++$pendingInserts >= 500) {
+                DB::commit();
+                $pendingInserts = 0;
+            }
+            $totalExecuted++;
+            tpCliProgressBar((int) min(100, floor(100 * $totalExecuted / max(1, $statementCount))), $totalExecuted, $interactive);
+        }
+        if ($pendingInserts > 0) {
+            DB::commit();
+            $pendingInserts = 0;
+        }
+    } finally {
+        if ($pendingInserts > 0) {
+            DB::rollback();
+        }
+        DB::query('SET SESSION FOREIGN_KEY_CHECKS=1');
+    }
+    foreach ($inventory['rows'] as $table => $expectedRows) {
+        if ((int) DB::queryFirstField('SELECT COUNT(*) FROM %b', $table) !== $expectedRows) {
+            throw new TeamPassRecoveryException('DATABASE_ROW_COUNT_MISMATCH');
+        }
+    }
     $log('INFO', 'SQL import completed. Total statements executed: ' . $totalExecuted);
 
     if ($tmpPackageZip !== '') {
@@ -699,23 +590,21 @@ try {
         }
     }
 
-    $payload['status'] = 'success';
-    $payload['finished_at'] = time();
-    tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
+    tpBackupInvalidateRestoredState();
+    logEvents($SETTINGS, 'admin_action', 'dataBase restore', (string) $initiatorId,
+        (string) ($payload['initiator']['login'] ?? ''), basename($file));
+    $restoreCompleted = true;
+    $log('INFO', 'Restore completed. Credentials and queued work invalidated; maintenance remains enabled.');
     $exitCode = 0;
 } catch (Throwable $e) {
     $payload['status'] = 'failed';
     $payload['finished_at'] = time();
-    $payload['error'] = $e->getMessage();
+    $payload['error'] = $e instanceof TeamPassRecoveryException ? $e->reason : 'RESTORE_FAILED';
     tpRestoreAuthorizationUpdatePayload($authId, $payload);
 
-    $log('ERROR', 'Restore failed: ' . $e->getMessage());
+    $log('ERROR', 'Restore failed: ' . $payload['error']);
     $exitCode = 50;
 } finally {
-    if (is_resource($handle)) {
-        fclose($handle);
-    }
     @unlink($tmpSql);
     if ($tmpPackageZip !== '') {
         @unlink($tmpPackageZip);
@@ -750,6 +639,15 @@ try {
         }
     }
 
+    if ($restoreCompleted) {
+        if (!@unlink(tpBackupRestoreGuardPath())) {
+            $log('ERROR', 'Restore completed but the persistent hold could not be removed.');
+            $exitCode = 50;
+        }
+    }
+    if ($tasksLock !== null) {
+        $tasksLock->release();
+    }
     // Release lock
     try {
         flock($lockHandle, LOCK_UN);

@@ -12,6 +12,12 @@ declare(strict_types=1);
 
 use TeampassClasses\ConfigManager\ConfigManager;
 
+/** Share one connection-scoped lock between backup captures and destructive restores. */
+function tpBackupDatabaseLockName(): string
+{
+    return 'tp-backup-' . substr(hash('sha256', DB::getMDB()->dbName . ':' . prefixTable('misc')), 0, 48);
+}
+
 /** Keep a package's database reads in one snapshot and maintenance active until publication. */
 final class TeamPassBackupCapture
 {
@@ -19,10 +25,11 @@ final class TeamPassBackupCapture
     private static string $lock = '';
     private static ?string $previousMaintenance = null;
     private static bool $transaction = false;
+    private static ?BackgroundTaskLock $tasksLock = null;
     private bool $acquired = false;
 
     /** Acquire the capture once; a package and its inner SQL dump share the same scope. */
-    public function __construct()
+    public function __construct(?bool $holdBackgroundTasks = null)
     {
         if (self::$depth > 0) {
             self::$depth++;
@@ -33,8 +40,20 @@ final class TeamPassBackupCapture
         if (DB::getMDB()->nested_transactions_count !== 0) {
             throw new RuntimeException('A backup must start outside an application transaction.');
         }
-        $lock = 'tp-backup-' . substr(hash('sha256', DB::getMDB()->dbName . ':' . prefixTable('misc')), 0, 48);
+        // Scheduled backups are already exclusive workers; a manual web capture must
+        // also wait for the handler's pool to drain before reading filesystem documents.
+        if (($holdBackgroundTasks ?? PHP_SAPI !== 'cli') && defined('TASKS_LOCK_FILE')) {
+            require_once __DIR__ . '/../scripts/backgroundTaskLock.php';
+            self::$tasksLock = new BackgroundTaskLock(TASKS_LOCK_FILE);
+            if (!self::$tasksLock->acquire()) {
+                self::$tasksLock = null;
+                throw new RuntimeException('Background tasks are running. Retry the backup after they finish.');
+            }
+        }
+        $lock = tpBackupDatabaseLockName();
         if ((string) DB::queryFirstField('SELECT GET_LOCK(%s, 0)', $lock) !== '1') {
+            self::$tasksLock?->release();
+            self::$tasksLock = null;
             throw new RuntimeException('Another database backup is already running.');
         }
         self::$lock = $lock;
@@ -93,6 +112,8 @@ final class TeamPassBackupCapture
             self::$previousMaintenance = null;
             self::$transaction = false;
             self::$depth = 0;
+            self::$tasksLock?->release();
+            self::$tasksLock = null;
         }
     }
 

@@ -91,7 +91,7 @@ class BackgroundTasksHandler {
      */
     public function processBackgroundTasks(): bool {
         // A restored instance stays isolated until its operator completes the recovery checks.
-        if ((int) ($this->settings['recovery_pending_checks'] ?? 0) === 1) {
+        if (tpBackupRestoreIsInProgress() || (int) ($this->settings['recovery_pending_checks'] ?? 0) === 1) {
             return false;
         }
         // Prevent multiple concurrent executions

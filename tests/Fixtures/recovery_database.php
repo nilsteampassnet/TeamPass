@@ -131,6 +131,10 @@ try {
         DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
     }
     $settings = ['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'];
+    // Exercise byte fidelity through the real dump, authenticated archive and SQL import.
+    $backupBytes = implode('', array_map('chr', range(0, 255))) . "\nR&D O'Brien \"<>\"\r\nliteral\\n";
+    DB::query('CREATE TABLE ' . prefixTable('backup_bytes') . ' (payload LONGBLOB NOT NULL) ENGINE=InnoDB');
+    DB::insert(prefixTable('backup_bytes'), ['payload' => $backupBytes]);
     foreach (DB::query('SELECT intitule,valeur FROM ' . prefixTable('misc') . ' WHERE type=%s', 'admin') as $row) {
         $settings[$row['intitule']] = $row['valeur'];
     }
@@ -237,6 +241,15 @@ try {
         throw new RuntimeException('Batched encryption diagnostics were incomplete or disclosed an item identifier');
     }
     $targetDb = new mysqli('127.0.0.1', $dbUser, $dbPassword, $target, $port);
+    if ($targetDb->query('SELECT payload FROM recovery_backup_bytes')->fetch_row()[0] !== $backupBytes) {
+        throw new RuntimeException('The SQL backup changed binary bytes, newlines or literal escape sequences');
+    }
+    foreach (['bck_scheduled_enabled', 'bck_externalized_enabled'] as $setting) {
+        $disabled = $targetDb->query("SELECT valeur FROM recovery_misc WHERE type='settings' AND intitule='" . $setting . "'")->fetch_row();
+        if (!is_array($disabled) || $disabled[0] !== '0') {
+            throw new RuntimeException('Recovery did not disable backup scheduling in its runtime namespace');
+        }
+    }
     if ($scenario === 'upgrade') {
         $targetDb->query('SELECT * FROM recovery_webauthn_credentials LIMIT 1');
         $targetDb->query('SELECT * FROM recovery_secure_send_audit LIMIT 1');

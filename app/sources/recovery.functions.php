@@ -341,15 +341,16 @@ function tpRecoveryPublicJob(array $job): array
         ]))];
 }
 
-/** Store an admin setting using prepared statements against the original validated prefix. */
+/** Store a setting in its runtime namespace using prepared statements and the validated prefix. */
 function tpRecoverySetSetting(mysqli $db, string $prefix, string $name, string $value): void
 {
-    $statement = $db->prepare('UPDATE `' . $prefix . 'misc` SET valeur=? WHERE type=\'admin\' AND intitule=?');
-    $statement->bind_param('ss', $value, $name);
+    $type = str_starts_with($name, 'bck_') ? 'settings' : 'admin';
+    $statement = $db->prepare('UPDATE `' . $prefix . 'misc` SET valeur=? WHERE type=? AND intitule=?');
+    $statement->bind_param('sss', $value, $type, $name);
     $statement->execute();
     $statement->close();
-    $statement = $db->prepare('INSERT INTO `' . $prefix . 'misc` (type,intitule,valeur) SELECT \'admin\',?,? WHERE NOT EXISTS (SELECT 1 FROM `' . $prefix . 'misc` WHERE type=\'admin\' AND intitule=?)');
-    $statement->bind_param('sss', $name, $value, $name);
+    $statement = $db->prepare('INSERT INTO `' . $prefix . 'misc` (type,intitule,valeur) SELECT ?,?,? WHERE NOT EXISTS (SELECT 1 FROM `' . $prefix . 'misc` WHERE type=? AND intitule=?)');
+    $statement->bind_param('sssss', $type, $name, $value, $type, $name);
     $statement->execute();
     $statement->close();
 }

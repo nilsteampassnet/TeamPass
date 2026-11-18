@@ -77,6 +77,14 @@ if (!defined('TEAMPASS_SECRETS')) {
     define('TEAMPASS_SECRETS', TEAMPASS_ROOT . '/secrets');
 }
 
+require_once __DIR__ . '/../sources/restore_guard.php';
+if (PHP_SAPI !== 'cli' && tpBackupRestoreIsInProgress()) {
+    http_response_code(503);
+    header('Cache-Control: no-store');
+    header('Retry-After: 60');
+    exit('TeamPass database restoration is in progress.');
+}
+
 // Tasks Handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks
 define('LOG_TASKS_FILE', TEAMPASS_STORAGE . '/logs/teampass_tasks.log'); // Log file for background tasks. 🫸 Ensure you have the right to write in the log file

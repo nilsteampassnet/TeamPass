@@ -31,7 +31,7 @@ declare(strict_types=1);
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\Language\Language;
 require_once __DIR__.'/../sources/main.functions.php';
-if ((int) ($SETTINGS['recovery_pending_checks'] ?? 0) === 1) {
+if (tpBackupRestoreIsInProgress() || (int) ($SETTINGS['recovery_pending_checks'] ?? 0) === 1) {
     exit(0);
 }
 require_once __DIR__ . '/../sources/backup.functions.php';

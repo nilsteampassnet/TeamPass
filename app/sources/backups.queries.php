@@ -964,7 +964,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         $isPackage = tpBackupIsPackageFilename($bn);
         if ($isPackage === true) {
             $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : '';
-            if (in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === false) {
+            if ($backupType !== '' && in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === false) {
                 return [
                     'is_compatible' => false,
                     'reason' => 'PACKAGE_TYPE_UNSUPPORTED',
@@ -1058,37 +1058,10 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         ];
     }
 
-    // Version check is strict for server-side backups only
-    if ($mode === 'server_strict') {
-        if ($backupVersion === null) {
-            return [
-                'is_compatible' => false,
-                'reason' => 'MISSING_VERSION_METADATA',
-                'mode' => $mode,
-                'warnings' => $warnings,
-                'backup_schema_level' => $backupSchema,
-                'expected_schema_level' => $expectedSchema,
-                'backup_tp_files_version' => $backupVersion,
-                'expected_tp_files_version' => $expectedVersion,
-                'resolved_path' => $targetPath,
-            ];
-        }
-
-        if ((string) $backupVersion !== (string) $expectedVersion) {
-            return [
-                'is_compatible' => false,
-                'reason' => 'VERSION_MISMATCH',
-                'mode' => $mode,
-                'warnings' => $warnings,
-                'backup_schema_level' => $backupSchema,
-                'expected_schema_level' => $expectedSchema,
-                'backup_tp_files_version' => $backupVersion,
-                'expected_tp_files_version' => $expectedVersion,
-                'resolved_path' => $targetPath,
-            ];
-        }
+    // Schema is the compatibility boundary; authenticated dump metadata is checked after decryption.
+    if ($backupVersion === null || (string) $backupVersion !== (string) $expectedVersion) {
+        $warnings[] = 'VERSION_NOT_VERIFIED';
     }
-
     return [
         'is_compatible' => true,
         'reason' => '',
@@ -2387,7 +2360,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fp) : [];
                 $isPackage = tpBackupIsPackageFilename($bn);
                 $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
-                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
+                $restoreSupported = $isPackage === false || $backupType === '' || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
                 $files[] = [
                     'name' => $bn,
                     'size_bytes' => (int)@filesize($fp),
@@ -2904,7 +2877,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fp) : array();
                 $isPackage = tpBackupIsPackageFilename($bn);
                 $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
-                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
+                $restoreSupported = $isPackage === false || $backupType === '' || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
 
                 $files[] = array(
                     'name' => $bn,
@@ -3161,9 +3134,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
 
                     if (tpBackupIsPackageFilename($resolvedPath) === true) {
                         $packageRet = tpBackupPreparePackageSqlForRestore($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS, true, true);
-                        @unlink($tmpDecryptedSql);
 
                         if (empty($packageRet['success'])) {
+                            @unlink($tmpDecryptedSql);
                             $cleanupRestoreStage();
                             if (!empty($packageRet['decrypted_package_path']) && is_string($packageRet['decrypted_package_path'])) {
                                 @unlink($packageRet['decrypted_package_path']);
@@ -3197,6 +3170,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                             if (($documents['included'] ?? false) === true) {
                                 $docDryRun = tpBackupRestorePackageDocumentsFromZip($tmpPackageZipForDryRun, $packageManifestForDryRun, $SETTINGS, true, true);
                                 if (empty($docDryRun['success'])) {
+                                    @unlink($tmpDecryptedSql);
                                     $cleanupRestoreStage();
                                     @unlink($tmpPackageZipForDryRun);
                                     echo prepareExchangedData(
@@ -3216,9 +3190,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     } else {
                         // Try to decrypt with the available keys
                         $decRet = tpDefuseDecryptWithCandidates($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS);
-                        @unlink($tmpDecryptedSql);
 
                         if (empty($decRet['success'])) {
+                            @unlink($tmpDecryptedSql);
                             $cleanupRestoreStage();
                             echo prepareExchangedData(
                                 [
@@ -3232,6 +3206,16 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         }
                     }
 
+                    try {
+                        tpBackupPreflightRestoreSql($tmpDecryptedSql, $packageManifestForDryRun ?? []);
+                    } catch (Throwable $exception) {
+                        $cleanupRestoreStage();
+                        echo prepareExchangedData(['error' => true, 'error_code' => 'RESTORE_PREFLIGHT_FAILED',
+                            'message' => $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RESTORE_PREFLIGHT_FAILED'], 'encode');
+                        break;
+                    } finally {
+                        @unlink($tmpDecryptedSql);
+                    }
 // Create authorization token in DB (teampass_misc)
                     $compat = [
                         'mode' => (string) $chk['mode'],

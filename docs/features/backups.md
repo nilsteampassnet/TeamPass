@@ -95,6 +95,28 @@ To restore your database from a backup:
 
 > ⚠️ A restore operation will replace your current database. All connected users will be disconnected and you will be logged out automatically.
 
+Preparation validates the complete SQL dialect, schema, document targets and the
+original instance key before creating an authorization bound to the archive's
+SHA256 digest. The CLI repeats validation before changing any table. Compatible
+schema levels can be restored across patch releases; an external metadata file
+alone is not proof of compatibility. Backups from another master key require
+the [disaster-recovery procedure](../install/disaster-recovery.md).
+
+The CLI refuses to start while a backup or background handler is running. During
+import a persistent hold blocks web/API access and scheduled processing even
+while configuration tables are replaced. After successful import it invalidates
+web/API credentials, pairing and temporary tokens, queued tasks, idempotency
+results and Secure Send links (with lifecycle audit), and resets offline sync's
+generation. Backup schedules and LAPR are disabled; maintenance remains enabled.
+Review decryption, documents, permissions and authentication before reopening,
+issuing new API tokens, pairing devices and enabling schedules deliberately.
+
+A failed or killed import can leave a partial database: DDL is not globally
+rollbackable. The private `storage/logs/teampass_restore.pending` hold remains in
+that case. Keep cron stopped and complete an operator-controlled recovery before
+removing that hold; never remove it merely to dismiss a maintenance message.
+Preserve the original encrypted backup. A successful CLI run removes its hold.
+
 ### Exclusive mode
 
 Before starting a backup or restore operation, Teampass checks if other users are connected. If so, a dialog will appear allowing you to:

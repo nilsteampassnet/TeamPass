@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/runtime_files.functions.php';
 require_once __DIR__ . '/backup_capture.php';
+require_once __DIR__ . '/backup_restore.php';
 require_once __DIR__ . '/recovery_package_logic.php';
 require_once __DIR__ . '/recovery_package_state.functions.php';
 
@@ -527,6 +528,8 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 }
             }
 
+            // A TeamPass backup never captures another application's tables in a shared database.
+            $tables = array_values(array_filter($tables, static fn (string $table): bool => str_starts_with($table, prefixTable(''))));
             // Filter tables if requested
             if (!empty($includeTables) && is_array($includeTables)) {
                 $tables = array_values(array_intersect($tables, $includeTables));
@@ -3968,6 +3971,7 @@ function tpBackupCanonicalJson(array $payload): string
 /**
  * Return the SHA-256 hash of a file, or '' when it cannot be read.
  *
+ * @phpstan-impure The file can change between successive restore checks.
  * @return string
  */
 function tpBackupFileSha256(string $path): string
@@ -5577,6 +5581,15 @@ function tpBackupValidatePackageZipAndExtractSql(
         }
 
         try {
+            $inventory = tpRecoveryInspectZip($zip);
+            $free = disk_free_space(dirname($sqlDestFile));
+            if ($free === false || $free < $inventory['expanded_bytes'] + 67108864) {
+                return ['success' => false, 'error_code' => 'RECOVERY_SPACE_INSUFFICIENT', 'message' => 'Insufficient restore staging space.'];
+            }
+            $manifestStat = $zip->statName('manifest.json');
+            if (!is_array($manifestStat) || $manifestStat['size'] > 2097152) {
+                return ['success' => false, 'error_code' => 'MANIFEST_INVALID', 'message' => 'Invalid package manifest size.'];
+            }
             $manifestJson = $zip->getFromName('manifest.json');
             if (is_string($manifestJson) === false || trim($manifestJson) === '') {
                 return ['success' => false, 'error_code' => 'MANIFEST_MISSING', 'message' => 'Package manifest is missing.'];
@@ -5631,7 +5644,7 @@ function tpBackupValidatePackageZipAndExtractSql(
             }
 
             $expectedDbHash = is_scalar($database['sha256'] ?? null) ? (string) $database['sha256'] : '';
-            if ($expectedDbHash !== '' && hash_equals($expectedDbHash, tpBackupFileSha256($sqlDestFile)) === false) {
+            if (preg_match('/^[a-f0-9]{64}$/D', $expectedDbHash) !== 1 || hash_equals($expectedDbHash, tpBackupFileSha256($sqlDestFile)) === false) {
                 @unlink($sqlDestFile);
                 return ['success' => false, 'error_code' => 'DATABASE_CHECKSUM_INVALID', 'message' => 'Database checksum is invalid.'];
             }
@@ -5659,7 +5672,7 @@ function tpBackupValidatePackageZipAndExtractSql(
                         return ['success' => false, 'error_code' => 'DOCUMENT_ENTRY_MISSING', 'message' => 'A document entry is missing from package.'];
                     }
                     $expectedHash = is_scalar($entry['sha256'] ?? null) ? (string) $entry['sha256'] : '';
-                    if ($expectedHash !== '' && hash_equals($expectedHash, tpBackupZipEntrySha256($zip, $entryPath)) === false) {
+                    if (preg_match('/^[a-f0-9]{64}$/D', $expectedHash) !== 1 || hash_equals($expectedHash, tpBackupZipEntrySha256($zip, $entryPath)) === false) {
                         @unlink($sqlDestFile);
                         return ['success' => false, 'error_code' => 'DOCUMENT_CHECKSUM_INVALID', 'message' => 'A document checksum is invalid.'];
                     }
@@ -5674,6 +5687,9 @@ function tpBackupValidatePackageZipAndExtractSql(
                 'manifest_checksum' => hash('sha256', $manifestJson),
                 'warnings' => is_array($manifest['warnings'] ?? null) ? $manifest['warnings'] : [],
             ];
+        } catch (TeamPassRecoveryException $exception) {
+            @unlink($sqlDestFile);
+            return ['success' => false, 'error_code' => $exception->reason, 'message' => 'Invalid package archive.'];
         } finally {
             $zip->close();
         }
@@ -5744,7 +5760,7 @@ function tpBackupResolveDocumentRestoreTarget(array $entry, array $SETTINGS = []
         if ($storedName === '' && $packagePath !== '') {
             $storedName = tpBackupSafeStorageBasename(basename($packagePath));
         }
-        if ($packagePath === '' || $storedName === '') {
+        if ($packagePath === '' || $storedName === '' || str_starts_with($storedName, '.')) {
             return ['success' => false, 'error_code' => 'DOCUMENT_TARGET_INVALID', 'target_path' => ''];
         }
 
@@ -5755,6 +5771,9 @@ function tpBackupResolveDocumentRestoreTarget(array $entry, array $SETTINGS = []
             $filesDir = (string) ($SETTINGS['path_to_files_folder'] ?? '');
             $targetDir = rtrim($filesDir, '/\\') . DIRECTORY_SEPARATOR . 'kb_attachments';
         } elseif ($kind === 'user_avatar' && str_starts_with($packagePath, 'documents/user_avatars/') === true) {
+            if (!in_array(strtolower(pathinfo($storedName, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'], true)) {
+                return ['success' => false, 'error_code' => 'DOCUMENT_TARGET_INVALID', 'target_path' => ''];
+            }
             $targetDir = defined('TEAMPASS_ROOT')
                 ? ((string) TEAMPASS_ROOT . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'avatars')
                 : '';
@@ -6477,6 +6496,7 @@ function tpRestoreAuthorizationCreate(
                 'basename' => basename($resolvedPath),
                 'size' => is_file($resolvedPath) ? filesize($resolvedPath) : null,
                 'mtime' => is_file($resolvedPath) ? filemtime($resolvedPath) : null,
+                'sha256' => tpBackupFileSha256($resolvedPath),
             ],
             'source' => [
                 'serverScope' => $serverScope,
