@@ -97,6 +97,8 @@ if ($configState === 'not_installed') {
 // to a CSRF-protected handler. CSRFGuard therefore stays unconditionally enabled for
 // every other index.php request, and the page renders its own self-contained layout.
 if (isset($_GET['otv']) === true && $_GET['otv'] !== '') {
+    // This marker exempts only this terminating recipient dispatch, never another handler.
+    define('TEAMPASS_PUBLIC_SECURE_SEND', true);
     require_once TEAMPASS_APP . '/core/otv.php';
     exit;
 }

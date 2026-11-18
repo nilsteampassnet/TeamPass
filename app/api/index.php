@@ -103,23 +103,8 @@ if ((int) ($SETTINGS['api_require_https'] ?? 0) === 1) {
     }
 }
 
+// Network access was enforced by the shared runtime bootstrap, including OPTIONS.
 $networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
-$networkAccessRules = teampassLoadNetworkAclRules(true);
-$networkAccess = teampassEvaluateNetworkAclAccess(
-    $SETTINGS,
-    isset($networkAccessContext['detected_ip']) === true ? (string) $networkAccessContext['detected_ip'] : null,
-    $networkAccessRules
-);
-if (($networkAccess['checked'] ?? false) === true && ($networkAccess['allowed'] ?? true) === false) {
-    errorHdl(
-        'HTTP/1.1 403 Forbidden',
-        json_encode(
-            ['error' => $lang->get('network_security_access_denied_message')],
-            JSON_UNESCAPED_UNICODE
-        )
-    );
-    exit;
-}
 
 // sanitize url segments
 $base = new BaseController();

@@ -46,29 +46,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-// Apply network access control before reaching the login page
-$networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
-$networkAccessRules = teampassLoadNetworkAclRules(true);
-$networkAccess = teampassEvaluateNetworkAclAccess($SETTINGS, $networkAccessContext['detected_ip'], $networkAccessRules);
-if (($networkAccess['checked'] ?? false) === true && ($networkAccess['allowed'] ?? true) === false) {
-    http_response_code(403);
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html>';
-    echo '<html lang="' . htmlspecialchars((string) ($session->get('user-language') ?? 'en'), ENT_QUOTES, 'UTF-8') . '">';
-    echo '<head>';
-    echo '<meta charset="utf-8">';
-    echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-    echo '<title>' . htmlspecialchars((string) $lang->get('network_security_access_denied_title'), ENT_QUOTES, 'UTF-8') . '</title>';
-    echo '</head>';
-    echo '<body>';
-    echo '<div style="max-width:760px;margin:80px auto;padding:24px;border:1px solid #dee2e6;border-radius:8px;font-family:Arial,Helvetica,sans-serif;">';
-    echo '<h1 style="margin-top:0;">' . htmlspecialchars((string) $lang->get('network_security_access_denied_title'), ENT_QUOTES, 'UTF-8') . '</h1>';
-    echo '<p>' . htmlspecialchars((string) $lang->get('network_security_access_denied_message'), ENT_QUOTES, 'UTF-8') . '</p>';
-    echo '</div>';
-    echo '</body>';
-    echo '</html>';
-    exit;
-}
+// The shared runtime bootstrap enforces network access before any page or AJAX action.
 
 
 /**

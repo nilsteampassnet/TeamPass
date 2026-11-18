@@ -52,6 +52,13 @@ This separation provides defence in depth. It does not create a separate
 Teampass application or cryptographic trust boundary: the recipient endpoint
 still executes Teampass code and reads the same database and encryption key.
 
+The TeamPass network whitelist and blacklist protect application requests,
+including authentication, AJAX and the API, but do not filter the Secure Send
+recipient flow on either address. A link using the main address is not
+automatically LAN-only. Apply recipient network restrictions on the web server
+or reverse proxy. Defining a public sharing address does not create a network
+exception, DNS record or reachable listener.
+
 ### Recommended architecture
 
 ```text
@@ -522,7 +529,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
 
         proxy_no_cache 1;
         proxy_cache_bypass 1;

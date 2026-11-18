@@ -68,6 +68,7 @@ require_once __DIR__ . '/emails_queue_logic.php';
 require_once __DIR__ . '/emails_transport_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
+require_once __DIR__ . '/network_acl_guard.php';
 require_once __DIR__ . '/attachment_pending_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
@@ -90,6 +91,9 @@ if (PHP_SAPI !== 'cli' || !defined('TEAMPASS_FUNCTIONS_ONLY') || TEAMPASS_FUNCTI
 
     $configManager = new ConfigManager();
     $SETTINGS = $configManager->getAllSettings();
+    if (PHP_SAPI !== 'cli') {
+        teampassEnforceNetworkAccess($SETTINGS);
+    }
 }
 
 /**
@@ -4852,22 +4856,35 @@ function teampassIsTrustedProxy(string $remoteAddr, array $trustedProxyRules): b
 }
 
 /**
- * Extract the first valid IPv4 from a proxy header.
+ * Resolve the last untrusted IPv4 in a forwarded chain, starting at the trusted peer.
  *
  * @param string $headerValue Header value.
+ * @param array $trustedProxyRules Trusted intermediary addresses, never client networks.
  *
  * @return string|null
  */
-function teampassExtractClientIpv4FromHeader(string $headerValue): ?string
+function teampassExtractClientIpv4FromHeader(string $headerValue, array $trustedProxyRules = []): ?string
 {
+    if (strlen($headerValue) > 8192) {
+        return null;
+    }
     $parts = array_map('trim', explode(',', $headerValue));
-    foreach ($parts as $part) {
-        if (teampassIsValidIpv4($part) === true) {
+    if (count($parts) > 100) {
+        return null;
+    }
+    $reversed = array_reverse($parts);
+    foreach ($reversed as $part) {
+        // Never skip an invalid hop to accept an earlier, potentially forged address.
+        if (teampassIsValidIpv4($part) === false) {
+            return null;
+        }
+        if (teampassIsTrustedProxy($part, $trustedProxyRules) === false) {
             return $part;
         }
     }
 
-    return null;
+    // Every hop is trusted: the nearest entry was written by the trusted peer itself.
+    return $reversed[0];
 }
 
 /**
@@ -4927,8 +4944,15 @@ function teampassGetClientIpForSecurity(array $settings): array
     $headerValue = isset($_SERVER[$serverKey]) === true ? trim((string) $_SERVER[$serverKey]) : '';
     $trustedProxyRules = teampassGetTrustedProxyRules($settings);
     $isTrustedProxy = $mode === 'reverse_proxy' && teampassIsTrustedProxy($remoteAddr, $trustedProxyRules) === true;
-    $headerIp = $isTrustedProxy === true ? teampassExtractClientIpv4FromHeader($headerValue) : null;
-    $detectedIp = $headerIp ?? (teampassIsValidIpv4($remoteAddr) === true ? $remoteAddr : null);
+    $headerIp = null;
+    if ($isTrustedProxy === true) {
+        $headerIp = $headerName === 'x-real-ip'
+            ? (teampassIsValidIpv4($headerValue) ? $headerValue : null)
+            : teampassExtractClientIpv4FromHeader($headerValue, $trustedProxyRules);
+    }
+    // A trusted proxy without a usable client header must not authorize every client as itself.
+    $detectedIp = $isTrustedProxy === true ? $headerIp
+        : (teampassIsValidIpv4($remoteAddr) === true ? $remoteAddr : null);
 
     return [
         'detected_ip' => $detectedIp,
@@ -4946,10 +4970,11 @@ function teampassGetClientIpForSecurity(array $settings): array
  * Loads network ACL rules.
  *
  * @param bool $onlyEnabled Only enabled rules.
+ * @param bool $required Refuse an unavailable table when enforcing an enabled policy.
  *
  * @return array<string, array<int, array<string, mixed>>>
  */
-function teampassLoadNetworkAclRules(bool $onlyEnabled = false): array
+function teampassLoadNetworkAclRules(bool $onlyEnabled = false, bool $required = false): array
 {
     $result = [
         'whitelist' => [],
@@ -4957,6 +4982,9 @@ function teampassLoadNetworkAclRules(bool $onlyEnabled = false): array
     ];
 
     if (teampassNetworkAclTableExists() === false) {
+        if ($required === true) {
+            throw new RuntimeException('network_acl_unavailable');
+        }
         return $result;
     }
 
@@ -5000,13 +5028,16 @@ function teampassLoadNetworkAclRules(bool $onlyEnabled = false): array
  * @param array       $settings Settings.
  * @param string|null $clientIp Client IP.
  * @param array       $rules    ACL rules.
+ * @param bool        $storageVerified Whether a required rule load already verified storage.
  *
  * @return array<string, mixed>
  */
-function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, array $rules): array
+function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, array $rules, bool $storageVerified = false): array
 {
+    $blacklistEnabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1;
+    $whitelistEnabled = (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
     $result = [
-        'checked' => teampassNetworkAclTableExists(),
+        'checked' => $blacklistEnabled || $whitelistEnabled,
         'allowed' => true,
         'reason' => 'allowed',
         'matched_rule' => null,
@@ -5016,8 +5047,11 @@ function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, ar
         return $result;
     }
 
-    $blacklistEnabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1;
-    $whitelistEnabled = (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
+    if ($storageVerified === false && teampassNetworkAclTableExists() === false) {
+        $result['allowed'] = false;
+        $result['reason'] = 'acl_unavailable';
+        return $result;
+    }
 
     if ($clientIp === null || teampassIsValidIpv4($clientIp) === false) {
         if ($blacklistEnabled === true || $whitelistEnabled === true) {
@@ -5058,6 +5092,34 @@ function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, ar
     }
 
     return $result;
+}
+
+/**
+ * Resolve the current network policy without allowing storage failures to disable it.
+ *
+ * @param array $settings Current administrator settings.
+ * @return array<string, mixed> Decision and the client context, null when filtering is disabled.
+ */
+function teampassGetNetworkAccessDecision(array $settings): array
+{
+    $enabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1
+        || (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
+    if ($enabled === false) {
+        return ['checked' => false, 'allowed' => true, 'reason' => 'allowed',
+            'matched_rule' => null, 'context' => null];
+    }
+
+    $context = teampassGetClientIpForSecurity($settings);
+    try {
+        $rules = teampassLoadNetworkAclRules(true, true);
+        return teampassEvaluateNetworkAclAccess($settings, $context['detected_ip'], $rules, true)
+            + ['context' => $context];
+    } catch (Throwable $e) {
+        // Database exceptions can contain SQL or connection details; never expose their message.
+        error_log('TEAMPASS network ACL evaluation unavailable (' . get_class($e) . ')');
+        return ['checked' => true, 'allowed' => false, 'reason' => 'acl_unavailable',
+            'matched_rule' => null, 'context' => $context];
+    }
 }
 
 /**
