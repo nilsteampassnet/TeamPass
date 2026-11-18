@@ -5517,7 +5517,7 @@ function prepareFileWithDefuse(
     // Sanitize
     $source_file = $antiXss->xss_clean($source_file);
     $target_file = $antiXss->xss_clean($target_file);
-    if (empty($password) === true) {
+    if ($password === null || $password === '') {
         // get KEY to define password
         $ascii_key = file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE);
         $password = Key::loadFromAsciiSafeString($ascii_key);

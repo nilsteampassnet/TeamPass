@@ -46,6 +46,12 @@ The on-the-fly backup allows you to create an immediate backup of your database.
 
 > 💡 Store your encryption key in a safe place. Without it, you will not be able to restore the backup.
 
+Manual encryption keys are used exactly as entered, including special characters.
+The server refuses empty keys. Restore also tries the historical HTML-encoded
+form for backups created by older releases. New SQL dumps preserve newlines,
+literal backslashes and binary bytes; this cannot repair data already changed
+inside an older dump.
+
 When **Include documents** is enabled, Teampass creates a `.tpbackup` package containing the database and supported document files. Otherwise, it creates a legacy encrypted SQL backup.
 
 The backup file will be stored on the server and will appear in the **Server backups** table below.

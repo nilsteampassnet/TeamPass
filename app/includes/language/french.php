@@ -1413,6 +1413,7 @@ return array(
     'bck_restore_key_modal_body' => 'Cette sauvegarde ne peut pas être déchiffrée avec la clé d’instance actuelle. Merci de saisir la clé utilisée pour la chiffrer.',
     'bck_restore_other_key_help' => 'À utiliser uniquement si la sauvegarde a été chiffrée sur une autre instance TeamPass (migration).',
     'bck_restore_key_use' => 'Utiliser cette clé',
+    'bck_backup_key_required' => 'Merci de saisir une clé de chiffrement de 4096 octets maximum.',
     'bck_restore_key_required' => 'Merci de saisir une clé de déchiffrement.',
     'bck_restore_key_invalid' => 'Impossible de déchiffrer la sauvegarde avec la clé actuelle.',
     'bck_instance_key_copy_tooltip' => 'Cliquer pour copier la clé d’instance',

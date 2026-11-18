@@ -1393,7 +1393,11 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             );
         
             // Prepare variables
-            $encryptionKey = filter_var($dataReceived['encryptionKey'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $encryptionKey = is_string($dataReceived['encryptionKey'] ?? null) ? $dataReceived['encryptionKey'] : '';
+            if ($encryptionKey === '' || strlen($encryptionKey) > 4096) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_backup_key_required')], 'encode');
+                break;
+            }
             $includeDocuments = (int)($dataReceived['include_documents'] ?? 0) === 1;
             $backupFormat = tpBackupNormalizeRequestedFormat((string) ($dataReceived['backup_format'] ?? $dataReceived['format'] ?? 'sql'));
             if ($includeDocuments === true) {
@@ -3104,7 +3108,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         }
                     }
 
-                    $keysToTry = array_values(array_unique(array_filter($keysToTry)));
+                    $keysToTry = array_values(array_unique(array_merge(
+                        ...array_map('tpBackupManualKeyCandidates', $keysToTry)
+                    )));
 
                     if (empty($keysToTry)) {
                         $cleanupRestoreStage();

@@ -2183,6 +2183,7 @@ return array(
     'bck_restore_key_modal_body' => 'This backup cannot be decrypted with the current instance key. Please enter the key used to encrypt it.',
     'bck_restore_other_key_help' => 'To be used only if the backup was encrypted on another TeamPass instance (migration).',
     'bck_restore_key_use' => 'Use this key',
+    'bck_backup_key_required' => 'Please enter an encryption key of at most 4096 bytes.',
     'bck_restore_key_required' => 'Please enter a decryption key.',
     'bck_restore_key_invalid' => 'Unable to decrypt the backup with the current key.',
     'bck_restore_legacy_no_metadata' => 'Legacy backup without metadata: some checks are not available.',

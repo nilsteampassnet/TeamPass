@@ -460,7 +460,7 @@ try {
     $log('WARN', 'Unable to load instance backup key candidates: ' . $e->getMessage());
 }
 
-$keysToTry = array_values(array_unique($keysToTry));
+$keysToTry = array_values(array_unique(array_merge(...array_map('tpBackupManualKeyCandidates', $keysToTry))));
 
 // Decrypt backup file to temp SQL
 // IMPORTANT: do NOT use tempnam() here. It creates the file and can break Defuse file decrypt.

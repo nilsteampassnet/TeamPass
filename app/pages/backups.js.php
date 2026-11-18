@@ -1229,7 +1229,7 @@ function tpFmtBytes(bytes) {
 
                 // Prepare data
                 var data = {
-                    'encryptionKey': purifyUserInput($('#onthefly-backup-key').val()),
+                    'encryptionKey': ($('#onthefly-backup-key').val() || '').toString(),
                     'comment': ($('#onthefly-backup-comment').length ? $('#onthefly-backup-comment').val() : ''),
                     'include_documents': $('#onthefly-include-documents').is(':checked') ? 1 : 0
                 };
@@ -1246,7 +1246,6 @@ function tpFmtBytes(bytes) {
                         var _decoded = tpSafeDecodeQueryReturn(data);
                         if (_decoded === null) { return; }
                         data = _decoded;
-                        console.log(data);
 
                         if (data.error === true) {
                             // ERROR
@@ -1298,7 +1297,7 @@ function tpFmtBytes(bytes) {
                 return false;
             }
 
-            var encryptionKey = purifyUserInput($('#onthefly-restore-key').val());
+            var encryptionKey = ($('#onthefly-restore-key').val() || '').toString();
             var overrideKey = '';
 
             // If a scheduled backup is selected from this panel, the instance key will be used server-side.

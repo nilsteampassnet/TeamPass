@@ -728,6 +728,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             'message' => '',
         ];
 }
+
 /** Escape MySQL string bytes once, preserving actual newlines and literal backslashes. */
 function tpBackupEscapeSqlString(string $value): string
 {
@@ -735,6 +736,14 @@ function tpBackupEscapeSqlString(string $value): string
         "\r" => "\\r", "\x1a" => "\\Z", '"' => '\\"', "'" => "\\'"]);
 }
 
+/** Keep raw manual passphrases first; also read backups made with historical HTML encoding. */
+function tpBackupManualKeyCandidates(string $key): array
+{
+    if ($key === '') {
+        return [];
+    }
+    return array_values(array_unique([$key, (string) filter_var($key, FILTER_SANITIZE_FULL_SPECIAL_CHARS)]));
+}
 
 
 // -----------------------------------------------------------------------------
