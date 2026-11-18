@@ -159,6 +159,14 @@ Navigate to the `Scheduled` tab to configure automated backups:
 
 When **Include documents** is enabled, scheduled backups are generated as `.tpbackup` packages. Otherwise, they use the legacy encrypted SQL format.
 
+A requested document backup fails if its inventory is incomplete or cannot be
+read; it does not publish a package presented as complete. SQL backups require
+their metadata write to succeed. If that write fails after encryption, the SQL
+archive is retained and the operation reports failure. A retention failure is
+also reported, even when the new archive was created successfully. Failed backup
+runs do not purge previous archives: retention only runs after a successful new
+backup. Repair the reported storage or document problem before retrying.
+
 ### Email notifications
 
 You can enable email reports for scheduled backups:

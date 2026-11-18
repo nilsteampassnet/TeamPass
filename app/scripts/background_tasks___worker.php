@@ -271,6 +271,7 @@ class TaskWorker {
             $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
                 'output_dir' => $targetDir,
                 'filename_prefix' => 'scheduled-',
+                'metadata' => ['source' => 'scheduled'],
             ]);
         }
 
@@ -278,15 +279,6 @@ class TaskWorker {
             throw new Exception($res['message']);
         }
 
-
-        // Best effort: write metadata sidecar next to the backup file
-        try {
-            if ($backupFormat !== tpBackupGetPackageExtension() && !empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
-                tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
-            }
-        } catch (Throwable) {
-            // do not block backups if metadata cannot be written
-        }
 
         // Store a tiny summary for the task completion "arguments" field (no secrets)
         $this->taskData['backup_file'] = $res['filename'];
@@ -561,6 +553,7 @@ class TaskWorker {
                         $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
                             'output_dir' => $attemptOutputDir,
                             'filename_prefix' => 'externalized-',
+                            'metadata' => ['source' => 'externalized'],
                         ]);
                     }
 
@@ -569,14 +562,6 @@ class TaskWorker {
                     }
 
                     if (tpBackupExternalizedDestinationTypeIsRemote($destinationType) === true) {
-                        try {
-                            if ($backupFormat !== tpBackupGetPackageExtension() && !empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
-                                tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'externalized']);
-                            }
-                        } catch (Throwable) {
-                            // do not block backups if metadata cannot be written
-                        }
-
                         $upload = tpBackupUploadExternalizedBackup($destinationType, $targetDir, (string) $res['filepath'], $this->settings, $destinationConfig);
                         if ($upload['success'] !== true) {
                             throw new Exception('Externalized backup upload failed: ' . (string) $upload['reason']);
@@ -618,14 +603,6 @@ class TaskWorker {
 
         if (($res['success'] ?? false) !== true || ($targetDir === '' && $destinationType !== 's3')) {
             throw new Exception('Externalized backup failed.');
-        }
-
-        try {
-            if ($destinationType === 'local_directory' && $backupFormat !== tpBackupGetPackageExtension() && !empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
-                tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'externalized']);
-            }
-        } catch (Throwable) {
-            // do not block backups if metadata cannot be written
         }
 
         $this->taskData['backup_file'] = (string) $res['filename'];
@@ -1512,10 +1489,12 @@ class TaskWorker {
 
             $mtime = @filemtime($file);
             if ($mtime !== false && $mtime < $cutoff) {
-                if (@unlink($file)) {
-                    $deleted++;
-                    // Also remove metadata sidecar if present
-                    @unlink($file . '.meta.json');
+                if (!@unlink($file)) {
+                    throw new RuntimeException('The backup was created, but scheduled retention could not delete an expired archive.');
+                }
+                $deleted++;
+                if (file_exists($file . '.meta.json') && !@unlink($file . '.meta.json')) {
+                    throw new RuntimeException('The backup was created, but scheduled retention could not delete expired metadata.');
                 }
             }
         }
@@ -1543,7 +1522,7 @@ class TaskWorker {
             );
         }
 
-        return 0;
+        throw new RuntimeException('The backup was created, but externalized retention failed: ' . (string) $purge['reason']);
     }
 
     /**
@@ -1840,30 +1819,7 @@ class TaskWorker {
             tpNotifyBackupFailure($this->taskId, 'externalized', $e->getMessage());
         }
 
-        // Purge retention even on failure (safe: only files matching the task source prefix)
-        $backupDir = (string)($this->taskData['output_dir'] ?? '');
-        if ($backupDir !== '') {
-            if ($this->processType === 'database_backup' && (string)($this->taskData['source'] ?? '') === 'scheduler') {
-                if (is_dir($backupDir) === true) {
-                    $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
-                    $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
 
-                    $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
-                    $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
-                }
-            } elseif ($this->processType === 'externalized_backup') {
-                $days = max(1, (int)$this->getMiscSetting('bck_externalized_retention_days', '30'));
-                $count = max(1, (int)$this->getMiscSetting('bck_externalized_retention_count', '10'));
-                $destinationType = (string)($this->taskData['destination_type'] ?? 'local_directory');
-                $destinationConfig = $this->getExternalizedDestinationConfig($destinationType);
-                if (tpBackupExternalizedDestinationTypeIsRemote($destinationType) === true || is_dir($backupDir) === true) {
-                    $deleted = $this->purgeOldExternalizedBackups($backupDir, $days, $count, $destinationType, $destinationConfig);
-
-                    $this->upsertMiscSetting('bck_externalized_last_purge_at', (string)time());
-                    $this->upsertMiscSetting('bck_externalized_last_purge_deleted', (string)$deleted);
-                }
-            }
-        }
     }
 
     /**

@@ -38,4 +38,13 @@ final class BackupTransportSecurityTest extends TestCase
                 'bucket' => 'fixture', 'access_key' => 'fixture', 'secret_key' => 'fixture'])['success']);
         }
     }
+
+    public function testRefusedRetentionDeletionCannotReportSuccess(): void
+    {
+        $process = new Process([PHP_BINARY, __DIR__ . '/../Fixtures/backup_sftp_identity.php', 'retention']);
+        $process->mustRun();
+        $result = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertFalse($result['success']);
+        self::assertSame('RETENTION_DELETE_FAILED', $result['reason']);
+    }
 }

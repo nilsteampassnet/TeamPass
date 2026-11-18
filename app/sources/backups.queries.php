@@ -1413,7 +1413,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $backupResult = tpCreateDatabaseBackup(
                     $SETTINGS,
                     $encryptionKey,
-                    ['output_dir' => tpGetOntheflyBackupDir(true)]
+                    ['output_dir' => tpGetOntheflyBackupDir(true), 'metadata' => ['source' => 'onthefly', 'comment' => $comment]]
                 );
             }
 
@@ -1429,19 +1429,6 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             }
 
             $filename = $backupResult['filename'];
-            // Write metadata sidecar (<backup>.meta.json) for fast listings / migration safety
-            try {
-                if ($backupFormat !== tpBackupGetPackageExtension() && function_exists('tpWriteBackupMetadata') && !empty($backupResult['filepath'])) {
-                    $extraMeta = ['source' => 'onthefly'];
-                    if ($comment !== '') {
-                        $extraMeta['comment'] = $comment;
-                    }
-                    tpWriteBackupMetadata((string)$backupResult['filepath'], '', '', $extraMeta);
-                }
-            } catch (Throwable $ignored) {
-                // best effort
-            }
-        
             // Generate 2d key
             $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
         

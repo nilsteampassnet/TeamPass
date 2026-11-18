@@ -547,6 +547,9 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             if (!empty($excludeTables) && is_array($excludeTables)) {
                 $tables = array_values(array_diff($tables, $excludeTables));
             }
+            if ($tables === []) {
+                throw new RuntimeException('No TeamPass tables were found to back up.');
+            }
 
             foreach ($tables as $tableName) {
                 // Safety: only allow typical MySQL table identifiers
@@ -559,9 +562,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 
                 $row2 = DB::queryFirstRow('SHOW CREATE TABLE `' . $tableName . '`');
                 if (!is_array($row2) || empty($row2['Create Table'])) {
-                    // Skip table if structure cannot be fetched
-                    $write($handle, "\n");
-                    continue;
+                    throw new RuntimeException('A database table definition could not be captured.');
                 }
 
                 if (preg_match('/\bENGINE\s*=\s*InnoDB\b/i', $row2['Create Table']) !== 1) {
@@ -723,6 +724,18 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             ];
         }
 
+        if ($encrypted) {
+            $extra = is_array($options['metadata'] ?? null) ? $options['metadata'] : [];
+            if (array_key_exists('schema_level', $options) && $schemaLevel === '') {
+                $extra['schema_level'] = null;
+            }
+            $meta = tpWriteBackupMetadata($filepath, (string) ($options['files_version'] ?? ''), $schemaLevel, $extra);
+            if (!$meta['success']) {
+                return ['success' => false, 'filename' => $filename, 'filepath' => $filepath,
+                    'encrypted' => true, 'size_bytes' => (int) (filesize($filepath) ?: 0),
+                    'message' => 'Backup metadata could not be written. The encrypted archive was retained.'];
+            }
+        }
         // Gestion de filesize sans @
         $size = 0;
         if (is_file($filepath)) {
@@ -3882,6 +3895,7 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
     }
 
     $deleted = 0;
+    $failed = 0;
     $remaining = $listed['files'];
     if ($retentionDays > 0) {
         $cutoff = time() - ($retentionDays * 86400);
@@ -3891,10 +3905,12 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
             }
 
             $delete = tpBackupDeleteExternalizedBackup($destinationType, (string) $listed['path'], (string) $entry['name'], $SETTINGS, $sftpConfig);
-            if ($delete['success'] === true && $delete['deleted'] === true) {
-                $deleted++;
+            if ($delete['success'] === true) {
+                $deleted += $delete['deleted'] === true ? 1 : 0;
+                unset($remaining[$idx]);
+            } else {
+                $failed++;
             }
-            unset($remaining[$idx]);
         }
     }
 
@@ -3905,11 +3921,13 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
             $delete = tpBackupDeleteExternalizedBackup($destinationType, (string) $listed['path'], (string) $entry['name'], $SETTINGS, $sftpConfig);
             if ($delete['success'] === true && $delete['deleted'] === true) {
                 $deleted++;
+            } elseif ($delete['success'] === false) {
+                $failed++;
             }
         }
     }
 
-    return ['success' => true, 'reason' => '', 'deleted' => $deleted];
+    return ['success' => $failed === 0, 'reason' => $failed > 0 ? 'RETENTION_DELETE_FAILED' : '', 'deleted' => $deleted];
 }
 
 /**
@@ -4729,6 +4747,11 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
             ? $documentCatalog['summary']
             : tpBackupBuildEmptyDocumentSummary($includeDocuments, $includeDocuments ? 'included' : 'not_requested');
         $warnings = is_array($documentSummary['warnings'] ?? null) ? $documentSummary['warnings'] : [];
+
+        if ($includeDocuments && $warnings !== []) {
+            return ['success' => false, 'filename' => '', 'filepath' => '', 'encrypted' => false,
+                'size_bytes' => 0, 'message' => 'Document collection is incomplete. Check missing or unreadable files before retrying.'];
+        }
 
         $manifest = [
             'backup_format' => tpBackupGetPackageFormatId(),
