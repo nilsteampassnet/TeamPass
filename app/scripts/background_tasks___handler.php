@@ -292,6 +292,7 @@ class BackgroundTasksHandler {
             $targetDir = tpBackupNormalizeExternalizedSftpRemotePath($targetDirSetting);
             $validation = tpBackupValidateExternalizedSftpConfig([
                 'host' => (string)$this->getSettingValue('bck_externalized_sftp_host', ''),
+                'host_key_sha256' => (string)$this->getSettingValue('bck_externalized_sftp_host_key_sha256', ''),
                 'port' => (int)$this->getSettingValue('bck_externalized_sftp_port', '22'),
                 'username' => (string)$this->getSettingValue('bck_externalized_sftp_username', ''),
                 'auth_type' => (string)$this->getSettingValue('bck_externalized_sftp_auth_type', 'password'),

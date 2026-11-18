@@ -230,6 +230,20 @@ also stage their temporary plaintext SQL dump on that destination.
 
 For SFTP, the remote directory must already exist. For WebDAV, the remote path must already exist and be writable. For S3, the bucket must already exist and the credentials must allow listing, uploading, downloading, and deleting objects in the configured prefix.
 
+SFTP requires the server's **OpenSSH SHA256 host key fingerprint**, obtained from
+its administrator over a trusted channel (for example, `ssh-keygen -lf server_host_key.pub -E sha256`).
+Verify the fingerprint independently before saving it. Existing configurations
+must supply it after upgrading; there is no automatic first-use trust. The key
+is checked before password or private-key authentication on every connection.
+A key rotation requires independent verification and an explicit settings update.
+If the server offers several host key algorithms, configure the fingerprint of
+the key negotiated by the client; do not accept a new key merely to clear an error.
+
+WebDAV and custom S3 endpoints require HTTPS. Plain HTTP is accepted only for
+loopback development endpoints. URLs containing embedded credentials are refused;
+use the dedicated credential fields. Existing remote HTTP configurations must
+be migrated to TLS before further transfers.
+
 > 💡 Leave the S3 endpoint empty when using AWS S3. Set it when using an S3-compatible provider.
 
 ### Buttons

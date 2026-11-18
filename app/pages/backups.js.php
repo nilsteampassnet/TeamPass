@@ -2465,6 +2465,7 @@ var tpExternalized = {
     $('#externalized-target-dir').val(s.target_dir || '');
     var sftp = s.sftp || {};
     $('#externalized-sftp-host').val(sftp.host || '');
+    $('#externalized-sftp-host-key').val(sftp.host_key_sha256 || '');
     $('#externalized-sftp-port').val(String(sftp.port || 22));
     $('#externalized-sftp-username').val(sftp.username || '');
     $('#externalized-sftp-auth-type').val(sftp.auth_type || 'password');
@@ -2519,6 +2520,7 @@ var tpExternalized = {
       destination_type: $('#externalized-destination-type').val() || 'local_directory',
       target_dir: $('#externalized-target-dir').val() || '',
       sftp_host: $('#externalized-sftp-host').val() || '',
+      sftp_host_key_sha256: $('#externalized-sftp-host-key').val() || '',
       sftp_port: parseInt($('#externalized-sftp-port').val(), 10) || 22,
       sftp_username: $('#externalized-sftp-username').val() || '',
       sftp_auth_type: $('#externalized-sftp-auth-type').val() || 'password',

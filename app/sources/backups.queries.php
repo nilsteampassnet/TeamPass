@@ -225,6 +225,8 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'UNSUPPORTED_TYPE' => 'bck_externalized_destination_type_unsupported',
             'UNSUPPORTED_OPERATION' => 'bck_externalized_destination_operation_not_available',
             'SFTP_MISSING_HOST' => 'bck_externalized_sftp_missing_host',
+            'SFTP_HOST_KEY_REQUIRED' => 'bck_externalized_sftp_host_key_required',
+            'SFTP_HOST_KEY_MISMATCH' => 'bck_externalized_sftp_host_key_mismatch',
             'SFTP_INVALID_PORT' => 'bck_externalized_sftp_invalid_port',
             'SFTP_MISSING_USERNAME' => 'bck_externalized_sftp_missing_username',
             'SFTP_REMOTE_PATH_INVALID' => 'bck_externalized_sftp_remote_path_invalid',
@@ -334,6 +336,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'host' => (string) tpGetSettingsValue('bck_externalized_sftp_host', ''),
+            'host_key_sha256' => (string) tpGetSettingsValue('bck_externalized_sftp_host_key_sha256', ''),
             'port' => max(1, min(65535, (int) tpGetSettingsValue('bck_externalized_sftp_port', '22'))),
             'username' => (string) tpGetSettingsValue('bck_externalized_sftp_username', ''),
             'auth_type' => $authType,
@@ -378,6 +381,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'host' => trim(str_replace("\0", '', (string)($dataReceived['sftp_host'] ?? $stored['host']))),
+            'host_key_sha256' => trim((string) ($dataReceived['sftp_host_key_sha256'] ?? $stored['host_key_sha256'])),
             'port' => max(1, min(65535, (int)($dataReceived['sftp_port'] ?? $stored['port']))),
             'username' => trim(str_replace("\0", '', (string)($dataReceived['sftp_username'] ?? $stored['username']))),
             'auth_type' => $authType,
@@ -402,6 +406,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'host' => (string) $config['host'],
+            'host_key_sha256' => (string) $config['host_key_sha256'],
             'port' => (int) $config['port'],
             'username' => (string) $config['username'],
             'auth_type' => (string) $config['auth_type'],
@@ -1819,6 +1824,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             tpUpsertSettingsValue('bck_externalized_destination_type', $destinationType);
             tpUpsertSettingsValue('bck_externalized_target_dir', $targetDir);
             tpUpsertSettingsValue('bck_externalized_sftp_host', (string)$sftpConfig['host']);
+            tpUpsertSettingsValue('bck_externalized_sftp_host_key_sha256', (string)$sftpConfig['host_key_sha256']);
             tpUpsertSettingsValue('bck_externalized_sftp_port', (string)((int)$sftpConfig['port']));
             tpUpsertSettingsValue('bck_externalized_sftp_username', (string)$sftpConfig['username']);
             tpUpsertSettingsValue('bck_externalized_sftp_auth_type', (string)$sftpConfig['auth_type']);

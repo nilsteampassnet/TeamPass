@@ -1416,6 +1416,7 @@ class TaskWorker {
 
         return [
             'host' => $this->getMiscSetting('bck_externalized_sftp_host', ''),
+            'host_key_sha256' => $this->getMiscSetting('bck_externalized_sftp_host_key_sha256', ''),
             'port' => max(1, min(65535, (int) $this->getMiscSetting('bck_externalized_sftp_port', '22'))),
             'username' => $this->getMiscSetting('bck_externalized_sftp_username', ''),
             'auth_type' => $authType,

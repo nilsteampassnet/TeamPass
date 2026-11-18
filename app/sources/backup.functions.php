@@ -1482,6 +1482,10 @@ function tpBackupValidateExternalizedSftpConfig(array $config): array
         return ['success' => false, 'reason' => 'SFTP_INVALID_PORT', 'path' => ''];
     }
 
+    if (preg_match('/^SHA256:[A-Za-z0-9+\/]{43}=?$/D', trim((string) ($config['host_key_sha256'] ?? ''))) !== 1) {
+        return ['success' => false, 'reason' => 'SFTP_HOST_KEY_REQUIRED', 'path' => ''];
+    }
+
     $username = trim(str_replace("\0", '', (string)($config['username'] ?? '')));
     if ($username === '') {
         return ['success' => false, 'reason' => 'SFTP_MISSING_USERNAME', 'path' => ''];
@@ -1602,6 +1606,11 @@ function tpBackupOpenExternalizedSftpConnection(array $config): array
 
     try {
         $sftp = new \phpseclib3\Net\SFTP($host, $port, 15);
+        $serverKey = $sftp->getServerPublicHostKey();
+        if (!is_string($serverKey) || !tpBackupSftpHostKeyMatches($serverKey, (string) $config['host_key_sha256'])) {
+            $sftp->disconnect();
+            return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_HOST_KEY_MISMATCH', 'destination_type' => 'sftp'];
+        }
         if ($authType === 'private_key') {
             if (class_exists('\\phpseclib3\\Crypt\\PublicKeyLoader') === false) {
                 return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_LIBRARY_MISSING', 'destination_type' => 'sftp'];
@@ -1629,6 +1638,28 @@ function tpBackupOpenExternalizedSftpConnection(array $config): array
     } catch (Throwable) {
         return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_CONNECTION_FAILED', 'destination_type' => 'sftp'];
     }
+}
+
+/** Verify an OpenSSH SHA256 host fingerprint before sending any authentication material. */
+function tpBackupSftpHostKeyMatches(string $publicKey, string $expected): bool
+{
+    $parts = preg_split('/\s+/', trim($publicKey));
+    $blob = is_array($parts) && count($parts) >= 2 ? base64_decode($parts[1], true) : false;
+    if (!is_string($blob) || $blob === '' || preg_match('/^SHA256:[A-Za-z0-9+\/]{43}=?$/D', trim($expected)) !== 1) {
+        return false;
+    }
+    return hash_equals(rtrim(trim($expected), '='), 'SHA256:' . rtrim(base64_encode(hash('sha256', $blob, true)), '='));
+}
+
+/** Require TLS outside loopback development servers; never accept URL-embedded credentials. */
+function tpBackupRemoteUrlIsSecure(array $parts): bool
+{
+    if (isset($parts['user']) || isset($parts['pass'])) {
+        return false;
+    }
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    return $scheme === 'https' || ($scheme === 'http'
+        && in_array(strtolower((string) ($parts['host'] ?? '')), ['localhost', '127.0.0.1', '[::1]', '::1'], true));
 }
 
 /**
@@ -1716,7 +1747,7 @@ function tpBackupValidateExternalizedWebdavConfig(array $config): array
 
     $parts = parse_url($baseUrl);
     $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-    if (($scheme !== 'http' && $scheme !== 'https') || empty($parts['host'])) {
+    if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts)) {
         return ['success' => false, 'reason' => 'WEBDAV_URL_INVALID', 'path' => ''];
     }
 
@@ -2119,7 +2150,7 @@ function tpBackupValidateExternalizedS3Config(array $config): array
 
         $parts = parse_url($endpoint);
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        if (($scheme !== 'http' && $scheme !== 'https') || empty($parts['host'])) {
+        if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts)) {
             return ['success' => false, 'reason' => 'S3_ENDPOINT_INVALID', 'path' => ''];
         }
     }
