@@ -191,7 +191,7 @@ switch ($inputData['type']) {
 
         // Ouvrir le fichier pour récupérer l'en-tête
         $fp = fopen($file, 'r');
-        $header = fgetcsv($fp);
+        $header = fgetcsv($fp, 0, ',', '"', ''); // Same RFC 4180 rule as the lexer below
         fclose($fp);
 
         // Vérifier si l'en-tête est valide
