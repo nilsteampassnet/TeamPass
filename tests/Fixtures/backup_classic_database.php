@@ -51,7 +51,8 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
         DB::query('DROP TRIGGER restore_auth_failure_fixture');
         if ($exerciseResume) {
             $blocker = new mysqli($connection['host'], $connection['user'], $connection['password'], $connection['database'], $connection['port']);
-            $blocker->query('LOCK TABLES ' . prefixTable('api') . ' READ');
+            // Do not block the normal pre-import API-session revocation.
+            $blocker->query('LOCK TABLES ' . prefixTable('backup_bytes') . ' READ');
             try {
                 $process->start();
                 $deadline = microtime(true) + 15;
@@ -59,16 +60,22 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
                     usleep(20000);
                 }
                 if (!tpBackupRestoreIsInProgress()) {
-                    throw new RuntimeException('The controlled import did not reach its persistent hold.');
+                    throw new RuntimeException('The controlled import did not reach its persistent hold: '
+                        . $process->getOutput() . $process->getErrorOutput());
                 }
                 $process->stop(0, 9);
             } finally {
+                if ($process->isRunning()) {
+                    $process->stop(0, 9);
+                }
                 $blocker->query('UNLOCK TABLES');
                 $blocker->close();
             }
             // Simulate the point where an interrupted DDL import has already replaced auth/settings tables.
+            DB::query('SET SESSION FOREIGN_KEY_CHECKS=0');
             DB::query('DROP TABLE ' . prefixTable('misc'));
             DB::query('DROP TABLE ' . prefixTable('users'));
+            DB::query('SET SESSION FOREIGN_KEY_CHECKS=1');
             $arguments = [PHP_BINARY, $root . '/app/scripts/restore.php', '--file', $backup['filepath'],
                 '--auth-token', 'wrong-original-token', '--resume'];
             $refused = new \Symfony\Component\Process\Process($arguments, $root);
