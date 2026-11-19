@@ -102,6 +102,52 @@ If a setting change is not reflected, restart PHP-FPM to clear the 60-second APC
 
 ---
 
+## An item saved to a shared folder is invisible or unreadable for the other users
+
+### Symptom
+
+Releases before 3.2.4.4 could give an item the encryption keys of the wrong kind of folder when the item form saved it to another folder than the one open in the tree ([#5469](https://github.com/nilsteampassnet/TeamPass/issues/5469)). Two cases remain visible after the upgrade:
+
+* **Created from a personal folder.** The *New item* form was opened while a personal folder was selected, and a shared folder was picked in the form. The item is not listed in that shared folder, for anyone, its creator included.
+* **Moved from the edit form.** A personal item was edited and a shared folder was picked in the form. The item is listed in the shared folder, but the other users cannot open its password.
+
+### Cause
+
+The form told the server whether the folder was personal from the folder open in the tree, not from the folder picked in the form. In the first case the item was stored as personal (`perso = 1`) in a shared folder, with keys for its creator and the internal `TP` account only. In the second case the item is flagged shared, but its keys were never handed to the users of the shared folder. 3.2.4.4 reads this from the folder the item is saved to. The new release does not repair items saved before it.
+
+### Fix
+
+⚠️ Back up the database first.
+
+**Moved from the edit form:** run **Monitoring → Tools → Restore missing sharekeys** (see [Tools](../manage/tools.md#restore-missing-sharekeys)). Nothing else is needed.
+
+**Created from a personal folder:** the tool counts an item flagged personal as personal and never gives its keys to other users, so the flag must be reset first.
+
+1. List the items flagged personal outside any personal folder. The queries use the default `teampass_` table prefix: replace it with the `DB_PREFIX` value of `app/config/settings.php` if your installation uses another one.
+
+   ```sql
+   SELECT i.id, i.label, f.title AS folder
+   FROM teampass_items AS i
+   INNER JOIN teampass_nested_tree AS f ON f.id = i.id_tree
+   WHERE i.perso = 1
+     AND NOT EXISTS (
+       SELECT 1 FROM teampass_nested_tree AS root
+       WHERE root.personal_folder = 1
+         AND f.nleft >= root.nleft AND f.nright <= root.nright
+     );
+   ```
+
+2. Clear the flag on these items, in the items table and in the items cache. Replace `<ids>` with the ids returned by the query, separated by commas.
+
+   ```sql
+   UPDATE teampass_items SET perso = 0 WHERE id IN (<ids>);
+   UPDATE teampass_cache SET perso = 0 WHERE id IN (<ids>);
+   ```
+
+3. Run **Monitoring → Tools → Restore missing sharekeys**. Its background task gives the keys to the users of the folder from the `TP` account key, which these items hold. Once the task has completed on the *Tasks* page, the items are listed in their folder and the other users can open them.
+
+---
+
 ## Emails are not being sent
 
 ### Checklist
