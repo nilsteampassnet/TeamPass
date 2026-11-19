@@ -297,18 +297,6 @@ class TaskWorker {
         // keep for debug/trace
         $this->taskData['output_dir'] = $backupDir;
 
-        if ($backupSource === 'scheduler') {
-            $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
-            $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
-
-            $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
-            $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
-
-            if (LOG_TASKS === true) {
-                $this->logger->log("database_backup: purge retention={$days}d dir={$backupDir} deleted={$deleted}", 'INFO');
-            }
-        }
-
         // If launched by scheduler, update scheduler status in teampass_misc
         if (!empty($taskData['source']) && $taskData['source'] === 'scheduler') {
             $scheduledMessage = 'Backup created: ' . ($this->taskData['backup_file'] ?? '');
@@ -325,6 +313,19 @@ class TaskWorker {
                         'database_backup: unable to queue externalized backup after scheduled backup: ' . $e->getMessage(),
                         'ERROR'
                     );
+                }
+            }
+
+            // Retention must never prevent delivery of the new, valid archive.
+            if ($backupSource === 'scheduler') {
+                $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
+                $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
+
+                $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
+                $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
+
+                if (LOG_TASKS === true) {
+                    $this->logger->log("database_backup: purge retention={$days}d dir={$backupDir} deleted={$deleted}", 'INFO');
                 }
             }
 
