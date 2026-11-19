@@ -102,9 +102,11 @@ To restore your database from a backup:
 
 > ⚠️ A restore operation will replace your current database. All connected users will be disconnected and you will be logged out automatically.
 
-Preparation validates the complete SQL dialect, schema, document targets and the
-original instance key before creating an authorization bound to the archive's
-SHA256 digest. The CLI repeats validation before changing any table. Compatible
+Web preparation checks archive decryption, package integrity and document targets
+before creating an authorization bound to the archive's SHA256 digest. It does
+not parse the SQL dump. The CLI validates its complete dialect, schema and original
+instance key before changing any table, collecting SQL inventory and embedded
+metadata in one streaming pass. Compatible
 schema levels can be restored across patch releases; an external metadata file
 alone is not proof of compatibility. Backups from another master key require
 the [disaster-recovery procedure](../install/disaster-recovery.md).

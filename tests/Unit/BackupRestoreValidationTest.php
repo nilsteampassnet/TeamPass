@@ -105,4 +105,25 @@ final class BackupRestoreValidationTest extends TestCase
         self::assertStringContainsString('ONLY_FULL_GROUP_BY', $mode);
         self::assertStringContainsString('NO_AUTO_VALUE_ON_ZERO', $mode);
     }
+
+    public function testInventoryAndMetadataConsumersShareOneValidatedStatementStream(): void
+    {
+        file_put_contents($this->path, $this->dump());
+        $seen = [];
+        $inventory = tpRecoveryInspectSql($this->path, 'fixture_', static function (string $sql, array $info) use (&$seen): void {
+            $seen[] = [$sql, $info];
+        });
+        self::assertCount(15, $seen);
+        self::assertCount(6, $inventory['tables']);
+        self::assertSame('insert', $seen[2][1]['type']);
+        self::assertSame(['admin', 'teampass_version_full', '3.2.4.2'], tpBackupSqlValues($seen[2][0]));
+    }
+
+    public function testWebPreparationDoesNotParseSqlAndCliValidatesBeforeTheHold(): void
+    {
+        $web = file_get_contents(__DIR__ . '/../../app/sources/backups.queries.php');
+        $cli = file_get_contents(__DIR__ . '/../../app/scripts/restore.php');
+        self::assertStringNotContainsString('tpBackupPreflightRestoreSql(', $web);
+        self::assertLessThan(strpos($cli, '$guard = tpBackupOpenProtectedFile('), strpos($cli, 'tpBackupPreflightRestoreSql('));
+    }
 }

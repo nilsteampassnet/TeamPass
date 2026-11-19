@@ -145,8 +145,12 @@ function tpRecoverySqlLiteralValues(string $values): bool
     return false;
 }
 
-/** Validate the whole dump before making any database change. */
-function tpRecoveryInspectSql(string $path, string $prefix): array
+/**
+ * Validate the whole dump before making any database change.
+ *
+ * @param callable(string, array): void|null $onStatement Inspect each validated statement in the same streaming pass.
+ */
+function tpRecoveryInspectSql(string $path, string $prefix, ?callable $onStatement = null): array
 {
     $tables = [];
     $rows = [];
@@ -166,6 +170,9 @@ function tpRecoveryInspectSql(string $path, string $prefix): array
             $rows[$table]++;
         } elseif (isset($tables[$table])) {
             throw new TeamPassRecoveryException('SQL_TABLE_ORDER_INVALID');
+        }
+        if ($onStatement !== null) {
+            $onStatement($sql, $info);
         }
     }
     foreach (['misc', 'users', 'items', 'nested_tree', 'sharekeys_items', 'user_private_keys'] as $required) {

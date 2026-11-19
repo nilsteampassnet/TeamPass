@@ -2946,6 +2946,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         break;
                     }
 
+                    // Authenticated archive decryption/checksumming can also exceed the PHP web time limit.
+                    set_time_limit(0);
                     $dataReceived = prepareExchangedData($post_data, 'decode');
                     if (!is_array($dataReceived)) {
                         $dataReceived = [];
@@ -3193,16 +3195,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         }
                     }
 
-                    try {
-                        tpBackupPreflightRestoreSql($tmpDecryptedSql, $packageManifestForDryRun ?? []);
-                    } catch (Throwable $exception) {
-                        $cleanupRestoreStage();
-                        echo prepareExchangedData(['error' => true, 'error_code' => 'RESTORE_PREFLIGHT_FAILED',
-                            'message' => $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RESTORE_PREFLIGHT_FAILED'], 'encode');
-                        break;
-                    } finally {
-                        tpBackupCleanupRestoreFile($tmpDecryptedSql);
-                    }
+                    // Full SQL/schema/master-key validation belongs to the CLI, before any import.
+                    tpBackupCleanupRestoreFile($tmpDecryptedSql);
 // Create authorization token in DB (teampass_misc)
                     $compat = [
                         'mode' => (string) $chk['mode'],

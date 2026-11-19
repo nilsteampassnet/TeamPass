@@ -83,17 +83,17 @@ function tpBackupInspectRestoreSql(
     ?callable $masterValidator = null,
     int $systemUserId = -1
 ): array {
-    $inventory = tpRecoveryInspectSql($path, $prefix);
     if ($manifest !== [] && (string) ($manifest['teampass']['schema_level'] ?? '') !== $expectedSchema) {
         throw new TeamPassRecoveryException('SCHEMA_MISMATCH');
     }
     $columns = [];
     $settings = [];
     $masterVerified = false;
-    foreach (tpRecoverySqlStatements($path) as $sql) {
-        $info = tpRecoverySqlStatementInfo($sql, $prefix);
+    $inventory = tpRecoveryInspectSql($path, $prefix, static function (string $sql, array $info) use (
+        $prefix, $systemUserId, $masterValidator, &$columns, &$settings, &$masterVerified
+    ): void {
         if (!in_array($info['table'], [$prefix . 'misc', $prefix . 'users'], true)) {
-            continue;
+            return;
         }
         if ($info['type'] === 'create') {
             $definition = substr($sql, strpos($sql, '(') + 1);
@@ -115,7 +115,7 @@ function tpBackupInspectRestoreSql(
                 $masterVerified = $masterValidator((string) ($row['pw'] ?? '')) === true;
             }
         }
-    }
+    });
     $sourceVersion = $settings['teampass_version_full'] ?? $settings['teampass_version'] ?? '';
     $releaseLine = static fn (string $version): string => implode('.', array_slice(explode('.', $version), 0, 3));
     $embeddedSchema = $settings['teampass_schema_level'] ?? ($manifest['teampass']['schema_level'] ?? '');
