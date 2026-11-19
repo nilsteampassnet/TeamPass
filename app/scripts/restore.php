@@ -708,6 +708,7 @@ try {
                 // ignore
             }
         }
+        ConfigManager::invalidateCache();
     }
 
     if ($restoreCompleted || ($holdCreated && !$importStarted)) {
