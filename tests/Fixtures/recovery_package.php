@@ -288,6 +288,7 @@ if (str_starts_with($scenario, 'info_')) {
     $zip = new ZipArchive();
     $zip->open($directory . '/plain.zip');
     $result = ['packaged_master' => $zip->getFromName('secrets/' . SECUREFILE),
+        'archive_mode' => fileperms($package['filepath']) & 0777,
         'snapshot_matches_capture' => $snapshot === $package['snapshot'],
         'state' => tpRecoveryPackageGetStatus(), 'writes' => DB::$writes,
         'archive_has_receipt' => $zip->locateName('snapshot') !== false];

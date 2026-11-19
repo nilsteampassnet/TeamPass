@@ -654,11 +654,13 @@ function tpUpgradeCliCreateBackup(array &$SETTINGS, array $journal): array
 
     $from = $journal['from'];
     $schemaLevel = (string) $from['schema_level'];
+    $fromRelease = (string) ($from['version_full'] !== '' ? $from['version_full'] : $from['version']);
     $result = tpCreateDatabaseBackup($SETTINGS, $clearKey, [
         'output_dir' => $dirReal,
         'filename_prefix' => 'pre-upgrade-',
         'include_tables' => array_keys($journal['inventory']),
         'schema_level' => $schemaLevel,
+        'files_version' => $fromRelease,
     ]);
     if ($result['success'] !== true) {
         return $failure((string) $result['message']);
@@ -668,7 +670,6 @@ function tpUpgradeCliCreateBackup(array &$SETTINGS, array $journal): array
         return $failure('The backup was not encrypted');
     }
 
-    $fromRelease = (string) ($from['version_full'] !== '' ? $from['version_full'] : $from['version']);
     $extra = [
         'source' => 'upgrade_cli',
         'run_id' => $journal['run_id'],
@@ -680,7 +681,10 @@ function tpUpgradeCliCreateBackup(array &$SETTINGS, array $journal): array
         // tpWriteBackupMetadata() would otherwise stamp the level of the new files.
         $extra['schema_level'] = null;
     }
-    tpWriteBackupMetadata($result['filepath'], $fromRelease, $schemaLevel, $extra);
+    $metadata = tpWriteBackupMetadata($result['filepath'], $fromRelease, $schemaLevel, $extra);
+    if (!$metadata['success']) {
+        return $failure('Pre-upgrade backup metadata could not be written. The encrypted archive was retained.');
+    }
 
     return [
         'success' => true,
@@ -732,9 +736,7 @@ function tpUpgradeCliVerifyBackup(string $file, array $inventory, array &$SETTIN
 
         return ['success' => true, 'message' => count($found) . ' tables verified'];
     } finally {
-        if (is_file($temporary) === true) {
-            @unlink($temporary);
-        }
+        tpBackupCleanupRestoreFile($temporary);
     }
 }
 

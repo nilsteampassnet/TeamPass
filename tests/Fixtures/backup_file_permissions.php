@@ -37,6 +37,9 @@ class DB
     /** Inspect the dump before the first SQL bytes are written. */
     public static function query(string $query): array
     {
+        if (self::$failure === 'documents' && str_starts_with($query, 'SELECT')) {
+            throw new RuntimeException('Fixture document inventory failure');
+        }
         if ($query === 'SHOW TABLES') {
             self::inspectPlaintextTarget();
         }
@@ -93,6 +96,8 @@ class DB
                         ? $entry->getPath() . '/payload.encrypted'
                         : substr($entry->getPathname(), 0, -5) . '.encrypted.part';
                     file_put_contents($blockedPath, 'existing target');
+                } elseif (self::$failure === 'metadata') {
+                    mkdir(substr($entry->getPathname(), 0, -5) . '.meta.json', 0700);
                 }
             }
         }
@@ -151,6 +156,7 @@ if ($format === 'metadata') {
 $results = [];
 foreach (['', 'scheduled-', 'externalized-'] as $prefix) {
     $options = ['output_dir' => DB::$outputDir, 'filename_prefix' => $prefix];
+    if (DB::$failure === 'documents') { $options['include_documents'] = true; }
     $result = $format === 'tpbackup'
         ? tpCreateBackupPackage([], 'test-only-backup-password', $options)
         : tpCreateDatabaseBackup([], $format === 'plain' ? '' : 'test-only-backup-password', $options);

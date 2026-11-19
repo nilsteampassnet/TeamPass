@@ -1229,7 +1229,7 @@ function tpFmtBytes(bytes) {
 
                 // Prepare data
                 var data = {
-                    'encryptionKey': purifyUserInput($('#onthefly-backup-key').val()),
+                    'encryptionKey': ($('#onthefly-backup-key').val() || '').toString(),
                     'comment': ($('#onthefly-backup-comment').length ? $('#onthefly-backup-comment').val() : ''),
                     'include_documents': $('#onthefly-include-documents').is(':checked') ? 1 : 0
                 };
@@ -1246,7 +1246,6 @@ function tpFmtBytes(bytes) {
                         var _decoded = tpSafeDecodeQueryReturn(data);
                         if (_decoded === null) { return; }
                         data = _decoded;
-                        console.log(data);
 
                         if (data.error === true) {
                             // ERROR
@@ -1298,7 +1297,7 @@ function tpFmtBytes(bytes) {
                 return false;
             }
 
-            var encryptionKey = purifyUserInput($('#onthefly-restore-key').val());
+            var encryptionKey = ($('#onthefly-restore-key').val() || '').toString();
             var overrideKey = '';
 
             // If a scheduled backup is selected from this panel, the instance key will be used server-side.
@@ -2373,6 +2372,7 @@ var tpExternalized = {
     var isS3 = destinationType === 's3';
     $('#externalized-sftp-fields').toggle(isSftp);
     $('#externalized-webdav-fields').toggle(isWebdav);
+    $('#externalized-http-policy-fields').toggle(isWebdav || isS3);
     $('#externalized-s3-fields').toggle(isS3);
 
     var $target = $('#externalized-target-dir');
@@ -2466,6 +2466,7 @@ var tpExternalized = {
     $('#externalized-target-dir').val(s.target_dir || '');
     var sftp = s.sftp || {};
     $('#externalized-sftp-host').val(sftp.host || '');
+    $('#externalized-sftp-host-key').val(sftp.host_key_sha256 || '');
     $('#externalized-sftp-port').val(String(sftp.port || 22));
     $('#externalized-sftp-username').val(sftp.username || '');
     $('#externalized-sftp-auth-type').val(sftp.auth_type || 'password');
@@ -2473,6 +2474,7 @@ var tpExternalized = {
     $('#externalized-sftp-private-key').val('');
     $('#externalized-sftp-private-key-passphrase').val('');
     var webdav = s.webdav || {};
+    $('#externalized-allow-http').prop('checked', parseInt(webdav.allow_http || 0, 10) === 1);
     $('#externalized-webdav-url').val(webdav.url || '');
     $('#externalized-webdav-username').val(webdav.username || '');
     $('#externalized-webdav-password').val('');
@@ -2519,7 +2521,9 @@ var tpExternalized = {
       schedule_dom: parseInt($('#externalized-schedule-dom').val(), 10) || 1,
       destination_type: $('#externalized-destination-type').val() || 'local_directory',
       target_dir: $('#externalized-target-dir').val() || '',
+      allow_http: $('#externalized-allow-http').prop('checked') ? '1' : '0',
       sftp_host: $('#externalized-sftp-host').val() || '',
+      sftp_host_key_sha256: $('#externalized-sftp-host-key').val() || '',
       sftp_port: parseInt($('#externalized-sftp-port').val(), 10) || 22,
       sftp_username: $('#externalized-sftp-username').val() || '',
       sftp_auth_type: $('#externalized-sftp-auth-type').val() || 'password',
