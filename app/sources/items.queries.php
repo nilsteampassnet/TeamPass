@@ -263,7 +263,20 @@ switch ($inputData['type']) {
                 ];
             }
             $inputData['folderId'] = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
+            // The personal flag is read from the target folder, never from the client: the form
+            // sends the flag of the folder being browsed, not of the one picked in its list (#5469).
+            $targetFolderIdentity = getFolderIdentityWithPersonalFlag((int) $inputData['folderId']);
+            if ($targetFolderIdentity === null) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            $post_folder_is_personal = $targetFolderIdentity['personal_folder'];
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_password = teampassDecodeTransportSecret(
@@ -1014,7 +1027,19 @@ switch ($inputData['type']) {
             $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
         }
         $inputData['folderId'] = (int) filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
-        $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
+        // Read from the target folder, never from the client (#5469)
+        $targetFolderIdentity = getFolderIdentityWithPersonalFlag($inputData['folderId']);
+        if ($targetFolderIdentity === null) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        $post_folder_is_personal = $targetFolderIdentity['personal_folder'];
         $post_restricted_to = filter_var_array(
             $dataReceived['restricted_to'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
@@ -1273,6 +1298,25 @@ switch ($inputData['type']) {
                 break;
             }
         }
+
+        // A folder change between a personal and a shared folder changes who holds the keys:
+        // it gets the same treatment as move_item (#5469)
+        $sourceFolderIdentity = getFolderIdentityWithPersonalFlag($originalFolderId);
+        $sourceFolderIsPersonal = $sourceFolderIdentity === null ? 0 : $sourceFolderIdentity['personal_folder'];
+        if ($sourceFolderIsPersonal === 0 && $post_folder_is_personal === 1) {
+            // LAPR: a managed target or an SSH credential must stay in a shared folder
+            $laprMoveBlocker = laprItemsPersonalMoveBlocker([(int) $inputData['itemId']], $SETTINGS);
+            if ($laprMoveBlocker !== '') {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get($laprMoveBlocker),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+        }
         if ($editionLockForSave['allowed'] !== true) {
             echo (string) prepareExchangedData(
                 array(
@@ -1411,6 +1455,43 @@ switch ($inputData['type']) {
                     'encode'
                 );
                 break;
+            }
+
+            // Personal item taken into a shared folder: hand its keys to the users of that
+            // folder first, then save the rest of the form as a shared item (#5469)
+            if ($sourceFolderIsPersonal === 1 && $post_folder_is_personal === 0) {
+                try {
+                    movePersonalItemToSharedFolderSynchronously(
+                        (int) $inputData['itemId'],
+                        $targetFolderId,
+                        (int) $session->get('user-id'),
+                        (string) $session->get('user-private_key')
+                    );
+                } catch (Throwable $exception) {
+                    // Same messages as move_item. UnexpectedValueException extends
+                    // RuntimeException, so it must be tested first.
+                    if ($exception instanceof UnexpectedValueException) {
+                        $moveErrorKey = 'error_move_missing_sharekey';
+                    } elseif ($exception instanceof RuntimeException) {
+                        $moveErrorKey = 'error_item_currently_being_updated';
+                    } else {
+                        $moveErrorKey = 'error_unknown';
+                    }
+                    error_log(
+                        'TEAMPASS Error - update_item personal-to-shared move failed for item '
+                        . (int) $inputData['itemId'] . ': ' . $exception->getMessage()
+                    );
+                    echo (string) prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get($moveErrorKey),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+                // The item is shared from now on: the key fan-out below must run
+                $dataItem['perso'] = 0;
             }
 
             if ($post_password !== $pw) {
@@ -1569,7 +1650,8 @@ switch ($inputData['type']) {
                     'complexity_level' => (int) $post_complexity_level,
                     'renewal_period' => $post_renewal_period,
                     'encryption_type' => TP_ENCRYPTION_NAME,
-                    'perso' => in_array($inputData['folderId'], $session->get('user-personal_folders')) === true ? 1 : 0,
+                    // Same source as the sharekeys written above, so the flag and the keys agree
+                    'perso' => $post_folder_is_personal,
                     'fa_icon' => $post_fa_icon,
                     'updated_at' => time(),
                 ),
@@ -1580,8 +1662,9 @@ switch ($inputData['type']) {
             // Delete all existing sharekey_items for users if the item is personal.
             // Narrow to the editor, not to $dataItem['id_user']: that is the creator, who is
             // not the owner once a shared item has been moved into a personal folder. The
-            // function itself checks that the editor owns the personal tree.
-            if (intval($dataItem['perso']) === 1) {
+            // function itself checks that the editor owns the personal tree. A shared item
+            // taken into a personal folder by this save is covered too (#5469).
+            if (intval($dataItem['perso']) === 1 || $post_folder_is_personal === 1) {
                 EnsurePersonalItemHasOnlyKeysForOwner((int) $session->get('user-id'), (int) $inputData['itemId']);
             }
 
@@ -1890,7 +1973,8 @@ switch ($inputData['type']) {
             }
 
             // create a task for all fields updated
-            if ($encryptionTaskIsRequested === true && intval($dataItem['perso']) !== 1) {
+            // Never for an item that is, or has just become, personal: its keys stay with its owner
+            if ($encryptionTaskIsRequested === true && intval($dataItem['perso']) !== 1 && $post_folder_is_personal !== 1) {
                 if (WIP === true) error_log('createTaskForItem - '.print_r($tasksToBePerformed, true));
                 createTaskForItem(
                     'item_update_create_keys',
