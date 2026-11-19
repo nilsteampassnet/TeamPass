@@ -53,4 +53,17 @@ final class BackupRestoreJournalTest extends TestCase
             unlink($path);
         }
     }
+
+    public function testAnOversizedJournalIsRejectedBeforeCreatingAnUnresumableHold(): void
+    {
+        $path = sys_get_temp_dir() . '/tp-resume-' . bin2hex(random_bytes(8));
+        try {
+            tpBackupWriteRestoreJournal(['settings' => ['oversized' => str_repeat('x', 8388608)]], $path);
+            self::fail('Unresumable journal was published.');
+        } catch (TeamPassRecoveryException $exception) {
+            self::assertSame('RESTORE_HOLD_FAILED', $exception->reason);
+            self::assertFileDoesNotExist($path);
+            self::assertSame([], glob($path . '.*.tmp'));
+        }
+    }
 }

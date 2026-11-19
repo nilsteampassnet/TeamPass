@@ -45,6 +45,9 @@ function tpBackupReadRestoreJournal(string $tokenHash, ?string $path = null): ar
 function tpBackupWriteRestoreJournal(array $journal, ?string $path = null): void
 {
     $json = json_encode($journal, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+    if (strlen($json) > 8388608) {
+        throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+    }
     $path = $path ?? tpBackupRestoreGuardPath();
     $temporary = $path . '.' . bin2hex(random_bytes(8)) . '.tmp';
     $handle = tpBackupOpenProtectedFile($temporary, 'x+b', true);
