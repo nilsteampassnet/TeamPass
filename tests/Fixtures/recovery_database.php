@@ -135,7 +135,7 @@ try {
         DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
     }
     $settings = ['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'];
-    if ($scenario === 'classic') {
+    if (in_array($scenario, ['classic', 'classic-resume'], true)) {
         foreach (['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'] as $name => $value) {
             DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
         }
@@ -205,11 +205,11 @@ try {
     if (!$backup['success'] || !$kit['success']) {
         throw new RuntimeException('Fixture package creation failed');
     }
-    if ($scenario === 'classic') {
+    if (in_array($scenario, ['classic', 'classic-resume'], true)) {
         require_once __DIR__ . '/backup_classic_database.php';
         tpTestClassicBackupRestore($root, $fixture, $backup,
             ['host' => '127.0.0.1', 'user' => $dbUser, 'password' => $dbPassword, 'database' => $source, 'port' => $port],
-            $settings, $backupBytes);
+            $settings, $backupBytes, $scenario === 'classic-resume');
         echo "OK: real encrypted backup restored through the production classic CLI\n";
         return;
     }

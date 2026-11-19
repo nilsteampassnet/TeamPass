@@ -231,6 +231,7 @@ jobs:
           cd "$drp_checkout"
           php tests/Fixtures/recovery_database.php current
           php tests/Fixtures/recovery_database.php classic
+          php tests/Fixtures/recovery_database.php classic-resume
           php tests/Fixtures/recovery_database.php upgrade
           php tests/Integration/recovery_http.php
           php tests/Fixtures/recovery_database.php http-publish

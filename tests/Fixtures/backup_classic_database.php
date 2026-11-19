@@ -10,7 +10,7 @@ declare(strict_types=1);
  */
 
 /** Exercise the actual CLI against the disposable database and original key created by the recovery fixture. */
-function tpTestClassicBackupRestore(string $root, string $fixture, array $backup, array $connection, array $settings, string $bytes): void
+function tpTestClassicBackupRestore(string $root, string $fixture, array $backup, array $connection, array $settings, string $bytes, bool $exerciseResume = false): void
 {
     if (!is_file($root . '/_tools/drp-lab-allow-activation') || is_file($root . '/app/config/settings.php')
         || is_file($root . '/secrets/fixture.key') || tpBackupRestoreIsInProgress()) {
@@ -30,6 +30,54 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
         $process = new \Symfony\Component\Process\Process([PHP_BINARY, $root . '/app/scripts/restore.php',
             '--file', $backup['filepath'], '--auth-token', $authorization['token'], '--force-disconnect'], $root);
         $process->setTimeout(180);
+        $previousMaintenance = DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s AND intitule=%s', 'admin', 'maintenance_mode');
+        DB::query('CREATE TRIGGER restore_auth_failure_fixture BEFORE UPDATE ON ' . prefixTable('misc')
+            . " FOR EACH ROW BEGIN IF NEW.type='restore_authorization_cli' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='synthetic authorization write failure'; END IF; END");
+        $process->run();
+        if ($process->getExitCode() !== 50 || tpBackupRestoreIsInProgress()
+            || DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s AND intitule=%s', 'admin', 'maintenance_mode') !== $previousMaintenance) {
+            throw new RuntimeException('A harmless pre-import failure retained its hold or changed maintenance.');
+        }
+        DB::query('DROP TRIGGER restore_auth_failure_fixture');
+        if ($exerciseResume) {
+            $blocker = new mysqli($connection['host'], $connection['user'], $connection['password'], $connection['database'], $connection['port']);
+            $blocker->query('LOCK TABLES ' . prefixTable('api') . ' READ');
+            try {
+                $process->start();
+                $deadline = microtime(true) + 15;
+                while (!tpBackupRestoreIsInProgress() && $process->isRunning() && microtime(true) < $deadline) {
+                    usleep(20000);
+                }
+                if (!tpBackupRestoreIsInProgress()) {
+                    throw new RuntimeException('The controlled import did not reach its persistent hold.');
+                }
+                $process->stop(0, 9);
+            } finally {
+                $blocker->query('UNLOCK TABLES');
+                $blocker->close();
+            }
+            // Simulate the point where an interrupted DDL import has already replaced auth/settings tables.
+            DB::query('DROP TABLE ' . prefixTable('misc'));
+            DB::query('DROP TABLE ' . prefixTable('users'));
+            $arguments = [PHP_BINARY, $root . '/app/scripts/restore.php', '--file', $backup['filepath'],
+                '--auth-token', 'wrong-original-token', '--resume'];
+            $refused = new \Symfony\Component\Process\Process($arguments, $root);
+            $refused->run();
+            if ($refused->getExitCode() !== 36) {
+                throw new RuntimeException('Resume accepted another authorization token.');
+            }
+            $arguments[5] = $authorization['token'];
+            $originalArchive = file_get_contents($backup['filepath']);
+            file_put_contents($backup['filepath'], 'changed archive', FILE_APPEND);
+            $changed = new \Symfony\Component\Process\Process($arguments, $root);
+            $changed->run();
+            file_put_contents($backup['filepath'], $originalArchive);
+            if ($changed->getExitCode() !== 34 || !tpBackupRestoreIsInProgress()) {
+                throw new RuntimeException('Resume accepted a changed archive or released the hold.');
+            }
+            $process = new \Symfony\Component\Process\Process($arguments, $root);
+            $process->setTimeout(180);
+        }
         $process->run();
         if (!$process->isSuccessful()) {
             throw new RuntimeException('Classic restore failed: ' . $process->getOutput() . $process->getErrorOutput());

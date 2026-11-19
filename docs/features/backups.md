@@ -125,7 +125,17 @@ A failed or killed import can leave a partial database: DDL is not globally
 rollbackable. The private `storage/logs/teampass_restore.pending` hold remains in
 that case. Keep cron stopped and complete an operator-controlled recovery before
 removing that hold; never remove it merely to dismiss a maintenance message.
-Preserve the original encrypted backup. A successful CLI run removes its hold.
+Keep the original encrypted archive and the original authorization token. Retry
+the same command with `--resume`, using the same operating-system account (or an
+authorized root operator). This restarts the entire import, rechecking the archive
+digest, schema and master key. The private hold contains the original authorization,
+settings and encrypted key candidates, so retry works even if the database's
+authorization/settings tables have already been replaced. The original token's
+initial expiry does not prevent continuation through that private journal.
+Other tokens and changed archives are refused. A successful CLI run removes its
+hold. A handled failure before the first import statement releases a newly created
+hold automatically and restores the preceding maintenance state. An already-held
+interrupted restore remains closed on a failed resume attempt.
 
 ### Exclusive mode
 

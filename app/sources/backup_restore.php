@@ -12,6 +12,56 @@ declare(strict_types=1);
 require_once __DIR__ . '/recovery_sql.php';
 require_once __DIR__ . '/restore_guard.php';
 
+/** Read a private, token-bound retry journal without consulting a potentially partial database. */
+function tpBackupReadRestoreJournal(string $tokenHash, ?string $path = null): array
+{
+    $path = $path ?? tpBackupRestoreGuardPath();
+    if (is_link($path) || !is_file($path) || filesize($path) > 8388608
+        || (PHP_OS_FAMILY !== 'Windows' && (fileperms($path) & 0077) !== 0)) {
+        throw new TeamPassRecoveryException('RESTORE_RESUME_UNAVAILABLE');
+    }
+    $journal = json_decode((string) file_get_contents($path), true, 64);
+    if (!is_array($journal) || ($journal['version'] ?? null) !== 1
+        || !is_string($journal['token_hash'] ?? null) || !hash_equals($journal['token_hash'], $tokenHash)
+        || !is_array($journal['payload'] ?? null) || !is_array($journal['settings'] ?? null)
+        || !is_array($journal['key_candidates'] ?? null)) {
+        throw new TeamPassRecoveryException('RESTORE_RESUME_UNAVAILABLE');
+    }
+    return $journal;
+}
+
+/** Persist only encrypted key candidates in an owner-only hold before importing SQL. */
+function tpBackupWriteRestoreJournal(array $journal, ?string $path = null): void
+{
+    $json = json_encode($journal, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+    $path = $path ?? tpBackupRestoreGuardPath();
+    $temporary = $path . '.' . bin2hex(random_bytes(8)) . '.tmp';
+    $handle = tpBackupOpenProtectedFile($temporary, 'x+b', true);
+    if (!is_resource($handle)) {
+        throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+    }
+    try {
+        if (fwrite($handle, $json) !== strlen($json) || !fflush($handle)) {
+            throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+        }
+        if (function_exists('fsync') && !fsync($handle)) {
+            throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+        }
+        fclose($handle);
+        $handle = null;
+        if (file_exists($path) || is_link($path) || !rename($temporary, $path)) {
+            throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+        }
+    } finally {
+        if (is_resource($handle)) {
+            fclose($handle);
+        }
+        if (is_file($temporary)) {
+            unlink($temporary);
+        }
+    }
+}
+
 /** Re-read archive bytes at each security boundary, including after decryption and preflight. */
 function tpBackupAssertRestoreFileUnchanged(string $path, string $expectedHash): void
 {

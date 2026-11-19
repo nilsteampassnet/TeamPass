@@ -124,6 +124,6 @@ final class BackupRestoreValidationTest extends TestCase
         $web = file_get_contents(__DIR__ . '/../../app/sources/backups.queries.php');
         $cli = file_get_contents(__DIR__ . '/../../app/scripts/restore.php');
         self::assertStringNotContainsString('tpBackupPreflightRestoreSql(', $web);
-        self::assertLessThan(strpos($cli, '$guard = tpBackupOpenProtectedFile('), strpos($cli, 'tpBackupPreflightRestoreSql('));
+        self::assertLessThan(strpos($cli, 'tpBackupWriteRestoreJournal('), strpos($cli, 'tpBackupPreflightRestoreSql('));
     }
 }
