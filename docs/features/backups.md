@@ -59,6 +59,12 @@ form for backups created by older releases. New SQL dumps preserve newlines,
 literal backslashes and binary bytes; this cannot repair data already changed
 inside an older dump.
 
+Some historical manual-backup requests also passed the key through input
+purification, which could strip tag-like fragments such as `<...>`. The original
+typed key and its HTML-encoded form cannot reproduce that lossy transformation
+in every case. For such an old archive, supply the effective key used by the
+historical release or recover it with that release; retain the original archive.
+
 When **Include documents** is enabled, Teampass creates a `.tpbackup` package containing the database and supported document files. Otherwise, it creates a legacy encrypted SQL backup.
 
 The backup file will be stored on the server and will appear in the **Server backups** table below.
