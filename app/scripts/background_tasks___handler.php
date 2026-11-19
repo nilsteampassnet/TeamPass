@@ -91,7 +91,7 @@ class BackgroundTasksHandler {
      */
     public function processBackgroundTasks(): bool {
         // A restored instance stays isolated until its operator completes the recovery checks.
-        if ((int) ($this->settings['recovery_pending_checks'] ?? 0) === 1) {
+        if (tpBackupRestoreIsInProgress() || (int) ($this->settings['recovery_pending_checks'] ?? 0) === 1) {
             return false;
         }
         // Prevent multiple concurrent executions
@@ -292,6 +292,7 @@ class BackgroundTasksHandler {
             $targetDir = tpBackupNormalizeExternalizedSftpRemotePath($targetDirSetting);
             $validation = tpBackupValidateExternalizedSftpConfig([
                 'host' => (string)$this->getSettingValue('bck_externalized_sftp_host', ''),
+                'host_key_sha256' => (string)$this->getSettingValue('bck_externalized_sftp_host_key_sha256', ''),
                 'port' => (int)$this->getSettingValue('bck_externalized_sftp_port', '22'),
                 'username' => (string)$this->getSettingValue('bck_externalized_sftp_username', ''),
                 'auth_type' => (string)$this->getSettingValue('bck_externalized_sftp_auth_type', 'password'),

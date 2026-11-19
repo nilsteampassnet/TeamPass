@@ -596,91 +596,6 @@ switch ($post_type) {
         );
         break;
 
-    case 'save_google_options':
-        // Check KEY and rights
-        if ($post_key !== $session->get('key')) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(
-            $post_data,
-            'decode'
-        );
-
-        // Google Authentication
-        if (htmlspecialchars_decode($dataReceived['google_authentication']) === 'false') {
-            $tmp = 0;
-        } else {
-            $tmp = 1;
-        }
-        DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'google_authentication');
-        $counter = DB::count();
-        if ($counter === 0) {
-            DB::insert(
-                prefixTable('misc'),
-                array(
-                    'type' => 'admin',
-                    'intitule' => 'google_authentication',
-                    'valeur' => $tmp,
-                    'created_at' => time(),
-                )
-            );
-        } else {
-            DB::update(
-                prefixTable('misc'),
-                array(
-                    'valeur' => $tmp,
-                    'updated_at' => time(),
-                ),
-                'type = %s AND intitule = %s',
-                'admin',
-                'google_authentication'
-            );
-        }
-        $SETTINGS['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
-
-        // ga_website_name
-        if (is_null($dataReceived['ga_website_name']) === false) {
-            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'ga_website_name');
-            $counter = DB::count();
-            if ($counter === 0) {
-                DB::insert(
-                    prefixTable('misc'),
-                    array(
-                        'type' => 'admin',
-                        'intitule' => 'ga_website_name',
-                        'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name']),
-                        'created_at' => time(),
-                    )
-                );
-            } else {
-                DB::update(
-                    prefixTable('misc'),
-                    array(
-                        'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name']),
-                        'updated_at' => time(),
-                    ),
-                    'type = %s AND intitule = %s',
-                    'admin',
-                    'ga_website_name'
-                );
-            }
-            $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
-        } else {
-            $SETTINGS['ga_website_name'] = '';
-        }
-
-        // send data
-        echo '[{"result" : "' . addslashes($lang->get('done')) . '" , "error" : ""}]';
-        break;
-
     case 'save_agses_options':
         // Check KEY and rights
         if ($post_key !== $session->get('key')) {
@@ -1550,7 +1465,10 @@ switch ($post_type) {
         }
 
         // prepare data
-        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // HTML special characters are escaped; accented letters are kept as typed, not stored
+        // as named entities (FILTER_SANITIZE_FULL_SPECIAL_CHARS turned "é" into "&eacute;").
+        require_once __DIR__ . '/setting_value_logic.php';
+        $post_value = tpEncodeSettingValue($dataReceived['value']);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 

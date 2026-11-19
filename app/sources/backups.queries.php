@@ -225,6 +225,8 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'UNSUPPORTED_TYPE' => 'bck_externalized_destination_type_unsupported',
             'UNSUPPORTED_OPERATION' => 'bck_externalized_destination_operation_not_available',
             'SFTP_MISSING_HOST' => 'bck_externalized_sftp_missing_host',
+            'SFTP_HOST_KEY_REQUIRED' => 'bck_externalized_sftp_host_key_required',
+            'SFTP_HOST_KEY_MISMATCH' => 'bck_externalized_sftp_host_key_mismatch',
             'SFTP_INVALID_PORT' => 'bck_externalized_sftp_invalid_port',
             'SFTP_MISSING_USERNAME' => 'bck_externalized_sftp_missing_username',
             'SFTP_REMOTE_PATH_INVALID' => 'bck_externalized_sftp_remote_path_invalid',
@@ -334,6 +336,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'host' => (string) tpGetSettingsValue('bck_externalized_sftp_host', ''),
+            'host_key_sha256' => (string) tpGetSettingsValue('bck_externalized_sftp_host_key_sha256', ''),
             'port' => max(1, min(65535, (int) tpGetSettingsValue('bck_externalized_sftp_port', '22'))),
             'username' => (string) tpGetSettingsValue('bck_externalized_sftp_username', ''),
             'auth_type' => $authType,
@@ -378,6 +381,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'host' => trim(str_replace("\0", '', (string)($dataReceived['sftp_host'] ?? $stored['host']))),
+            'host_key_sha256' => trim((string) ($dataReceived['sftp_host_key_sha256'] ?? $stored['host_key_sha256'])),
             'port' => max(1, min(65535, (int)($dataReceived['sftp_port'] ?? $stored['port']))),
             'username' => trim(str_replace("\0", '', (string)($dataReceived['sftp_username'] ?? $stored['username']))),
             'auth_type' => $authType,
@@ -402,6 +406,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'host' => (string) $config['host'],
+            'host_key_sha256' => (string) $config['host_key_sha256'],
             'port' => (int) $config['port'],
             'username' => (string) $config['username'],
             'auth_type' => (string) $config['auth_type'],
@@ -423,6 +428,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'url' => (string) tpGetSettingsValue('bck_externalized_webdav_url', ''),
+            'allow_http' => (int) tpGetSettingsValue('bck_externalized_allow_http', '0') === 1 ? 1 : 0,
             'username' => (string) tpGetSettingsValue('bck_externalized_webdav_username', ''),
             'password' => $password,
             'password_available' => $password !== '' || (string) tpGetSettingsValue('bck_externalized_webdav_password', '') !== '',
@@ -449,6 +455,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'username' => trim(str_replace("\0", '', (string)($dataReceived['webdav_username'] ?? $stored['username']))),
             'password' => $password,
             'password_available' => $password !== '' || !empty($stored['password_available']),
+            'allow_http' => (int) ($dataReceived['allow_http'] ?? $stored['allow_http']) === 1 ? 1 : 0,
         ];
     }
 
@@ -466,6 +473,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'url' => (string) $config['url'],
             'username' => (string) $config['username'],
             'has_password' => !empty($config['password_available']),
+            'allow_http' => (int) $config['allow_http'],
         ];
     }
 
@@ -481,6 +489,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'endpoint' => (string) tpGetSettingsValue('bck_externalized_s3_endpoint', ''),
+            'allow_http' => (int) tpGetSettingsValue('bck_externalized_allow_http', '0') === 1 ? 1 : 0,
             'region' => (string) tpGetSettingsValue('bck_externalized_s3_region', 'us-east-1'),
             'bucket' => (string) tpGetSettingsValue('bck_externalized_s3_bucket', ''),
             'access_key' => (string) tpGetSettingsValue('bck_externalized_s3_access_key', ''),
@@ -515,6 +524,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'secret_key' => $secretKey,
             'secret_key_available' => $secretKey !== '' || !empty($stored['secret_key_available']),
             'path_style' => $pathStyle === 1 ? 1 : 0,
+            'allow_http' => (int) ($dataReceived['allow_http'] ?? $stored['allow_http']) === 1 ? 1 : 0,
         ];
     }
 
@@ -535,6 +545,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'access_key' => (string) $config['access_key'],
             'has_secret_key' => !empty($config['secret_key_available']),
             'path_style' => (int) $config['path_style'],
+            'allow_http' => (int) $config['allow_http'],
         ];
     }
 
@@ -832,8 +843,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             $backupSchema = (string) tpParseSchemaLevelFromBackupFilename($bn);
         }
 
-        // Upload restore has no meta => version cannot be verified by design
-        $warnings[] = 'VERSION_NOT_VERIFIED';
+        // Uploaded archives are classified with the common schema/version checks below.
     } elseif ($serverFile !== '') {
         $bn = basename(str_replace('\\', '/', $serverFile));
         $extension = strtolower((string) pathinfo($bn, PATHINFO_EXTENSION));
@@ -959,7 +969,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         $isPackage = tpBackupIsPackageFilename($bn);
         if ($isPackage === true) {
             $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : '';
-            if (in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === false) {
+            if ($backupType !== '' && in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === false) {
                 return [
                     'is_compatible' => false,
                     'reason' => 'PACKAGE_TYPE_UNSUPPORTED',
@@ -1053,37 +1063,10 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         ];
     }
 
-    // Version check is strict for server-side backups only
-    if ($mode === 'server_strict') {
-        if ($backupVersion === null) {
-            return [
-                'is_compatible' => false,
-                'reason' => 'MISSING_VERSION_METADATA',
-                'mode' => $mode,
-                'warnings' => $warnings,
-                'backup_schema_level' => $backupSchema,
-                'expected_schema_level' => $expectedSchema,
-                'backup_tp_files_version' => $backupVersion,
-                'expected_tp_files_version' => $expectedVersion,
-                'resolved_path' => $targetPath,
-            ];
-        }
-
-        if ((string) $backupVersion !== (string) $expectedVersion) {
-            return [
-                'is_compatible' => false,
-                'reason' => 'VERSION_MISMATCH',
-                'mode' => $mode,
-                'warnings' => $warnings,
-                'backup_schema_level' => $backupSchema,
-                'expected_schema_level' => $expectedSchema,
-                'backup_tp_files_version' => $backupVersion,
-                'expected_tp_files_version' => $expectedVersion,
-                'resolved_path' => $targetPath,
-            ];
-        }
+    // Schema is the compatibility boundary; authenticated dump metadata is checked after decryption.
+    if ($backupVersion === null || (string) $backupVersion !== (string) $expectedVersion) {
+        $warnings[] = 'VERSION_NOT_VERIFIED';
     }
-
     return [
         'is_compatible' => true,
         'reason' => '',
@@ -1393,7 +1376,11 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             );
         
             // Prepare variables
-            $encryptionKey = filter_var($dataReceived['encryptionKey'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $encryptionKey = is_string($dataReceived['encryptionKey'] ?? null) ? $dataReceived['encryptionKey'] : '';
+            if ($encryptionKey === '' || strlen($encryptionKey) > 4096) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_backup_key_required')], 'encode');
+                break;
+            }
             $includeDocuments = (int)($dataReceived['include_documents'] ?? 0) === 1;
             $backupFormat = tpBackupNormalizeRequestedFormat((string) ($dataReceived['backup_format'] ?? $dataReceived['format'] ?? 'sql'));
             if ($includeDocuments === true) {
@@ -1431,7 +1418,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $backupResult = tpCreateDatabaseBackup(
                     $SETTINGS,
                     $encryptionKey,
-                    ['output_dir' => tpGetOntheflyBackupDir(true)]
+                    ['output_dir' => tpGetOntheflyBackupDir(true), 'metadata' => ['source' => 'onthefly', 'comment' => $comment]]
                 );
             }
 
@@ -1447,19 +1434,6 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             }
 
             $filename = $backupResult['filename'];
-            // Write metadata sidecar (<backup>.meta.json) for fast listings / migration safety
-            try {
-                if ($backupFormat !== tpBackupGetPackageExtension() && function_exists('tpWriteBackupMetadata') && !empty($backupResult['filepath'])) {
-                    $extraMeta = ['source' => 'onthefly'];
-                    if ($comment !== '') {
-                        $extraMeta['comment'] = $comment;
-                    }
-                    tpWriteBackupMetadata((string)$backupResult['filepath'], '', '', $extraMeta);
-                }
-            } catch (Throwable $ignored) {
-                // best effort
-            }
-        
             // Generate 2d key
             $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
         
@@ -1815,12 +1789,14 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             tpUpsertSettingsValue('bck_externalized_destination_type', $destinationType);
             tpUpsertSettingsValue('bck_externalized_target_dir', $targetDir);
             tpUpsertSettingsValue('bck_externalized_sftp_host', (string)$sftpConfig['host']);
+            tpUpsertSettingsValue('bck_externalized_sftp_host_key_sha256', (string)$sftpConfig['host_key_sha256']);
             tpUpsertSettingsValue('bck_externalized_sftp_port', (string)((int)$sftpConfig['port']));
             tpUpsertSettingsValue('bck_externalized_sftp_username', (string)$sftpConfig['username']);
             tpUpsertSettingsValue('bck_externalized_sftp_auth_type', (string)$sftpConfig['auth_type']);
             tpExternalizedEncryptSecretSetting('bck_externalized_sftp_password', (string)($dataReceived['sftp_password'] ?? ''), $SETTINGS);
             tpExternalizedEncryptSecretSetting('bck_externalized_sftp_private_key', (string)($dataReceived['sftp_private_key'] ?? ''), $SETTINGS);
             tpExternalizedEncryptSecretSetting('bck_externalized_sftp_private_key_passphrase', (string)($dataReceived['sftp_private_key_passphrase'] ?? ''), $SETTINGS);
+            tpUpsertSettingsValue('bck_externalized_allow_http', (string) $webdavConfig['allow_http']);
             tpUpsertSettingsValue('bck_externalized_webdav_url', (string)$webdavConfig['url']);
             tpUpsertSettingsValue('bck_externalized_webdav_username', (string)$webdavConfig['username']);
             tpExternalizedEncryptSecretSetting('bck_externalized_webdav_password', (string)($dataReceived['webdav_password'] ?? ''), $SETTINGS);
@@ -1856,11 +1832,13 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         'sftp' => tpExternalizedGetSftpPublicSettings($SETTINGS),
                         'webdav' => [
                             'url' => (string) $webdavConfig['url'],
+                            'allow_http' => (int) $webdavConfig['allow_http'],
                             'username' => (string) $webdavConfig['username'],
                             'has_password' => !empty($webdavConfig['password_available']),
                         ],
                         's3' => [
                             'endpoint' => (string) $s3Config['endpoint'],
+                            'allow_http' => (int) $s3Config['allow_http'],
                             'region' => (string) $s3Config['region'],
                             'bucket' => (string) $s3Config['bucket'],
                             'access_key' => (string) $s3Config['access_key'],
@@ -2079,7 +2057,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $isPackage = tpBackupIsPackageFilename($bn);
                 $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
                 $restoreSupported = ($isRemote === false || tpBackupExternalizedDestinationTypeSupportsFileOperations($destinationType) === true)
-                    && ($isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true);
+                    && ($isPackage === false || $backupType === '' || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true);
                 $tpFilesVersion = null;
                 if (is_scalar($meta['tp_files_version'] ?? null) && (string) $meta['tp_files_version'] !== '') {
                     $tpFilesVersion = (string) $meta['tp_files_version'];
@@ -2377,7 +2355,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fp) : [];
                 $isPackage = tpBackupIsPackageFilename($bn);
                 $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
-                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
+                $restoreSupported = $isPackage === false || $backupType === '' || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
                 $files[] = [
                     'name' => $bn,
                     'size_bytes' => (int)@filesize($fp),
@@ -2894,7 +2872,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fp) : array();
                 $isPackage = tpBackupIsPackageFilename($bn);
                 $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
-                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
+                $restoreSupported = $isPackage === false || $backupType === '' || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
 
                 $files[] = array(
                     'name' => $bn,
@@ -2976,6 +2954,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         break;
                     }
 
+                    // Authenticated archive decryption/checksumming can also exceed the PHP web time limit.
+                    set_time_limit(0);
                     $dataReceived = prepareExchangedData($post_data, 'decode');
                     if (!is_array($dataReceived)) {
                         $dataReceived = [];
@@ -3033,7 +3013,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId, $resolvedOverridePath);
                     if (!empty($chk['is_compatible']) === false) {
                         $cleanupRestoreStage();
-                        $compatMessage = $lang->get('bck_restore_incompatible_version_body');
+                        $compatMessage = $lang->get(tpBackupRestoreErrorLanguageKey((string) $chk['reason']));
                         if ((string) $chk['reason'] === 'PACKAGE_DOCUMENTS_RESTORE_NOT_SUPPORTED') {
                             $compatMessage = $lang->get('bck_restore_tpbackup_documents_not_supported');
                         } elseif ((string) $chk['reason'] === 'PACKAGE_TYPE_UNSUPPORTED') {
@@ -3104,7 +3084,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         }
                     }
 
-                    $keysToTry = array_values(array_unique(array_filter($keysToTry)));
+                    $keysToTry = array_values(array_unique(array_merge(
+                        ...array_map('tpBackupManualKeyCandidates', $keysToTry)
+                    )));
 
                     if (empty($keysToTry)) {
                         $cleanupRestoreStage();
@@ -3149,12 +3131,12 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
 
                     if (tpBackupIsPackageFilename($resolvedPath) === true) {
                         $packageRet = tpBackupPreparePackageSqlForRestore($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS, true, true);
-                        @unlink($tmpDecryptedSql);
 
                         if (empty($packageRet['success'])) {
+                            tpBackupCleanupRestoreFile($tmpDecryptedSql);
                             $cleanupRestoreStage();
                             if (!empty($packageRet['decrypted_package_path']) && is_string($packageRet['decrypted_package_path'])) {
-                                @unlink($packageRet['decrypted_package_path']);
+                                tpBackupCleanupRestoreFile($packageRet['decrypted_package_path']);
                             }
                             $packageErrorCode = (string) ($packageRet['error_code'] ?? 'TPBACKUP_INVALID');
                             $message = $lang->get('bck_restore_tpbackup_invalid');
@@ -3185,8 +3167,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                             if (($documents['included'] ?? false) === true) {
                                 $docDryRun = tpBackupRestorePackageDocumentsFromZip($tmpPackageZipForDryRun, $packageManifestForDryRun, $SETTINGS, true, true);
                                 if (empty($docDryRun['success'])) {
+                                    tpBackupCleanupRestoreFile($tmpDecryptedSql);
                                     $cleanupRestoreStage();
-                                    @unlink($tmpPackageZipForDryRun);
+                                    tpBackupCleanupRestoreFile($tmpPackageZipForDryRun);
                                     echo prepareExchangedData(
                                         [
                                             'error' => true,
@@ -3199,14 +3182,14 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                                     break;
                                 }
                             }
-                            @unlink($tmpPackageZipForDryRun);
+                            tpBackupCleanupRestoreFile($tmpPackageZipForDryRun);
                         }
                     } else {
                         // Try to decrypt with the available keys
                         $decRet = tpDefuseDecryptWithCandidates($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS);
-                        @unlink($tmpDecryptedSql);
 
                         if (empty($decRet['success'])) {
+                            tpBackupCleanupRestoreFile($tmpDecryptedSql);
                             $cleanupRestoreStage();
                             echo prepareExchangedData(
                                 [
@@ -3220,6 +3203,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         }
                     }
 
+                    // Full SQL/schema/master-key validation belongs to the CLI, before any import.
+                    tpBackupCleanupRestoreFile($tmpDecryptedSql);
 // Create authorization token in DB (teampass_misc)
                     $compat = [
                         'mode' => (string) $chk['mode'],

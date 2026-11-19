@@ -52,6 +52,13 @@ This separation provides defence in depth. It does not create a separate
 Teampass application or cryptographic trust boundary: the recipient endpoint
 still executes Teampass code and reads the same database and encryption key.
 
+The TeamPass network whitelist and blacklist protect application requests,
+including authentication, AJAX and the API, but do not filter the Secure Send
+recipient flow on either address. A link using the main address is not
+automatically LAN-only. Apply recipient network restrictions on the web server
+or reverse proxy. Defining a public sharing address does not create a network
+exception, DNS record or reachable listener.
+
 ### Recommended architecture
 
 ```text
@@ -522,7 +529,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
 
         proxy_no_cache 1;
         proxy_cache_bypass 1;
@@ -1347,8 +1354,10 @@ code/database backups and draining or cancelling pending email tasks first.
 
 ## API clients
 
-The browser extension, paired mobile devices and API scripts can create item links
-through `POST /api/v1/secureSend/create`. They are off by default, on new and on
+The browser extension, paired mobile devices and API scripts can create item and note
+links through `POST /api/v1/secureSend/create`, list them through
+`GET /api/v1/secureSend/list` and revoke them through `DELETE /api/v1/secureSend/revoke`.
+Creation is off by default, on new and on
 upgraded instances: enable **Allow Secure Send from API clients** in **Settings → API**
 after **User can propose One-Time-View links**. Device tokens and personal access
 tokens make link creation reachable outside a web session, so enabling Secure Send
@@ -1361,8 +1370,11 @@ at creation and at every reveal. The user also needs API access with the **read*
 Creations appear in the audit journal and in the statistics as `created` events of the
 sender, like web creations; the journal does not record which channel was used.
 
-This version only sends items: notes stay a web feature, and API clients cannot list or
-revoke links. Users revoke them from **My secure sends** in the web interface.
+Note sends follow **Allow sending ad-hoc notes/secrets**, exactly like in the web
+interface. A user can list and revoke links through the API whichever channel created them,
+and without **Allow Secure Send from API clients**: listing and revoking only help to remove
+exposure. The API list shows what **My secure sends** shows, without the link addresses, which
+the server does not keep.
 
 Turning the setting off refuses new API creations at once. Links already created stay
 valid until they expire or are revoked. The endpoints and the rules clients must follow

@@ -76,7 +76,7 @@ class SecureSendLocalizationTest extends TestCase
             foreach (glob($directory . '*.php') as $path) {
                 $catalog = require $path;
                 $language = new Language(basename($path, '.php'), $directory);
-                foreach (['secure_send_reveal', 'secure_send_description_truncated', 'secure_send_invalid_public_url'] as $key) {
+                foreach (['secure_send_reveal', 'secure_send_show_passphrase', 'secure_send_description_truncated', 'secure_send_invalid_public_url'] as $key) {
                     $expected = !empty($catalog[$key]) ? $catalog[$key] : $english[$key];
                     self::assertSame($expected, $language->getShipped($key), basename($path) . ': ' . $key);
                 }

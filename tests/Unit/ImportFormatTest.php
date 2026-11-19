@@ -20,8 +20,9 @@ use TeampassClasses\ImportFormat\ImportFormat;
  *   - parseLastpass(): header mapping, nested folders, secure-note URL sentinel.
  *   - parseOnePassword(): title/login mapping, tag-as-folder, header reordering.
  *   - parseKeepassxc(): "Root/" stripping, group path, field mapping.
- *   - CSV robustness: BOM stripping, quoted embedded newlines.
+ *   - CSV robustness: BOM stripping, quoted embedded newlines, trailing backslashes.
  *   - Rows without a label are dropped.
+ *   - Passwords keep their surrounding spaces; the other fields are trimmed.
  */
 class ImportFormatTest extends TestCase
 {
@@ -292,6 +293,18 @@ class ImportFormatTest extends TestCase
         $this->assertSame('Databases', $item['folder']);
     }
 
+    public function testKeepassxcPasswordEndingInBackslash(): void
+    {
+        $csv = "\"Group\",\"Title\",\"Username\",\"Password\",\"URL\",\"Notes\"\n"
+             . "\"Root\",\"NAS\",\"admin\",\"Xk9#q2\\\",\"https://nas.local\",\"share at \\\\nas\\backup\"\n";
+
+        $item = ImportFormat::parseKeepassxc($csv)['items'][0];
+
+        $this->assertSame('Xk9#q2\\', $item['pwd']);
+        $this->assertSame('https://nas.local', $item['url']);
+        $this->assertSame('share at \\\\nas\\backup', $item['description']);
+    }
+
     public function testKeepassxcBareRootBecomesEmptyFolder(): void
     {
         $csv = "\"Group\",\"Title\",\"Username\",\"Password\",\"URL\",\"Notes\"\n"
@@ -325,6 +338,39 @@ class ImportFormatTest extends TestCase
         $this->assertSame('Has label', $result['items'][0]['label']);
     }
 
+    public function testPasswordSurroundingSpacesAreKept(): void
+    {
+        $csv = "\"Group\",\"Title\",\"Username\",\"Password\",\"URL\",\"Notes\"\n"
+             . "\"Root\",\" Spaced \",\" admin \",\"  pass word  \",\" https://x.example \",\"n\"\n";
+
+        $item = ImportFormat::parseKeepassxc($csv)['items'][0];
+
+        $this->assertSame('  pass word  ', $item['pwd']);
+        $this->assertSame('Spaced', $item['label']);
+        $this->assertSame('admin', $item['login']);
+        $this->assertSame('https://x.example', $item['url']);
+    }
+
+    public function testPasswordMadeOfSpacesIsKept(): void
+    {
+        $csv = "Title,Url,Username,Password,Notes\n"
+             . "Blank,https://x.example,u,\"   \",n\n";
+
+        $item = ImportFormat::parseOnePassword($csv)['items'][0];
+
+        $this->assertSame('   ', $item['pwd']);
+    }
+
+    public function testBlankCandidateDoesNotHideTheNextOne(): void
+    {
+        $csv = "Title,Name,Url,Username,Password,Notes\n"
+             . "\"  \",Real name,https://x.example,u,p,n\n";
+
+        $item = ImportFormat::parseOnePassword($csv)['items'][0];
+
+        $this->assertSame('Real name', $item['label']);
+    }
+
     public function testCsvBomIsStripped(): void
     {
         $bom = "\xEF\xBB\xBF";
@@ -351,5 +397,130 @@ class ImportFormatTest extends TestCase
         $result = ImportFormat::parseOnePassword("Title,Url,Username,Password,Notes\n");
         $this->assertFalse($result['error']);
         $this->assertSame([], $result['items']);
+    }
+
+    // =========================================================================
+    // TeamPass generic CSV (issue #5470)
+    // =========================================================================
+
+    public function testGenericCsvDocumentedCommentsColumnFillsDescription(): void
+    {
+        $header = ImportFormat::normaliseTeampassCsvHeader(
+            ['label', 'login', 'password', 'url', 'comments', 'folder']
+        );
+        $item = ImportFormat::mapTeampassCsvRow(
+            $header,
+            ['Test item', 'testlogin', 'Secret123!', 'http://example.com', 'This must land in the description', 'Test']
+        );
+
+        $this->assertSame([
+            'label'       => 'Test item',
+            'login'       => 'testlogin',
+            'pwd'         => 'Secret123!',
+            'url'         => 'http://example.com',
+            'description' => 'This must land in the description',
+            'folder'      => 'Test',
+        ], $item);
+    }
+
+    public function testGenericCsvDescriptionColumnStillAccepted(): void
+    {
+        $header = ImportFormat::normaliseTeampassCsvHeader(['label', 'login', 'password', 'url', 'description']);
+        $item = ImportFormat::mapTeampassCsvRow($header, ['Item', 'u', 'p', 'https://x.example', 'Notes']);
+
+        $this->assertSame('Notes', $item['description']);
+        $this->assertSame('', $item['folder']);
+    }
+
+    public function testGenericCsvTeampassExportHeaderIsImported(): void
+    {
+        // Header written by export.queries.php (export_to_csv_format)
+        $header = ImportFormat::normaliseTeampassCsvHeader([
+            'id', 'label', 'description', 'pw', 'login', 'restricted_to', 'perso',
+            'url', 'email', 'kb', 'tag', 'folder', 'totp',
+        ]);
+        $item = ImportFormat::mapTeampassCsvRow($header, [
+            '12', 'Item', 'Notes', 'Secret', 'u', '', 'False',
+            'https://x.example', 'a@x.example', '', '', 'Folder/Sub', '',
+        ]);
+
+        $this->assertSame('Secret', $item['pwd']);
+        $this->assertSame('Notes', $item['description']);
+        $this->assertSame('Folder/Sub', $item['folder']);
+        $this->assertSame('u', $item['login']);
+    }
+
+    public function testGenericCsvHeaderIsCaseInsensitiveAndBomStripped(): void
+    {
+        $header = ImportFormat::normaliseTeampassCsvHeader(
+            ["\xEF\xBB\xBFLabel", ' Login ', 'Password', 'URL', 'Comments', 'Folder']
+        );
+
+        $this->assertSame(['label', 'login', 'password', 'url', 'comments', 'folder'], $header);
+        $this->assertTrue(ImportFormat::teampassCsvHeaderIsValid($header));
+    }
+
+    public function testGenericCsvHeaderWithoutLabelIsInvalid(): void
+    {
+        $this->assertFalse(ImportFormat::teampassCsvHeaderIsValid(
+            ImportFormat::normaliseTeampassCsvHeader(['name', 'login', 'password', 'url', 'comments'])
+        ));
+        // Blank first line, as fgetcsv() returns it
+        $this->assertFalse(ImportFormat::teampassCsvHeaderIsValid(
+            ImportFormat::normaliseTeampassCsvHeader([null])
+        ));
+    }
+
+    public function testGenericCsvShortAndLongRowsArePaddedOrCut(): void
+    {
+        $header = ImportFormat::normaliseTeampassCsvHeader(['label', 'login', 'password', 'url', 'comments', 'folder']);
+
+        $short = ImportFormat::mapTeampassCsvRow($header, ['Item', 'u']);
+        $this->assertSame('Item', $short['label']);
+        $this->assertSame('', $short['pwd']);
+        $this->assertSame('', $short['folder']);
+
+        $long = ImportFormat::mapTeampassCsvRow($header, ['Item', 'u', 'p', 'url', 'c', 'F', 'extra']);
+        $this->assertSame('F', $long['folder']);
+    }
+
+    public function testGenericCsvPasswordIsKeptVerbatim(): void
+    {
+        $header = ImportFormat::normaliseTeampassCsvHeader(['label', 'login', 'password', 'url', 'comments']);
+        $item = ImportFormat::mapTeampassCsvRow($header, [' Item ', ' u ', '  p w  ', ' url ', ' c ']);
+
+        $this->assertSame('  p w  ', $item['pwd']);
+        $this->assertSame('Item', $item['label']);
+        $this->assertSame('u', $item['login']);
+        $this->assertSame('url', $item['url']);
+        $this->assertSame('c', $item['description']);
+    }
+
+    public function testGenericCsvBlankCommentsFallsBackToDescription(): void
+    {
+        $header = ImportFormat::normaliseTeampassCsvHeader(['label', 'comments', 'description']);
+        $item = ImportFormat::mapTeampassCsvRow($header, ['Item', '', 'From description']);
+
+        $this->assertSame('From description', $item['description']);
+    }
+
+    // =========================================================================
+    // Dual-location copies
+    // =========================================================================
+
+    public function testImportFormatCopiesAreByteIdentical(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $vendor = $root . '/app/vendor/teampassclasses/importformat/src/ImportFormat.php';
+        $includes = $root . '/app/includes/libraries/teampassclasses/importformat/src/ImportFormat.php';
+
+        $this->assertFileExists($vendor);
+        $this->assertFileExists($includes);
+        $this->assertSame(
+            hash_file('sha256', $vendor),
+            hash_file('sha256', $includes),
+            'The two ImportFormat.php copies have diverged — edit both identically (see CLAUDE.md). '
+            . 'Only the vendor copy is autoloaded.'
+        );
     }
 }

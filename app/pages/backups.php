@@ -557,7 +557,20 @@ $recoveryPackageInformation = tpRecoveryPackageGetDisplayInformation($SETTINGS, 
                                                     </small>
                                                 </div>
 
+                                                <div id="externalized-http-policy-fields" class="mb-3" style="display:none;">
+                                                    <label for="externalized-allow-http">
+                                                        <input type="checkbox" id="externalized-allow-http">
+                                                        <?php echo htmlspecialchars($lang->get('bck_externalized_allow_http'), ENT_QUOTES, 'UTF-8'); ?>
+                                                    </label>
+                                                    <small class="form-text text-warning"><?php echo htmlspecialchars($lang->get('bck_externalized_allow_http_help'), ENT_QUOTES, 'UTF-8'); ?></small>
+                                                </div>
+
                                                 <div id="externalized-sftp-fields" style="display:none;">
+                                                    <div class="mb-3">
+                                                        <label for="externalized-sftp-host-key"><?php echo htmlspecialchars($lang->get('bck_externalized_sftp_host_key'), ENT_QUOTES, 'UTF-8'); ?></label>
+                                                        <input class="form-control" type="text" id="externalized-sftp-host-key" placeholder="SHA256:…" autocomplete="off">
+                                                        <small class="form-text text-muted"><?php echo htmlspecialchars($lang->get('bck_externalized_sftp_host_key_help'), ENT_QUOTES, 'UTF-8'); ?></small>
+                                                    </div>
                                                     <div class="row mb-3">
                                                         <div class="col-8">
                                                             <label class="form-label" for="externalized-sftp-host"><?php echo $lang->get('bck_externalized_sftp_host'); ?></label>
@@ -695,7 +708,7 @@ $recoveryPackageInformation = tpRecoveryPackageGetDisplayInformation($SETTINGS, 
                                                     <div class="col-9">
                                                         <?php echo $lang->get('bck_externalized_run_after_scheduled'); ?>
                                                         <small class="form-text text-muted">
-                                                            <?php echo $lang->get('bck_externalized_run_after_scheduled_help'); ?>
+                                                            <?php echo htmlspecialchars($lang->get('bck_externalized_scheduled_copy_hint'), ENT_QUOTES, 'UTF-8'); ?>
                                                         </small>
                                                     </div>
                                                     <div class="col-3 d-flex justify-content-end align-items-start">

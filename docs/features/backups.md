@@ -24,6 +24,13 @@ Temporary decrypted restore files and SQL extracted from packages also request
 owner-only `0600` permissions before writing. Failed decryption attempts remove
 their temporary output before trying another key.
 
+New decrypted restore files also live in private `0700` staging directories,
+removed after use. Maintenance removes abandoned staging and old flat restore
+remnants after a day, and expired, abandoned recovery downloads after a day.
+Recovery Package downloads are created with owner-only `0600` permissions.
+Persistent archives and their metadata are excluded from the generic seven-day
+files-directory purge; the configured backup retention is responsible for them.
+
 Existing backup archives are not changed automatically. The System Health file
 integrity permission repair plan can restrict them; the CLI option
 `--deep-permissions` also checks the contents of `storage/backups`.
@@ -45,6 +52,20 @@ The on-the-fly backup allows you to create an immediate backup of your database.
 6. Click `Perform backup`
 
 > 💡 Store your encryption key in a safe place. Without it, you will not be able to restore the backup.
+
+Manual encryption keys are used exactly as entered, including special characters.
+The server refuses an empty key and a key longer than 4,096 bytes. A manual backup
+also refuses to start while background tasks are running: retry once they have
+finished. Restore also tries the historical HTML-encoded
+form for backups created by older releases. New SQL dumps preserve newlines,
+literal backslashes and binary bytes; this cannot repair data already changed
+inside an older dump.
+
+Some historical manual-backup requests also passed the key through input
+purification, which could strip tag-like fragments such as `<...>`. The original
+typed key and its HTML-encoded form cannot reproduce that lossy transformation
+in every case. For such an old archive, supply the effective key used by the
+historical release or recover it with that release; retain the original archive.
 
 When **Include documents** is enabled, Teampass creates a `.tpbackup` package containing the database and supported document files. Otherwise, it creates a legacy encrypted SQL backup.
 
@@ -89,6 +110,41 @@ To restore your database from a backup:
 
 > ⚠️ A restore operation will replace your current database. All connected users will be disconnected and you will be logged out automatically.
 
+Web preparation checks archive decryption, package integrity and document targets
+before creating an authorization bound to the archive's SHA256 digest. It does
+not parse the SQL dump. The CLI validates its complete dialect, schema and original
+instance key before changing any table, collecting SQL inventory and embedded
+metadata in one streaming pass. Compatible
+schema levels can be restored across patch releases; an external metadata file
+alone is not proof of compatibility. Backups from another master key require
+the [disaster-recovery procedure](../install/disaster-recovery.md).
+
+The CLI refuses to start while a backup or background handler is running. During
+import a persistent hold blocks web/API access and scheduled processing even
+while configuration tables are replaced. After successful import it invalidates
+web/API credentials (including legacy API keys and session material), pairing and
+temporary tokens, queued tasks, idempotency results and Secure Send links (with
+lifecycle audit), and resets offline sync's
+generation. Backup schedules and LAPR are disabled; maintenance remains enabled.
+Review decryption, documents, permissions and authentication before reopening,
+issuing new API tokens, pairing devices and enabling schedules deliberately.
+
+A failed or killed import can leave a partial database: DDL is not globally
+rollbackable. The private `storage/logs/teampass_restore.pending` hold remains in
+that case. Keep cron stopped and complete an operator-controlled recovery before
+removing that hold; never remove it merely to dismiss a maintenance message.
+Keep the original encrypted archive and the original authorization token. Retry
+the same command with `--resume`, using the same operating-system account (or an
+authorized root operator). This restarts the entire import, rechecking the archive
+digest, schema and master key. The private hold contains the original authorization,
+settings and encrypted key candidates, so retry works even if the database's
+authorization/settings tables have already been replaced. The original token's
+initial expiry does not prevent continuation through that private journal.
+Other tokens and changed archives are refused. A successful CLI run removes its
+hold. A handled failure before the first import statement releases a newly created
+hold automatically and restores the preceding maintenance state. An already-held
+interrupted restore remains closed on a failed resume attempt.
+
 ### Exclusive mode
 
 Before starting a backup or restore operation, Teampass checks if other users are connected. If so, a dialog will appear allowing you to:
@@ -124,6 +180,16 @@ Navigate to the `Scheduled` tab to configure automated backups:
 
 When **Include documents** is enabled, scheduled backups are generated as `.tpbackup` packages. Otherwise, they use the legacy encrypted SQL format.
 
+A requested document backup fails if its inventory is incomplete or cannot be
+read; it does not publish a package presented as complete. SQL backups require
+their metadata write to succeed. If that write fails after encryption, the SQL
+archive is retained and the operation reports failure. A retention failure is
+also reported, even when the new archive was created successfully; it does not
+prevent the externalized copy of that new archive, which is queued before
+retention runs. Failed backup
+runs do not purge previous archives: retention only runs after a successful new
+backup. Repair the reported storage or document problem before retrying.
+
 ### Email notifications
 
 You can enable email reports for scheduled backups:
@@ -136,6 +202,14 @@ You can enable email reports for scheduled backups:
 > 💡 Email settings must be configured in Teampass options for notifications to work.
 
 When externalized backups are configured to run after scheduled backups, Teampass sends a single consolidated report after the externalized step completes. No separate scheduled-only email is sent for that run.
+
+The externalized step copies that exact encrypted archive and verifies its SHA256
+digest while staging; it does not run another database dump or disconnect users
+again. Retries use the same archive. Its format and document selection come from
+the scheduled backup, regardless of the independent externalized format options.
+Those options still apply to manual or independently scheduled externalized runs.
+Previously queued post-backup jobs without a source digest fail safely after an
+upgrade: run a new scheduled backup to queue a verified copy.
 
 When the in-app notification centre is enabled, every active administrator also receives a durable alert if a scheduled backup fails, an externalized backup exhausts its retries, or a successful scheduled backup cannot queue its configured externalization. These alerts are independent of the optional email report settings and link directly to the Backups page. Successful backups do not generate in-app alerts.
 
@@ -197,7 +271,7 @@ Navigate to the `Externalized` tab to configure the external destination:
 | Target directory / remote path / object prefix | Where externalized backup files are stored |
 | Format | `.tpbackup` package or `Legacy encrypted SQL` |
 | Include documents | Force the `.tpbackup` format and include supported document files |
-| Run after scheduled backup | Queue an externalized backup after each successful scheduled backup |
+| Run after scheduled backup | After each successful scheduled backup, copy that exact encrypted archive to the destination (see [Email notifications](#email-notifications) for the details) |
 | Schedule externalized backups | Run externalized backups using their own schedule |
 | Frequency | `Daily`, `Weekly`, or `Monthly` |
 | Time | Time of day to run the externalized backup |
@@ -213,9 +287,9 @@ Navigate to the `Externalized` tab to configure the external destination:
 | Destination | Required information |
 |-------------|----------------------|
 | Local directory / mounted share | A writable directory outside Teampass directories |
-| SFTP | Host, port, username, authentication method, and writable remote path |
-| WebDAV | WebDAV URL, username, password, and writable remote path |
-| S3 | Endpoint, region, bucket, access key, secret key, path-style option, and optional object prefix |
+| SFTP | Host, port, server host key fingerprint (SHA256), username, authentication method, and writable remote path |
+| WebDAV | WebDAV URL, username, password, and writable remote path; *Allow an unencrypted HTTP endpoint* only for an `http://` URL on a trusted private network |
+| S3 | Endpoint, region, bucket, access key, secret key, path-style option, and optional object prefix; *Allow an unencrypted HTTP endpoint* only for an `http://` endpoint on a trusted private network |
 
 For SMB/CIFS shares without Unix permission support, configure restrictive mount
 options such as `file_mode=0600,dir_mode=0700`, with `uid`/`gid` matching the PHP
@@ -223,6 +297,25 @@ worker account and appropriate server-side ACLs. Local externalized backups
 also stage their temporary plaintext SQL dump on that destination.
 
 For SFTP, the remote directory must already exist. For WebDAV, the remote path must already exist and be writable. For S3, the bucket must already exist and the credentials must allow listing, uploading, downloading, and deleting objects in the configured prefix.
+
+SFTP requires the server's **OpenSSH SHA256 host key fingerprint**, obtained from
+its administrator over a trusted channel (for example, `ssh-keygen -lf server_host_key.pub -E sha256`).
+Verify the fingerprint independently before saving it. Existing configurations
+must supply it after upgrading; there is no automatic first-use trust. The key
+is checked before password or private-key authentication on every connection.
+A key rotation requires independent verification and an explicit settings update.
+If the server offers several host key algorithms, configure the fingerprint of
+the key negotiated by the client; do not accept a new key merely to clear an error.
+
+WebDAV and custom S3 endpoints use HTTPS by default. An administrator can explicitly
+enable **Allow an unencrypted HTTP endpoint** for trusted LAN/Docker endpoints
+(for example a private MinIO service). This opt-in is off by default; loopback
+development endpoints remain supported. HTTP exposes traffic, metadata and WebDAV
+Basic credentials to network observers. S3 signs requests rather than sending its
+secret key, and archives remain authenticated-encrypted, but HTTPS is recommended
+for both transports. URLs containing embedded credentials are always refused;
+use the dedicated credential fields. TLS certificate verification and redirect
+protections remain enabled independently of this opt-in.
 
 > 💡 Leave the S3 endpoint empty when using AWS S3. Set it when using an S3-compatible provider.
 

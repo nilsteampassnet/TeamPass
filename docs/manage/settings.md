@@ -157,7 +157,7 @@ Options governing the REST API and the clients built on it (browser extension, m
 
 | Option | Description |
 |--------|-------------|
-| **Allow Secure Send from API clients** (`secure_send_api_enabled`) | Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, under the same policy as the web interface. Also requires **User can propose One-Time-View links**. Default: off. See [Secure Send through the API](../api/secure-send.md) |
+| **Allow Secure Send from API clients** (`secure_send_api_enabled`) | Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, and for notes when notes are allowed, under the same policy as the web interface. Listing and revoking links through the API do not depend on it. Also requires **User can propose One-Time-View links**. Default: off. See [Secure Send through the API](../api/secure-send.md) |
 | **Offline synchronization window (days)** (`offline_sync_window_days`) | How long a mobile device may stay offline and still catch up incrementally when it reconnects. Beyond this delay the device rebuilds its local cache instead. Default: 90. Set to 0 for no limit |
 | **Allow the browser extension to save passkeys** (`webauthn_provider_enabled`) | *Browser Extension* tab. Lets the extension keep the passkeys of third-party sites in items and sign in with them. Default: off. See [Passkeys](../features/passkeys.md) |
 | **Notify users when a passkey is saved** (`webauthn_email_on_add`) | *Browser Extension* tab. Emails the user who saved a passkey. Default: on |
@@ -183,7 +183,7 @@ Item and folder behaviour.
 | **Enable favourites** | Activates the Favourites feature (see [Favourites](../features/favourites.md)) |
 | **Show copy icons** | Displays quick copy-to-clipboard icons on the item list row |
 | **Show item description** | Displays the description field in the item list |
-| **Show folder tree counters** | Adds item counts next to folder names in the tree |
+| **Show counters in folder tree** | Shows three numbers next to each folder: items in the folder, items including its subfolders, and subfolders. A folder reached only through individual item access shows the number of items the user can open there. The option applies to every folder, read-only ones included. Changing it rebuilds each user's cached tree on their next folder load |
 | **Restricted search by default** | Search is scoped to a subset of folders unless the user explicitly widens it |
 | **Highlight selected items** | Highlights the currently selected item row |
 | **Highlight favourite items** | Applies a visual marker to favourite items in the item list |

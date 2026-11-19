@@ -26,6 +26,7 @@ require_once __DIR__ . '/../../app/sources/secure_send_retention.php';
 require_once __DIR__ . '/../../app/sources/secret_settings_logic.php';
 require_once __DIR__ . '/../../app/sources/storage_folder_logic.php';
 require_once __DIR__ . '/../../app/sources/emails_transport_logic.php';
+require_once __DIR__ . '/../../app/sources/setting_value_logic.php';
 
 /** Observe only persistence calls made by the real save_option_change handler. */
 final class DB
@@ -103,7 +104,7 @@ class SecureSendRetentionSettingsTest extends TestCase
         self::assertIsInt($end, "Missing case 'get_values_for_statistics': in app/sources/admin.queries.php");
         self::assertGreaterThan($start, $end, "case 'get_values_for_statistics': must follow save_option_change in app/sources/admin.queries.php");
         $handler = substr($source, $start, $end - $start);
-        $handler = str_replace(["require_once 'main.functions.php';", "require_once __DIR__ . '/secure_send_retention.php';", "require_once __DIR__ . '/emails_transport_logic.php';"], '', $handler);
+        $handler = str_replace(["require_once 'main.functions.php';", "require_once __DIR__ . '/secure_send_retention.php';", "require_once __DIR__ . '/emails_transport_logic.php';", "require_once __DIR__ . '/setting_value_logic.php';"], '', $handler);
         SessionManager::$encrypted = $encrypted;
         $session = SessionManager::getSession();
         $lang = new class {

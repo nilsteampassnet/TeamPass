@@ -27,11 +27,17 @@ While logged in as an administrator,
 
 In order to be imported, the CSV requires to be build following a specific format.
 
-* The first line must be a header,
-* The header must contain 5 or 6 columns (with or without folder),
+* The first line must be a header naming the columns,
 * The separator character is a comma `,`,
-* The encalupsation character is a double quotes `"`,
-* Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments` , `Folder` (is optional).
+* The enclosure character is a double quote `"`,
+* Expected columns are: `label` , `login` , `password` , `url` , `comments` , `folder` (is optional).
+
+Columns are matched by name, not by position, so their order does not matter:
+
+* Header names are case-insensitive (`Label` and `label` are the same column), and the byte order mark written by Excel's *CSV UTF-8* format is ignored.
+* `description` is accepted instead of `comments`, and `pw` instead of `password`. These are the names written by the TeamPass CSV export, so an exported file can be imported again; its other columns (`id`, `email`, `tag`, `totp`, ...) are ignored.
+* The `label` column is mandatory. A file without it is rejected with an error. A row with an empty label is skipped.
+* The password is imported exactly as written, including leading and trailing spaces.
 
 #### Example with folder
 
@@ -90,10 +96,12 @@ For every entry, TeamPass maps:
 
 * the **title / name** → item label,
 * the **username / login** → item login,
-* the **password** → item password,
+* the **password** → item password, imported exactly as exported (spaces, quotes, `&`, backslashes and non-Latin characters included),
 * the **URL** → item URL,
 * the **notes** → item description,
 * the **folder / group / grouping** → folder path (created on import).
+
+In the CSV exports of LastPass, 1Password and KeePassXC, a quote inside a value is marked by doubling it; a backslash is kept as a plain character, so a value ending with `\` is imported whole.
 
 Folder handling follows the same rule as the CSV import: **folders are created only when the user has a `Manager` role**; otherwise items are imported flat into the selected target folder.
 

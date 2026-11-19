@@ -444,24 +444,27 @@ if (null !== $post_type) {
                             ) {
                                 // Run query
                                 $dataItem = DB::queryFirstRow(
-                                    'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key
+                                    'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS increment_id
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-                                    WHERE user_id = %i AND i.id = %i',
+                                    WHERE s.user_id = %i AND i.id = %i',
                                     $session->get('user-id'),
                                     $record['id']
                                 );
 
-                                // Uncrypt PW
+                                // Uncrypt PW (migration-aware sharekey)
                                 if (DB::count() === 0 || empty($dataItem['pw']) === true) {
                                     // No share key found OR item has no password
                                     $pw = '';
                                 } else {
                                     $pw = teampassDecryptPasswordValue(
                                         $dataItem['pw'],
-                                        decryptUserObjectKey(
+                                        decryptUserObjectKeyWithMigration(
                                             $dataItem['share_key'],
-                                            $session->get('user-private_key')
+                                            $session->get('user-private_key'),
+                                            $session->get('user-public_key'),
+                                            (int) $dataItem['increment_id'],
+                                            'sharekeys_items'
                                         ),
                                         (int) ($dataItem['pw_len'] ?? 0),
                                         (string) ($dataItem['pw_iv'] ?? '')
@@ -685,24 +688,27 @@ if (null !== $post_type) {
                         } else {
                             // Run query
                             $dataItem = DB::queryFirstRow(
-                                'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key
+                                'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS increment_id
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-                                WHERE user_id = %i AND i.id = %i',
+                                WHERE s.user_id = %i AND i.id = %i',
                                 $session->get('user-id'),
                                 $record['id']
                             );
 
-                            // Uncrypt PW
+                            // Uncrypt PW (migration-aware sharekey)
                             if (DB::count() === 0 || empty($dataItem['pw']) === true) {
                                 // No share key found OR password is empty
                                 $pw = '';
                             } else {
                                 $pw = teampassDecryptPasswordValue(
                                     $dataItem['pw'],
-                                    decryptUserObjectKey(
+                                    decryptUserObjectKeyWithMigration(
                                         $dataItem['share_key'],
-                                        $session->get('user-private_key')
+                                        $session->get('user-private_key'),
+                                        $session->get('user-public_key'),
+                                        (int) $dataItem['increment_id'],
+                                        'sharekeys_items'
                                     ),
                                     (int) ($dataItem['pw_len'] ?? 0),
                                     (string) ($dataItem['pw_iv'] ?? '')
@@ -1145,7 +1151,7 @@ if (null !== $post_type) {
  *
  * @return string
  */
-function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '\\')
+function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '')
 {
     $buffer = fopen('php://temp', 'r+');
     if ($buffer === false) {
@@ -1153,10 +1159,11 @@ function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '
     }
     fputcsv($buffer, $fields, $delimiter, $enclosure, $escape_char);
     rewind($buffer);
-    $csv = fgets($buffer);
+    // The whole record: a quoted field can hold line breaks, so it may span lines
+    $csv = stream_get_contents($buffer);
     fclose($buffer);
 
-    return $csv;
+    return $csv === false ? '' : $csv;
 }
 
 

@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.2.4');
 define("UPGRADE_MIN_DATE", "1794554343");
-define('TP_VERSION_MINOR', '3');
+define('TP_VERSION_MINOR', '4');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -75,6 +75,14 @@ if (!defined('TEAMPASS_PUBLIC')) {
 }
 if (!defined('TEAMPASS_SECRETS')) {
     define('TEAMPASS_SECRETS', TEAMPASS_ROOT . '/secrets');
+}
+
+require_once __DIR__ . '/../sources/restore_guard.php';
+if (PHP_SAPI !== 'cli' && tpBackupRestoreIsInProgress()) {
+    http_response_code(503);
+    header('Cache-Control: no-store');
+    header('Retry-After: 60');
+    exit('TeamPass database restoration is in progress.');
 }
 
 // Tasks Handler

@@ -37,6 +37,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/runtime_files.functions.php';
 require_once __DIR__ . '/backup_capture.php';
+require_once __DIR__ . '/backup_restore.php';
+require_once __DIR__ . '/backup_copy.php';
 require_once __DIR__ . '/recovery_package_logic.php';
 require_once __DIR__ . '/recovery_package_state.functions.php';
 
@@ -125,9 +127,9 @@ function tpBackupOpenProtectedFile(string $path, string $mode = 'x+b', bool $own
  *
  * @return array{success: bool, message: string}
  */
-function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, string $encryptionKey): array
+function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, string $encryptionKey, bool $ownerOnly = false): array
 {
-    $handle = tpBackupOpenProtectedFile($destFile);
+    $handle = tpBackupOpenProtectedFile($destFile, 'x+b', $ownerOnly);
     if ($handle === false) {
         return ['success' => false, 'message' => 'Could not create or protect temporary encrypted backup file.'];
     }
@@ -138,7 +140,7 @@ function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, stri
         return $result;
     }
 
-    $handle = tpBackupOpenProtectedFile($destFile, 'r+b');
+    $handle = tpBackupOpenProtectedFile($destFile, 'r+b', $ownerOnly);
     if ($handle === false) {
         return ['success' => false, 'message' => 'Could not verify encrypted backup file protection.'];
     }
@@ -259,6 +261,9 @@ function tpBackupMapLegacyScheduledOutputDir(string $requestedDir, array $SETTIN
 
 function tpBackupResolveDirectoryCreationPath(string $path): string
 {
+    if (str_contains($path, '://') || preg_match('#(?:^|[\\\\/])\.\.(?:[\\\\/]|$)#', $path) === 1) {
+        return '';
+    }
     $path = rtrim($path, '/\\');
     if ($path === '') {
         return '';
@@ -353,6 +358,13 @@ function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS
 
     $dirReal = realpath($outputDir);
     if ($dirReal === false || !is_dir($dirReal)) {
+        return ['success' => false, 'path' => ''];
+    }
+    $insideAllowedBase = false;
+    foreach ($allowedBaseDirs as $base) {
+        $insideAllowedBase = $insideAllowedBase || tpBackupIsResolvedPathInsideDirectory($dirReal, (string) $base);
+    }
+    if (!$insideAllowedBase) {
         return ['success' => false, 'path' => ''];
     }
 
@@ -467,6 +479,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // Best effort: a fatal error cannot run the normal cleanup path, so the
         // next backup invocation removes only stale temporary dumps.
         tpBackupPurgeStaleDatabasePartFiles((string) $outputDir);
+        tpBackupPurgeOldTemporaryDirectories((string) $outputDir);
 
         // Generate filename
         $token = GenerateCryptKey(20, false, true, true, false, true);
@@ -527,12 +540,17 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 }
             }
 
+            // A TeamPass backup never captures another application's tables in a shared database.
+            $tables = array_values(array_filter($tables, static fn (string $table): bool => str_starts_with($table, prefixTable(''))));
             // Filter tables if requested
             if (!empty($includeTables) && is_array($includeTables)) {
                 $tables = array_values(array_intersect($tables, $includeTables));
             }
             if (!empty($excludeTables) && is_array($excludeTables)) {
                 $tables = array_values(array_diff($tables, $excludeTables));
+            }
+            if ($tables === []) {
+                throw new RuntimeException('No TeamPass tables were found to back up.');
             }
 
             foreach ($tables as $tableName) {
@@ -546,9 +564,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 
                 $row2 = DB::queryFirstRow('SHOW CREATE TABLE `' . $tableName . '`');
                 if (!is_array($row2) || empty($row2['Create Table'])) {
-                    // Skip table if structure cannot be fetched
-                    $write($handle, "\n");
-                    continue;
+                    throw new RuntimeException('A database table definition could not be captured.');
                 }
 
                 if (preg_match('/\bENGINE\s*=\s*InnoDB\b/i', $row2['Create Table']) !== 1) {
@@ -582,7 +598,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                             }
 
                             // Escape and keep newlines
-                            $value = addslashes(preg_replace("/\n/", '\\n', $value));
+                            $value = tpBackupEscapeSqlString($value);
                             $values[] = '"' . $value . '"';
                         }
 
@@ -710,6 +726,18 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             ];
         }
 
+        if ($encrypted) {
+            $extra = is_array($options['metadata'] ?? null) ? $options['metadata'] : [];
+            if (array_key_exists('schema_level', $options) && $schemaLevel === '') {
+                $extra['schema_level'] = null;
+            }
+            $meta = tpWriteBackupMetadata($filepath, (string) ($options['files_version'] ?? ''), $schemaLevel, $extra);
+            if (!$meta['success']) {
+                return ['success' => false, 'filename' => $filename, 'filepath' => $filepath,
+                    'encrypted' => true, 'size_bytes' => (int) (filesize($filepath) ?: 0),
+                    'message' => 'Backup metadata could not be written. The encrypted archive was retained.'];
+            }
+        }
         // Gestion de filesize sans @
         $size = 0;
         if (is_file($filepath)) {
@@ -727,6 +755,22 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             'size_bytes' => (int) $size,
             'message' => '',
         ];
+}
+
+/** Escape MySQL string bytes once, preserving actual newlines and literal backslashes. */
+function tpBackupEscapeSqlString(string $value): string
+{
+    return strtr($value, ["\\" => "\\\\", "\0" => "\\0", "\n" => "\\n",
+        "\r" => "\\r", "\x1a" => "\\Z", '"' => '\\"', "'" => "\\'"]);
+}
+
+/** Keep raw manual passphrases first; also read backups made with historical HTML encoding. */
+function tpBackupManualKeyCandidates(string $key): array
+{
+    if ($key === '') {
+        return [];
+    }
+    return array_values(array_unique([$key, (string) filter_var($key, FILTER_SANITIZE_FULL_SPECIAL_CHARS)]));
 }
 
 
@@ -1204,7 +1248,7 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
         $filepath = rtrim($outputDir, '/\\') . DIRECTORY_SEPARATOR . $filename;
         $encryptedTmpPath = $workDir . DIRECTORY_SEPARATOR . 'recovery.encrypted';
 
-        $encryptResult = tpPrepareFileWithDefuseNormalized('encrypt', $zipPath, $encryptedTmpPath, $passphrase);
+        $encryptResult = tpBackupEncryptProtectedFile($zipPath, $encryptedTmpPath, $passphrase, true);
         if ($encryptResult['success'] !== true || is_file($encryptedTmpPath) === false) {
             return [
                 'success' => false,
@@ -1466,6 +1510,10 @@ function tpBackupValidateExternalizedSftpConfig(array $config): array
         return ['success' => false, 'reason' => 'SFTP_INVALID_PORT', 'path' => ''];
     }
 
+    if (preg_match('/^SHA256:[A-Za-z0-9+\/]{43}=?$/D', trim((string) ($config['host_key_sha256'] ?? ''))) !== 1) {
+        return ['success' => false, 'reason' => 'SFTP_HOST_KEY_REQUIRED', 'path' => ''];
+    }
+
     $username = trim(str_replace("\0", '', (string)($config['username'] ?? '')));
     if ($username === '') {
         return ['success' => false, 'reason' => 'SFTP_MISSING_USERNAME', 'path' => ''];
@@ -1586,6 +1634,11 @@ function tpBackupOpenExternalizedSftpConnection(array $config): array
 
     try {
         $sftp = new \phpseclib3\Net\SFTP($host, $port, 15);
+        $serverKey = $sftp->getServerPublicHostKey();
+        if (!is_string($serverKey) || !tpBackupSftpHostKeyMatches($serverKey, (string) $config['host_key_sha256'])) {
+            $sftp->disconnect();
+            return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_HOST_KEY_MISMATCH', 'destination_type' => 'sftp'];
+        }
         if ($authType === 'private_key') {
             if (class_exists('\\phpseclib3\\Crypt\\PublicKeyLoader') === false) {
                 return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_LIBRARY_MISSING', 'destination_type' => 'sftp'];
@@ -1613,6 +1666,28 @@ function tpBackupOpenExternalizedSftpConnection(array $config): array
     } catch (Throwable) {
         return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_CONNECTION_FAILED', 'destination_type' => 'sftp'];
     }
+}
+
+/** Verify an OpenSSH SHA256 host fingerprint before sending any authentication material. */
+function tpBackupSftpHostKeyMatches(string $publicKey, string $expected): bool
+{
+    $parts = preg_split('/\s+/', trim($publicKey));
+    $blob = is_array($parts) && count($parts) >= 2 ? base64_decode($parts[1], true) : false;
+    if (!is_string($blob) || $blob === '' || preg_match('/^SHA256:[A-Za-z0-9+\/]{43}=?$/D', trim($expected)) !== 1) {
+        return false;
+    }
+    return hash_equals(rtrim(trim($expected), '='), 'SHA256:' . rtrim(base64_encode(hash('sha256', $blob, true)), '='));
+}
+
+/** Prefer TLS; accept explicit administrator HTTP opt-in, never URL-embedded credentials. */
+function tpBackupRemoteUrlIsSecure(array $parts, bool $allowHttp = false): bool
+{
+    if (isset($parts['user']) || isset($parts['pass'])) {
+        return false;
+    }
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    return $scheme === 'https' || ($scheme === 'http'
+        && ($allowHttp || in_array(strtolower((string) ($parts['host'] ?? '')), ['localhost', '127.0.0.1', '[::1]', '::1'], true)));
 }
 
 /**
@@ -1700,7 +1775,7 @@ function tpBackupValidateExternalizedWebdavConfig(array $config): array
 
     $parts = parse_url($baseUrl);
     $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-    if (($scheme !== 'http' && $scheme !== 'https') || empty($parts['host'])) {
+    if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts, (int) ($config['allow_http'] ?? 0) === 1)) {
         return ['success' => false, 'reason' => 'WEBDAV_URL_INVALID', 'path' => ''];
     }
 
@@ -1751,6 +1826,7 @@ function tpBackupOpenExternalizedWebdavConnection(array $config): array
 
     $cleanConfig = [
         'url' => rtrim(trim((string) ($config['url'] ?? '')), '/'),
+        'allow_http' => (int) ($config['allow_http'] ?? 0) === 1 ? 1 : 0,
         'username' => trim(str_replace("\0", '', (string) ($config['username'] ?? ''))),
         'password' => (string) ($config['password'] ?? ''),
         'remote_path' => (string) $validated['path'],
@@ -2103,7 +2179,7 @@ function tpBackupValidateExternalizedS3Config(array $config): array
 
         $parts = parse_url($endpoint);
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        if (($scheme !== 'http' && $scheme !== 'https') || empty($parts['host'])) {
+        if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts, (int) ($config['allow_http'] ?? 0) === 1)) {
             return ['success' => false, 'reason' => 'S3_ENDPOINT_INVALID', 'path' => ''];
         }
     }
@@ -2172,6 +2248,7 @@ function tpBackupOpenExternalizedS3Connection(array $config): array
 
     $cleanConfig = [
         'endpoint' => rtrim($endpoint, '/'),
+        'allow_http' => (int) ($config['allow_http'] ?? 0) === 1 ? 1 : 0,
         'region' => $region,
         'bucket' => trim(str_replace("\0", '', (string) ($config['bucket'] ?? ''))),
         'access_key' => trim(str_replace("\0", '', (string) ($config['access_key'] ?? ''))),
@@ -3822,6 +3899,7 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
     }
 
     $deleted = 0;
+    $failed = 0;
     $remaining = $listed['files'];
     if ($retentionDays > 0) {
         $cutoff = time() - ($retentionDays * 86400);
@@ -3831,10 +3909,12 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
             }
 
             $delete = tpBackupDeleteExternalizedBackup($destinationType, (string) $listed['path'], (string) $entry['name'], $SETTINGS, $sftpConfig);
-            if ($delete['success'] === true && $delete['deleted'] === true) {
-                $deleted++;
+            if ($delete['success'] === true) {
+                $deleted += $delete['deleted'] === true ? 1 : 0;
+                unset($remaining[$idx]);
+            } else {
+                $failed++;
             }
-            unset($remaining[$idx]);
         }
     }
 
@@ -3845,11 +3925,13 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
             $delete = tpBackupDeleteExternalizedBackup($destinationType, (string) $listed['path'], (string) $entry['name'], $SETTINGS, $sftpConfig);
             if ($delete['success'] === true && $delete['deleted'] === true) {
                 $deleted++;
+            } elseif ($delete['success'] === false) {
+                $failed++;
             }
         }
     }
 
-    return ['success' => true, 'reason' => '', 'deleted' => $deleted];
+    return ['success' => $failed === 0, 'reason' => $failed > 0 ? 'RETENTION_DELETE_FAILED' : '', 'deleted' => $deleted];
 }
 
 /**
@@ -3921,6 +4003,7 @@ function tpBackupCanonicalJson(array $payload): string
 /**
  * Return the SHA-256 hash of a file, or '' when it cannot be read.
  *
+ * @phpstan-impure The file can change between successive restore checks.
  * @return string
  */
 function tpBackupFileSha256(string $path): string
@@ -3972,6 +4055,9 @@ function tpBackupCreateTemporaryDirectory(string $baseDir): string
  */
 function tpBackupRemoveTemporaryDirectory(string $path): bool
 {
+    if (is_link($path)) {
+        return false;
+    }
     $real = realpath($path);
     if ($real === false || is_dir($real) === false) {
         return true;
@@ -4048,6 +4134,9 @@ function tpBackupPurgeOldTemporaryDirectories(string $baseDir, int $olderThanSec
         }
 
         $candidate = $baseReal . DIRECTORY_SEPARATOR . $entry;
+        if (is_link($candidate)) {
+            continue;
+        }
         $candidateReal = realpath($candidate);
         if (
             $candidateReal === false
@@ -4662,6 +4751,11 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
             ? $documentCatalog['summary']
             : tpBackupBuildEmptyDocumentSummary($includeDocuments, $includeDocuments ? 'included' : 'not_requested');
         $warnings = is_array($documentSummary['warnings'] ?? null) ? $documentSummary['warnings'] : [];
+
+        if ($includeDocuments && $warnings !== []) {
+            return ['success' => false, 'filename' => '', 'filepath' => '', 'encrypted' => false,
+                'size_bytes' => 0, 'message' => 'Document collection is incomplete. Check missing or unreadable files before retrying.'];
+        }
 
         $manifest = [
             'backup_format' => tpBackupGetPackageFormatId(),
@@ -5390,9 +5484,14 @@ function tpDefuseDecryptWithCandidates(
  */
 function tpBackupRestoreTempPath(string $extension): string
 {
+        $privateDir = tpBackupCreateTemporaryDirectory((string) sys_get_temp_dir());
+        if ($privateDir === '') {
+            return '';
+        }
         $extension = trim($extension, ". \t\n\r\0\x0B");
-        if ($extension === '') {
-            $extension = 'tmp';
+        if (preg_match('/^[A-Za-z0-9]{1,10}$/D', $extension) !== 1) {
+            tpBackupRemoveTemporaryDirectory($privateDir);
+            return '';
         }
 
         for ($i = 0; $i < 10; $i++) {
@@ -5402,14 +5501,64 @@ function tpBackupRestoreTempPath(string $extension): string
                 $token = str_replace('.', '', uniqid('', true));
             }
 
-            $path = rtrim((string) sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR
+            $path = $privateDir . DIRECTORY_SEPARATOR
                 . 'tpbackup_restore_' . getmypid() . '_' . time() . '_' . $token . '.' . $extension;
             if (file_exists($path) === false) {
                 return $path;
             }
         }
 
+        tpBackupRemoveTemporaryDirectory($privateDir);
         return '';
+}
+
+/** Remove only a private restore staging file and its now-empty generated directory. */
+function tpBackupCleanupRestoreFile(string $path): bool
+{
+    $directory = dirname($path);
+    $base = realpath((string) sys_get_temp_dir());
+    $parent = realpath(dirname($directory));
+    if ($base === false || $parent === false || is_link($directory)
+        || tpBackupNormalizePathForCompare($base) !== tpBackupNormalizePathForCompare($parent)
+        || preg_match('/^tpbackup_tmp_[a-f0-9]{16}$/D', basename($directory)) !== 1
+        || !str_starts_with(basename($path), 'tpbackup_restore_')) {
+        return false;
+    }
+    $removed = !file_exists($path) || @unlink($path);
+    if ($removed && is_dir($directory)) {
+        @rmdir($directory);
+    }
+    return $removed;
+}
+
+/** Keep persistent archives and sidecars outside the generic seven-day temporary-file purge. */
+function tpBackupIsPersistentArchiveFilename(string $name): bool
+{
+    return preg_match('/^(?:scheduled-|externalized-|pre-upgrade-|[0-9]{9,}-)[A-Za-z0-9._-]+\.(?:sql|tpbackup)(?:\.meta\.json)?$/D', $name) === 1;
+}
+
+/** Purge old flat restore remnants and abandoned recovery downloads from previous releases. */
+function tpBackupPurgeSensitiveTemporaryFiles(string $directory, int $age = 86400): array
+{
+    $stats = ['deleted' => 0, 'failed' => 0];
+    $base = realpath($directory);
+    if ($base === false || !is_dir($base)) {
+        return $stats;
+    }
+    foreach (scandir($base) ?: [] as $name) {
+        if (preg_match('/^(?:(?:tpbackup|defuse_temp)_restore_[A-Za-z0-9_.-]+\.(?:sql|zip|tmp)|recovery-[A-Za-z0-9_-]+\.tprecovery)$/D', $name) !== 1) {
+            continue;
+        }
+        $path = $base . DIRECTORY_SEPARATOR . $name;
+        if (is_link($path) || !is_file($path)) {
+            continue;
+        }
+        $mtime = filemtime($path);
+        if ($mtime !== false && $mtime < time() - max(3600, $age)) {
+            $stats[@unlink($path) ? 'deleted' : 'failed']++;
+        }
+    }
+    return $stats;
 }
 
 /**
@@ -5530,6 +5679,15 @@ function tpBackupValidatePackageZipAndExtractSql(
         }
 
         try {
+            $inventory = tpRecoveryInspectZip($zip);
+            $free = disk_free_space(dirname($sqlDestFile));
+            if ($free === false || $free < $inventory['expanded_bytes'] + 67108864) {
+                return ['success' => false, 'error_code' => 'RECOVERY_SPACE_INSUFFICIENT', 'message' => 'Insufficient restore staging space.'];
+            }
+            $manifestStat = $zip->statName('manifest.json');
+            if (!is_array($manifestStat) || $manifestStat['size'] > 2097152) {
+                return ['success' => false, 'error_code' => 'MANIFEST_INVALID', 'message' => 'Invalid package manifest size.'];
+            }
             $manifestJson = $zip->getFromName('manifest.json');
             if (is_string($manifestJson) === false || trim($manifestJson) === '') {
                 return ['success' => false, 'error_code' => 'MANIFEST_MISSING', 'message' => 'Package manifest is missing.'];
@@ -5584,7 +5742,7 @@ function tpBackupValidatePackageZipAndExtractSql(
             }
 
             $expectedDbHash = is_scalar($database['sha256'] ?? null) ? (string) $database['sha256'] : '';
-            if ($expectedDbHash !== '' && hash_equals($expectedDbHash, tpBackupFileSha256($sqlDestFile)) === false) {
+            if (preg_match('/^[a-f0-9]{64}$/D', $expectedDbHash) !== 1 || hash_equals($expectedDbHash, tpBackupFileSha256($sqlDestFile)) === false) {
                 @unlink($sqlDestFile);
                 return ['success' => false, 'error_code' => 'DATABASE_CHECKSUM_INVALID', 'message' => 'Database checksum is invalid.'];
             }
@@ -5612,7 +5770,7 @@ function tpBackupValidatePackageZipAndExtractSql(
                         return ['success' => false, 'error_code' => 'DOCUMENT_ENTRY_MISSING', 'message' => 'A document entry is missing from package.'];
                     }
                     $expectedHash = is_scalar($entry['sha256'] ?? null) ? (string) $entry['sha256'] : '';
-                    if ($expectedHash !== '' && hash_equals($expectedHash, tpBackupZipEntrySha256($zip, $entryPath)) === false) {
+                    if (preg_match('/^[a-f0-9]{64}$/D', $expectedHash) !== 1 || hash_equals($expectedHash, tpBackupZipEntrySha256($zip, $entryPath)) === false) {
                         @unlink($sqlDestFile);
                         return ['success' => false, 'error_code' => 'DOCUMENT_CHECKSUM_INVALID', 'message' => 'A document checksum is invalid.'];
                     }
@@ -5627,6 +5785,9 @@ function tpBackupValidatePackageZipAndExtractSql(
                 'manifest_checksum' => hash('sha256', $manifestJson),
                 'warnings' => is_array($manifest['warnings'] ?? null) ? $manifest['warnings'] : [],
             ];
+        } catch (TeamPassRecoveryException $exception) {
+            @unlink($sqlDestFile);
+            return ['success' => false, 'error_code' => $exception->reason, 'message' => 'Invalid package archive.'];
         } finally {
             $zip->close();
         }
@@ -5655,7 +5816,7 @@ function tpBackupPreparePackageSqlForRestore(
 
         $dec = tpDefuseDecryptWithCandidates($packagePath, $tmpZip, $candidateKeys, $SETTINGS);
         if (empty($dec['success'])) {
-            @unlink($tmpZip);
+            tpBackupCleanupRestoreFile($tmpZip);
             return [
                 'success' => false,
                 'error_code' => 'DECRYPT_FAILED',
@@ -5677,7 +5838,7 @@ function tpBackupPreparePackageSqlForRestore(
             return $validated;
         } finally {
             if ($shouldKeepTmpZip === false) {
-                @unlink($tmpZip);
+                tpBackupCleanupRestoreFile($tmpZip);
             }
         }
 }
@@ -5697,7 +5858,7 @@ function tpBackupResolveDocumentRestoreTarget(array $entry, array $SETTINGS = []
         if ($storedName === '' && $packagePath !== '') {
             $storedName = tpBackupSafeStorageBasename(basename($packagePath));
         }
-        if ($packagePath === '' || $storedName === '') {
+        if ($packagePath === '' || $storedName === '' || str_starts_with($storedName, '.')) {
             return ['success' => false, 'error_code' => 'DOCUMENT_TARGET_INVALID', 'target_path' => ''];
         }
 
@@ -5708,6 +5869,9 @@ function tpBackupResolveDocumentRestoreTarget(array $entry, array $SETTINGS = []
             $filesDir = (string) ($SETTINGS['path_to_files_folder'] ?? '');
             $targetDir = rtrim($filesDir, '/\\') . DIRECTORY_SEPARATOR . 'kb_attachments';
         } elseif ($kind === 'user_avatar' && str_starts_with($packagePath, 'documents/user_avatars/') === true) {
+            if (!in_array(strtolower(pathinfo($storedName, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'], true)) {
+                return ['success' => false, 'error_code' => 'DOCUMENT_TARGET_INVALID', 'target_path' => ''];
+            }
             $targetDir = defined('TEAMPASS_ROOT')
                 ? ((string) TEAMPASS_ROOT . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'avatars')
                 : '';
@@ -6430,6 +6594,7 @@ function tpRestoreAuthorizationCreate(
                 'basename' => basename($resolvedPath),
                 'size' => is_file($resolvedPath) ? filesize($resolvedPath) : null,
                 'mtime' => is_file($resolvedPath) ? filemtime($resolvedPath) : null,
+                'sha256' => tpBackupFileSha256($resolvedPath),
             ],
             'source' => [
                 'serverScope' => $serverScope,

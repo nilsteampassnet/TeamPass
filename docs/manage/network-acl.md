@@ -7,7 +7,25 @@ The **Network ACL** feature lets administrators control which IPv4 addresses or 
 - **Blacklist** — always-deny list: any matching IP is blocked regardless of the whitelist.
 - **Whitelist** — exclusive allow list: when enabled, only IPs explicitly listed can reach TeamPass.
 
-Both lists can be used together or independently. Access control is evaluated on every request **before** the login page is reached.
+Both lists can be used together or independently. The shared HTTP runtime
+checks the policy before login processing, application pages, AJAX actions and
+the REST API (including preflight requests). A session opened on an allowed
+network does not exempt later requests from a different or newly blocked IP.
+
+The following entry points keep their separate authorization:
+
+- **Secure Send recipient pages**, on both the main and public sharing address,
+  use their link credentials and confirmation policy. They are not filtered by
+  these network lists. Selecting the main address does not make a link LAN-only.
+- **Installation and upgrade scripts** use their setup protections, so a missing
+  ACL table cannot prevent a required migration or repair.
+- **CLI scripts** do not represent an incoming HTTP client and are not filtered.
+
+Static resources and the WebSocket transport are not
+filtered by this PHP request guard. Use the web server, reverse proxy or
+firewall when a network restriction must cover the entire service. To limit
+Secure Send recipients by network, apply that policy on its dedicated public
+virtual host or proxy route.
 
 > :warning: **Important:** Before enabling the whitelist, make sure your own IP and the server IP are already added to the list. TeamPass automatically offers to add them when you save the settings, but verify them first to avoid locking yourself out.
 
@@ -34,6 +52,11 @@ TeamPass needs to determine the real client IP. Two modes are available:
 | **Reverse proxy / WAF** | A proxy or load balancer sits in front of TeamPass. The real IP is read from a proxy header (`X-Forwarded-For` or `X-Real-IP`). |
 
 In reverse proxy mode, the proxy header is only trusted when `REMOTE_ADDR` matches one of the configured **trusted proxies**. This prevents header spoofing from untrusted clients.
+
+**Compatibility:** changing forwarded-address parsing in reverse proxy mode also
+changes the address used for brute-force counters, audit logging and device-pairing
+rate limits, even when both ACL lists are disabled. Verify the detected address
+and trusted proxy configuration before updating.
 
 ---
 
@@ -123,10 +146,34 @@ List all proxy IPs or their CIDR in **Trusted proxies**, one per line:
 ```
 10.0.0.1
 10.0.0.2
-172.16.0.0/12
+192.0.2.10
 ```
 
-Only the leftmost IP in the `X-Forwarded-For` header that was injected by a trusted proxy is used as the client IP.
+TeamPass reads `X-Forwarded-For` from right to left, skips declared trusted
+proxies and uses the first non-trusted address. Values before that address
+cannot select the client IP. Declare intermediary proxies only, never an
+entire client network. Include the outgoing ranges published by your CDN or WAF
+provider too; otherwise that undeclared intermediary becomes the detected client
+and clients behind it share its address for filtering and rate limits.
+
+If every hop is declared trusted, TeamPass uses the rightmost header entry,
+written by the trusted peer itself. Earlier client-supplied entries cannot choose
+this fallback. Prefer specific proxy addresses to broad ranges that include users.
+A missing header or an invalid/IPv6 hop encountered during resolution yields no
+usable client address: an enabled ACL then refuses access rather than using
+`REMOTE_ADDR` as the client. `X-Real-IP` accepts one IPv4 address, not a chain.
+
+At a single Internet-facing Nginx proxy, overwrite client-supplied headers:
+
+```nginx
+proxy_set_header X-Forwarded-For $remote_addr;
+proxy_set_header X-Real-IP $remote_addr;
+```
+
+For several proxies, the edge must remove untrusted incoming forwarding
+headers; subsequent trusted proxies can append their observed peer. Keep the
+backend reachable only from the intended proxies. Test the resulting client
+address before enabling or changing a whitelist.
 
 ### HTTPS terminated by the proxy
 
@@ -182,3 +229,14 @@ Then clear the APCu cache (restart PHP-FPM or run `php -r "apcu_clear_cache();"`
 ### Rules are not applied after saving
 
 TeamPass caches settings in APCu for 60 seconds. If you have APCu enabled, the new rules may take up to one minute to be picked up by existing PHP workers.
+
+### Access is refused after an ACL storage error
+
+When either list is enabled, TeamPass refuses access if its ACL table is missing
+or the rules cannot be read. A storage failure never disables an enabled policy.
+The response does not disclose database details; the PHP error log records a
+generic ACL diagnostic without SQL or credentials. Check database permissions
+and complete any required installation/upgrade before reopening the application.
+When both lists are disabled, no ACL table is required.
+Policy refusals return HTTP 403; unavailable enabled ACL storage returns HTTP
+503. API and AJAX responses contain a generic JSON error, without the rules.

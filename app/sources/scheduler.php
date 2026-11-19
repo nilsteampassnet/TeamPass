@@ -39,6 +39,11 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
+require_once __DIR__ . '/restore_guard.php';
+if (tpBackupRestoreIsInProgress()) {
+    exit(0);
+}
+
 // Load config
 require_once __DIR__.'/../config/include.php';
 require_once __DIR__.'/../config/settings.php';

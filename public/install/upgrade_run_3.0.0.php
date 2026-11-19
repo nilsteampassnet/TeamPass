@@ -1262,11 +1262,12 @@ if (mysqli_fetch_row($mysqli_result)){
 }
 
 // Alter table otv
+// Replayed upgrades must preserve NULL item IDs used by standalone Secure Send notes.
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "otv`
         MODIFY COLUMN `id` INT(10) NOT NULL AUTO_INCREMENT,
-        MODIFY COLUMN `item_id` INT(12) NOT NULL,
+        MODIFY COLUMN `item_id` INT(12) NULL DEFAULT NULL,
         MODIFY COLUMN `originator` INT(12) NOT NULL;"
 );
 

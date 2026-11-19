@@ -38,6 +38,8 @@ As a user,
 
 The `CSV` file holds one row per item the user can access, with the columns `id`, `label`, `description`, `pw`, `login`, `restricted_to`, `perso`, `url`, `email`, `kb`, `tag`, `folder` and `totp`.
 
+A value holding a line break, a comma, a space or a quote is enclosed in double quotes. A multi-line value, such as a multi-line description, is written whole inside its quotes, and a quote inside a value is marked by doubling it (`""`), the standard CSV rule read by the TeamPass [CSV import](import.md) and by other password managers. Backslashes are written as they are. The file can be imported back into TeamPass: the import accepts its `description` and `pw` column names.
+
 The `totp` column is filled only when TOTP is enabled on the item:
 
 * the bare Base32 secret for the standard profile (SHA-1, 6 digits, 30 seconds), which password managers accept as is;

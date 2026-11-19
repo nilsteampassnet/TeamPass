@@ -115,6 +115,10 @@ try {
             'purpose' => 'external_device', 'wrapped_private_key' => 'synthetic', 'salt' => 'synthetic',
             'created_at' => 1, 'revoked_at' => $revokedAt]);
     }
+    DB::insert(prefixTable('api'), ['type' => 'user', 'user_id' => TP_USER_ID, 'timestamp' => '1', 'value' => 'synthetic-historical-api-key',
+        'encrypted_private_key' => 'synthetic', 'session_key_salt' => 'synthetic',
+        'session_key' => 'synthetic-session', 'session_aes_key' => 'synthetic']);
+    DB::insert(prefixTable('api'), ['type' => 'ip', 'value' => '127.0.0.1', 'timestamp' => '1']);
     DB::insert(prefixTable('device_pairings'), ['id' => str_repeat('a', 32), 'user_id' => TP_USER_ID,
         'server_url' => 'https://old.example.test', 'owner_binding' => str_repeat('b', 64),
         'session_marker' => str_repeat('c', 64), 'user_key_fingerprint' => str_repeat('d', 64),
@@ -131,6 +135,15 @@ try {
         DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
     }
     $settings = ['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'];
+    if (in_array($scenario, ['classic', 'classic-resume'], true)) {
+        foreach (['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'] as $name => $value) {
+            DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
+        }
+    }
+    // Exercise byte fidelity through the real dump, authenticated archive and SQL import.
+    $backupBytes = implode('', array_map('chr', range(0, 255))) . "\nR&D O'Brien \"<>\"\r\nliteral\\n";
+    DB::query('CREATE TABLE ' . prefixTable('backup_bytes') . ' (payload LONGBLOB NOT NULL) ENGINE=InnoDB');
+    DB::insert(prefixTable('backup_bytes'), ['payload' => $backupBytes]);
     foreach (DB::query('SELECT intitule,valeur FROM ' . prefixTable('misc') . ' WHERE type=%s', 'admin') as $row) {
         $settings[$row['intitule']] = $row['valeur'];
     }
@@ -192,6 +205,14 @@ try {
     if (!$backup['success'] || !$kit['success']) {
         throw new RuntimeException('Fixture package creation failed');
     }
+    if (in_array($scenario, ['classic', 'classic-resume'], true)) {
+        require_once __DIR__ . '/backup_classic_database.php';
+        tpTestClassicBackupRestore($root, $fixture, $backup,
+            ['host' => '127.0.0.1', 'user' => $dbUser, 'password' => $dbPassword, 'database' => $source, 'port' => $port],
+            $settings, $backupBytes, $scenario === 'classic-resume');
+        echo "OK: real encrypted backup restored through the production classic CLI\n";
+        return;
+    }
     if ($scenario === 'upgrade') {
         tpRecoveryDecrypt($backup['filepath'], $fixture . '/old.zip', 'synthetic-backup-password');
         $zip = new ZipArchive();
@@ -237,6 +258,15 @@ try {
         throw new RuntimeException('Batched encryption diagnostics were incomplete or disclosed an item identifier');
     }
     $targetDb = new mysqli('127.0.0.1', $dbUser, $dbPassword, $target, $port);
+    if ($targetDb->query('SELECT payload FROM recovery_backup_bytes')->fetch_row()[0] !== $backupBytes) {
+        throw new RuntimeException('The SQL backup changed binary bytes, newlines or literal escape sequences');
+    }
+    foreach (['bck_scheduled_enabled', 'bck_externalized_enabled'] as $setting) {
+        $disabled = $targetDb->query("SELECT valeur FROM recovery_misc WHERE type='settings' AND intitule='" . $setting . "'")->fetch_row();
+        if (!is_array($disabled) || $disabled[0] !== '0') {
+            throw new RuntimeException('Recovery did not disable backup scheduling in its runtime namespace');
+        }
+    }
     if ($scenario === 'upgrade') {
         $targetDb->query('SELECT * FROM recovery_webauthn_credentials LIMIT 1');
         $targetDb->query('SELECT * FROM recovery_secure_send_audit LIMIT 1');
@@ -265,7 +295,10 @@ try {
     $restoredSettings = array_column($targetDb->query("SELECT intitule,valeur FROM recovery_misc WHERE type='admin'")->fetch_all(MYSQLI_ASSOC), 'valeur', 'intitule');
     if ($restoredSettings['teampass_version_full'] !== TP_VERSION . '.' . TP_VERSION_MINOR
         || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_api_tokens')->fetch_row()[0] !== 0
-        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_device_pairings')->fetch_row()[0] !== 0) {
+        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_device_pairings')->fetch_row()[0] !== 0
+        || (int) $targetDb->query("SELECT COUNT(*) FROM recovery_api WHERE type='user' AND value<>''")->fetch_row()[0] !== 0
+        || $targetDb->query("SELECT value FROM recovery_api WHERE type='ip'")->fetch_row()[0] !== '127.0.0.1'
+        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_api WHERE session_key IS NOT NULL OR session_aes_key IS NOT NULL OR encrypted_private_key IS NOT NULL')->fetch_row()[0] !== 0) {
         throw new RuntimeException('Restored release metadata or device credential invalidation was incorrect');
     }
     if ($restoredSettings['favicon'] !== $restoredSettings['cpassman_url'] . '/favicon.ico'

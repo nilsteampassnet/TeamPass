@@ -31,6 +31,14 @@ declare(strict_types=1);
 
 use TeampassClasses\ConfigManager\ConfigManager;
 
+// A retry must load its private journal before touching a partially imported misc table.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+if (!defined('TEAMPASS_FUNCTIONS_ONLY')) {
+    define('TEAMPASS_FUNCTIONS_ONLY', true);
+}
 require_once __DIR__ . '/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/backup.functions.php';
 
@@ -48,7 +56,7 @@ function tpCliErr(string $msg): void
 
 function tpCliHelp(): void
 {
-    tpCliOut('Usage: php app/scripts/restore.php --file "/path/to/backup.sql|backup.tpbackup" --auth-token "TOKEN" [--force-disconnect]');
+    tpCliOut('Usage: php app/scripts/restore.php --file "/path/to/backup.sql|backup.tpbackup" --auth-token "TOKEN" [--force-disconnect] [--resume]');
 }
 
 function tpCliIsInteractive(): bool
@@ -109,13 +117,8 @@ function tpCliProgressBar(int $pct, int $totalExecuted, bool $interactive): void
     }
 }
 
-if (PHP_SAPI !== 'cli') {
-    tpCliErr('ERROR: This script must be executed in CLI.');
-    exit(2);
-}
-
 // Parse CLI options
-$options = getopt('', ['file:', 'auth-token:', 'force-disconnect', 'help']);
+$options = getopt('', ['file:', 'auth-token:', 'force-disconnect', 'resume', 'help']);
 if (isset($options['help']) || empty($options['file']) || empty($options['auth-token'])) {
     tpCliHelp();
     exit(isset($options['help']) ? 0 : 2);
@@ -124,12 +127,30 @@ if (isset($options['help']) || empty($options['file']) || empty($options['auth-t
 $file = (string) $options['file'];
 $authToken = (string) $options['auth-token'];
 $forceDisconnect = array_key_exists('force-disconnect', $options);
+$resume = array_key_exists('resume', $options);
+$tokenHash = hash('sha256', $authToken);
+$journal = [];
+if ($resume) {
+    try {
+        $journal = tpBackupReadRestoreJournal($tokenHash);
+    } catch (Throwable $exception) {
+        tpCliErr('RESTORE_RESUME_UNAVAILABLE: use the original token and the operating-system account that started the import.');
+        exit(36);
+    }
+} elseif (tpBackupRestoreIsInProgress()) {
+    tpCliErr('A restore hold already exists. Retry the original archive and token with --resume.');
+    exit(36);
+}
 
 $interactive = tpCliIsInteractive();
 
 // Load settings
-$configManager = new ConfigManager();
-$SETTINGS = $configManager->getAllSettings();
+if ($resume) {
+    $SETTINGS = $journal['settings'];
+} else {
+    $configManager = new ConfigManager();
+    $SETTINGS = $configManager->getAllSettings();
+}
 
 // Logging
 $filesDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? sys_get_temp_dir()), '/');
@@ -191,10 +212,9 @@ if (!is_file($file)) {
     exit(3);
 }
 
-$tokenHash = hash('sha256', $authToken);
-
 // Token verification (DB)
-$fetch = tpRestoreAuthorizationFetchByHash($tokenHash);
+$fetch = $resume ? ['success' => true, 'id' => 0, 'payload' => $journal['payload']]
+    : tpRestoreAuthorizationFetchByHash($tokenHash);
 if (empty($fetch['success'])) {
     $log('ERROR', 'Authorization token not found or invalid.');
     exit(30);
@@ -213,13 +233,13 @@ $expiresAt = intval($payload['expires_at'] ?? 0);
 $payloadFilePath = strval($payload['file']['path'] ?? '');
 $restoreStage = is_array($payload['restore_stage'] ?? null) ? (array) $payload['restore_stage'] : [];
 
-if ($status !== 'pending') {
+if (!$resume && $status !== 'pending') {
     tpBackupCleanupExternalizedRestoreStage($restoreStage);
     $log('ERROR', 'Authorization token is not pending (status=' . $status . ').');
     exit(31);
 }
 
-if ($expiresAt > 0 && $expiresAt < $now) {
+if (!$resume && $expiresAt > 0 && $expiresAt < $now) {
     tpBackupCleanupExternalizedRestoreStage($restoreStage);
     $log('ERROR', 'Authorization token is expired.');
     exit(32);
@@ -244,185 +264,159 @@ if ($cmp1 === '' || $cmp1 !== $cmp2) {
     exit(33);
 }
 
-// Always disconnect the restore initiator right away (so the admin can safely run the CLI).
-$initiatorId = (int) (($payload['initiator']['id'] ?? 0));
-if ($initiatorId > 0) {
-    try {
-        DB::update(
-            prefixTable('users'),
-            [
-                'timestamp' => '',
-                'key_tempo' => '',
-                'session_end' => '',
-            ],
-            'id = %i',
-            $initiatorId
-        );
-        // Invalidate the initiator's API sessions as well (web + API)
-        tpInvalidateUserApiSession($initiatorId);
-        $log('INFO', 'Disconnected restore initiator (user id=' . $initiatorId . ').');
-    } catch (Throwable $e) {
-        $log('WARN', 'Unable to disconnect restore initiator: ' . $e->getMessage());
-    }
-}
-
-// Connected users detection (web + API if possible)
-$webUsers = [];
-$apiUsers = [];
+// Bind authorization to bytes, not only a pathname that can be replaced after preparation.
+$expectedHash = (string) ($payload['file']['sha256'] ?? '');
 try {
+    tpBackupAssertRestoreFileUnchanged($file, $expectedHash);
+} catch (TeamPassRecoveryException $exception) {
+    $log('ERROR', 'RESTORE_INPUT_CHANGED: prepare a new restore authorization.');
+    exit(34);
+}
+$databaseLock = tpBackupDatabaseLockName();
+if ((string) DB::queryFirstField('SELECT GET_LOCK(%s, 0)', $databaseLock) !== '1') {
+    $log('ERROR', 'Another backup or database restore is running.');
+    exit(20);
+}
+register_shutdown_function(static function () use ($databaseLock): void {
+    try {
+        DB::queryFirstField('SELECT RELEASE_LOCK(%s)', $databaseLock);
+    } catch (Throwable $exception) {
+        // The connection also releases its advisory lock when the process exits.
+    }
+});
+// A resume is authorized by the private journal and original token, not the partial database.
+$initiatorId = (int) ($payload['initiator']['id'] ?? 0);
+if (!$resume) {
+    $authorizer = DB::queryFirstRow('SELECT admin, disabled, deleted_at FROM %b WHERE id=%i',
+        prefixTable('users'), (int) ($payload['initiator']['id'] ?? 0));
+    if (!is_array($authorizer) || (int) ($authorizer['admin'] ?? 0) !== 1
+        || (int) ($authorizer['disabled'] ?? 0) !== 0 || ($authorizer['deleted_at'] ?? null) !== null) {
+        $log('ERROR', 'The authorizing administrator is no longer eligible.');
+        exit(35);
+    }
+    // Always disconnect the restore initiator right away (so the admin can safely run the CLI).
     if ($initiatorId > 0) {
-        $webUsers = DB::query(
-            'SELECT id, login, name, lastname, session_end
-             FROM ' . prefixTable('users') . '
-             WHERE session_end >= %i AND id != %i',
+        try {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'timestamp' => '',
+                    'key_tempo' => '',
+                    'session_end' => '',
+                ],
+                'id = %i',
+                $initiatorId
+            );
+            // Invalidate the initiator's API sessions as well (web + API)
+            tpInvalidateUserApiSession($initiatorId);
+            $log('INFO', 'Disconnected restore initiator (user id=' . $initiatorId . ').');
+        } catch (Throwable $e) {
+            $log('WARN', 'Unable to disconnect restore initiator: ' . $e->getMessage());
+        }
+    }
+
+    // Connected users detection (web + API if possible)
+    $webUsers = [];
+    $apiUsers = [];
+    try {
+        if ($initiatorId > 0) {
+            $webUsers = DB::query(
+                'SELECT id, login, name, lastname, session_end
+                 FROM ' . prefixTable('users') . '
+                 WHERE session_end >= %i AND id != %i',
+                $now,
+                $initiatorId
+            );
+        } else {
+            $webUsers = DB::query(
+                'SELECT id, login, name, lastname, session_end
+                 FROM ' . prefixTable('users') . '
+                 WHERE session_end >= %i',
+                $now
+            );
+        }
+    } catch (Throwable $e) {
+        // Ensure any in-place progress bar line is terminated before printing errors
+        if ($interactive) {
+            @fwrite(STDERR, PHP_EOL);
+        }
+        $log('WARN', 'Unable to check web sessions: ' . $e->getMessage());
+    }
+
+    try {
+        // API presence comes from teampass_api_sessions (one row per issued JWT):
+        // a session that is neither revoked nor expired means an active API client.
+        $apiUsers = DB::query(
+            'SELECT u.id, u.login, u.name, u.lastname, api_conn.last_api_date AS last_api
+             FROM ' . prefixTable('users') . ' u
+             INNER JOIN (
+                SELECT user_id, MAX(created_at) AS last_api_date
+                FROM ' . prefixTable('api_sessions') . '
+                WHERE revoked_at IS NULL
+                    AND expires_at >= %i
+                GROUP BY user_id
+             ) api_conn ON api_conn.user_id = u.id
+             WHERE (%i = 0 OR u.id != %i)',
             $now,
+            $initiatorId,
             $initiatorId
         );
-    } else {
-        $webUsers = DB::query(
-            'SELECT id, login, name, lastname, session_end
-             FROM ' . prefixTable('users') . '
-             WHERE session_end >= %i',
-            $now
-        );
-    }
-} catch (Throwable $e) {
-	// Ensure any in-place progress bar line is terminated before printing errors
-	if ($interactive) {
-	    @fwrite(STDERR, PHP_EOL);
-	}
-    $log('WARN', 'Unable to check web sessions: ' . $e->getMessage());
-}
-
-try {
-    // API presence comes from teampass_api_sessions (one row per issued JWT):
-    // a session that is neither revoked nor expired means an active API client.
-    $apiUsers = DB::query(
-        'SELECT u.id, u.login, u.name, u.lastname, api_conn.last_api_date AS last_api
-         FROM ' . prefixTable('users') . ' u
-         INNER JOIN (
-            SELECT user_id, MAX(created_at) AS last_api_date
-            FROM ' . prefixTable('api_sessions') . '
-            WHERE revoked_at IS NULL
-                AND expires_at >= %i
-            GROUP BY user_id
-         ) api_conn ON api_conn.user_id = u.id
-         WHERE (%i = 0 OR u.id != %i)',
-        $now,
-        $initiatorId,
-        $initiatorId
-    );
-} catch (Throwable $e) {
-    // Optional: ignore API checks if unavailable
-    $log('WARN', 'Unable to check API activity: ' . $e->getMessage());
-}
-
-// Enforce disconnect policy for web and API sessions
-if ((!empty($webUsers) || !empty($apiUsers)) && $forceDisconnect === false) {
-    $log('ERROR', 'Active sessions detected. Re-run with --force-disconnect or disconnect users first.');
-    foreach ($webUsers as $u) {
-        $log('ERROR', 'WEB user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
-    }
-    foreach ($apiUsers as $u) {
-        $log('ERROR', 'API user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
-    }
-    // IMPORTANT: keep token pending so the operator can retry after disconnecting users.
-    $payload['last_error'] = 'active_sessions';
-    $payload['last_error_at'] = time();
-    tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
-    exit(10);
-}
-
-if (!empty($webUsers) && $forceDisconnect === true) {
-    $log('INFO', 'Active web sessions detected: forcing disconnection.');
-    try {
-        DB::update(
-            prefixTable('users'),
-            [
-                'timestamp' => '',
-                'key_tempo' => '',
-                'session_end' => '',
-            ],
-            // By id: session_end is a varchar often holding '', which a numeric comparison
-            // rejects in an UPDATE under strict SQL mode, leaving every user connected.
-            'id IN %li',
-            array_map(static fn (array $user): int => (int) $user['id'], $webUsers)
-        );
     } catch (Throwable $e) {
-        $log('WARN', 'Failed to force-disconnect web users: ' . $e->getMessage());
+        // Optional: ignore API checks if unavailable
+        $log('WARN', 'Unable to check API activity: ' . $e->getMessage());
     }
-}
 
-if (!empty($apiUsers) && $forceDisconnect === true) {
-    $log('INFO', 'Active API sessions detected: forcing disconnection.');
-    foreach ($apiUsers as $u) {
-        $apiUserId = (int) ($u['id'] ?? 0);
-        if ($apiUserId > 0) {
-            try {
-                tpInvalidateUserApiSession($apiUserId);
-            } catch (Throwable $e) {
-                $log('WARN', 'Failed to force-disconnect API user ' . $apiUserId . ': ' . $e->getMessage());
+    // Enforce disconnect policy for web and API sessions
+    if ((!empty($webUsers) || !empty($apiUsers)) && $forceDisconnect === false) {
+        $log('ERROR', 'Active sessions detected. Re-run with --force-disconnect or disconnect users first.');
+        foreach ($webUsers as $u) {
+            $log('ERROR', 'WEB user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
+        }
+        foreach ($apiUsers as $u) {
+            $log('ERROR', 'API user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
+        }
+        // IMPORTANT: keep token pending so the operator can retry after disconnecting users.
+        $payload['last_error'] = 'active_sessions';
+        $payload['last_error_at'] = time();
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+
+        exit(10);
+    }
+
+    if (!empty($webUsers) && $forceDisconnect === true) {
+        $log('INFO', 'Active web sessions detected: forcing disconnection.');
+        try {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'timestamp' => '',
+                    'key_tempo' => '',
+                    'session_end' => '',
+                ],
+                // By id: session_end is a varchar often holding '', which a numeric comparison
+                // rejects in an UPDATE under strict SQL mode, leaving every user connected.
+                'id IN %li',
+                array_map(static fn (array $user): int => (int) $user['id'], $webUsers)
+            );
+        } catch (Throwable $e) {
+            $log('WARN', 'Failed to force-disconnect web users: ' . $e->getMessage());
+        }
+    }
+
+    if (!empty($apiUsers) && $forceDisconnect === true) {
+        $log('INFO', 'Active API sessions detected: forcing disconnection.');
+        foreach ($apiUsers as $u) {
+            $apiUserId = (int) ($u['id'] ?? 0);
+            if ($apiUserId > 0) {
+                try {
+                    tpInvalidateUserApiSession($apiUserId);
+                } catch (Throwable $e) {
+                    $log('WARN', 'Failed to force-disconnect API user ' . $apiUserId . ': ' . $e->getMessage());
+                }
             }
         }
     }
-}
 
-// From this point, we consider the restore authorized to start.
-$payload['status'] = 'in_progress';
-$payload['started_at'] = time();
-tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
-// Maintenance mode toggle (best-effort)
-// Keep maintenance enabled at the end of the restore (same behavior as the legacy web restore),
-// because the SQL dump may restore maintenance_mode to 0.
-try {
-    $affected = DB::update(
-        prefixTable('misc'),
-        [
-            'valeur' => '1',
-            'updated_at' => time(),
-        ],
-        'intitule = %s AND type = %s',
-        'maintenance_mode',
-        'admin'
-    );
-    if ($affected === 0) {
-        DB::insert(
-            prefixTable('misc'),
-            [
-                'intitule' => 'maintenance_mode',
-                'type' => 'admin',
-                'valeur' => '1',
-                'updated_at' => time(),
-            ]
-        );
-    }
-} catch (Throwable $e) {
-    // Fallback without updated_at
-    try {
-        $affected = DB::update(
-            prefixTable('misc'),
-            [
-                'valeur' => '1',
-            ],
-            'intitule = %s AND type = %s',
-            'maintenance_mode',
-            'admin'
-        );
-        if ($affected === 0) {
-            DB::insert(
-                prefixTable('misc'),
-                [
-                    'intitule' => 'maintenance_mode',
-                    'type' => 'admin',
-                    'valeur' => '1',
-                ]
-            );
-        }
-    } catch (Throwable $e2) {
-        $log('WARN', 'Unable to enable maintenance mode: ' . $e2->getMessage());
-    }
 }
 
 $log('INFO', 'Starting restore from: ' . $file);
@@ -438,12 +432,16 @@ try {
         if (!empty($secrets['encryptionKey'])) {
             $tmp = cryption(strval($secrets['encryptionKey']), '', 'decrypt', $SETTINGS);
             $k = isset($tmp['string']) ? (string) $tmp['string'] : '';
-            if ($k !== '') $keysToTry[] = $k;
+            if ($k !== '') {
+                $keysToTry[] = $k;
+            }
         }
         if (!empty($secrets['overrideKey'])) {
             $tmp = cryption(strval($secrets['overrideKey']), '', 'decrypt', $SETTINGS);
             $k = isset($tmp['string']) ? (string) $tmp['string'] : '';
-            if ($k !== '') $keysToTry[] = $k;
+            if ($k !== '') {
+                $keysToTry[] = $k;
+            }
         }
     }
 } catch (Throwable $e) {
@@ -452,15 +450,21 @@ try {
 
 // Instance key candidates (scheduled backups + archived legacy values)
 try {
-    $keysToTry = array_merge(
-        $keysToTry,
-        tpGetBackupScriptPasskeyCandidates($SETTINGS, false)
-    );
+    if ($resume) {
+        foreach ($journal['key_candidates'] as $encryptedKey) {
+            $decryptedKey = cryption((string) $encryptedKey, '', 'decrypt', $SETTINGS);
+            if (isset($decryptedKey['string']) && $decryptedKey['string'] !== '') {
+                $keysToTry[] = (string) $decryptedKey['string'];
+            }
+        }
+    } else {
+        $keysToTry = array_merge($keysToTry, tpGetBackupScriptPasskeyCandidates($SETTINGS, false));
+    }
 } catch (Throwable $e) {
     $log('WARN', 'Unable to load instance backup key candidates: ' . $e->getMessage());
 }
 
-$keysToTry = array_values(array_unique($keysToTry));
+$keysToTry = array_values(array_unique(array_merge(...array_map('tpBackupManualKeyCandidates', $keysToTry))));
 
 // Decrypt backup file to temp SQL
 // IMPORTANT: do NOT use tempnam() here. It creates the file and can break Defuse file decrypt.
@@ -481,22 +485,30 @@ if ($tmpSql === '') {
     $payload['status'] = 'failed';
     $payload['finished_at'] = time();
     $payload['error'] = 'temp_file_failed';
-    tpRestoreAuthorizationUpdatePayload($authId, $payload);
-    tpBackupCleanupExternalizedRestoreStage($restoreStage);
+    if (!$resume) {
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+    }
+    if (!$resume) {
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+    }
     exit(40);
 }
 
 if (tpBackupIsPackageFilename($file) === true) {
     $packageRestore = tpBackupPreparePackageSqlForRestore($file, $tmpSql, $keysToTry, $SETTINGS, true, true);
     if (empty($packageRestore['success'])) {
-        @unlink($tmpSql);
+        tpBackupCleanupRestoreFile($tmpSql);
         $errorCode = (string) ($packageRestore['error_code'] ?? 'package_invalid');
         $log('ERROR', 'Package restore preparation failed: ' . $errorCode . ' - ' . (string) ($packageRestore['message'] ?? ''));
         $payload['status'] = 'failed';
         $payload['finished_at'] = time();
         $payload['error'] = $errorCode;
-        tpRestoreAuthorizationUpdatePayload($authId, $payload);
-        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        if (!$resume) {
+            tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        }
+        if (!$resume) {
+            tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        }
         exit($errorCode === 'DECRYPT_FAILED' ? 41 : 43);
     }
 
@@ -506,165 +518,107 @@ if (tpBackupIsPackageFilename($file) === true) {
 } else {
     $dec = tpDefuseDecryptWithCandidates($file, $tmpSql, $keysToTry, $SETTINGS);
     if (empty($dec['success'])) {
-        @unlink($tmpSql);
+        tpBackupCleanupRestoreFile($tmpSql);
         $log('ERROR', 'Decrypt failed: ' . (string) $dec['message']);
         $payload['status'] = 'failed';
         $payload['finished_at'] = time();
         $payload['error'] = 'decrypt_failed';
-        tpRestoreAuthorizationUpdatePayload($authId, $payload);
-        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        if (!$resume) {
+            tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        }
+        if (!$resume) {
+            tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        }
         exit(41);
     }
 
     $log('INFO', 'Decrypt OK. Importing SQL...');
 }
 
-// Restore SQL (chunked)
-$totalSize = filesize($tmpSql);
-if ($totalSize === false) {
-    $totalSize = 0;
-}
-$offset = 0;
-$batchSize = 500;
+// Complete validation precedes maintenance, the worker hold and every destructive SQL statement.
 $totalExecuted = 0;
-
-$handle = fopen($tmpSql, 'r');
-if ($handle === false) {
-    @unlink($tmpSql);
-    if ($tmpPackageZip !== '') {
-        @unlink($tmpPackageZip);
-    }
-    $log('ERROR', 'Unable to open decrypted SQL file.');
-    tpBackupCleanupExternalizedRestoreStage($restoreStage);
-    exit(42);
-}
-
+$restoreCompleted = false;
+$importStarted = false;
+$holdCreated = false;
+$previousMaintenance = null;
+$tasksLock = null;
 try {
-    while (true) {
-        if ($offset > 0) {
-            fseek($handle, $offset);
+    $inventory = tpBackupPreflightRestoreSql($tmpSql, $packageManifest);
+    tpBackupAssertRestoreFileUnchanged($file, $expectedHash);
+    require_once __DIR__ . '/backgroundTaskLock.php';
+    $tasksLock = new BackgroundTaskLock(TASKS_LOCK_FILE);
+    if (!$tasksLock->acquire()) {
+        if (in_array($tasksLock->getFailureReason(), ['open_failed', 'write_failed', 'lock_failed'], true)) {
+            throw new TeamPassRecoveryException('BACKGROUND_TASK_LOCK_UNWRITABLE');
         }
-
-        $query = '';
-        $executed = 0;
-        $inMultiLineComment = false;
-        $errors = [];
-
-        try {
-            DB::startTransaction();
-            DB::query("SET FOREIGN_KEY_CHECKS = 0");
-            DB::query("SET UNIQUE_CHECKS = 0");
-
-            while (!feof($handle) && $executed < $batchSize) {
-                $line = fgets($handle);
-                if ($line === false) {
-                    break;
-                }
-
-                $trimmedLine = trim($line);
-
-                // Skip empty lines or comments
-                if (
-                    $trimmedLine === ''
-                    || strpos($trimmedLine, '--') === 0
-                    || strpos($trimmedLine, '#') === 0
-                ) {
-                    continue;
-                }
-
-                // Handle multi-line comments
-                if (strpos($trimmedLine, '/*') === 0 && strpos($trimmedLine, '*/') === false) {
-                    $inMultiLineComment = true;
-                    continue;
-                }
-                if ($inMultiLineComment) {
-                    if (strpos($trimmedLine, '*/') !== false) {
-                        $inMultiLineComment = false;
-                    }
-                    continue;
-                }
-
-                $query .= $line;
-
-                // Execute query if it ends with semicolon
-                if (substr(rtrim($query), -1) === ';') {
-                    try {
-                        DB::query($query);
-                        $executed++;
-                        $totalExecuted++;
-                    } catch (Throwable $e) {
-                        $errors[] = $e->getMessage();
-                        $log('ERROR', 'SQL error: ' . $e->getMessage());
-                        // Stop early on first error
-                        break;
-                    }
-                    $query = '';
-                }
-            }
-
-            if (empty($errors)) {
-                DB::commit();
-            } else {
-                DB::rollback();
-            }
-        } catch (Throwable $e) {
-            try {
-                DB::query("SET FOREIGN_KEY_CHECKS = 1");
-                DB::query("SET UNIQUE_CHECKS = 1");
-            } catch (Throwable $ignored) {
-                // ignore
-            }
-            DB::rollback();
-            $errors[] = $e->getMessage();
-            $log('ERROR', 'Restore chunk failed: ' . $e->getMessage());
-        } finally {
-            try {
-                DB::query("SET FOREIGN_KEY_CHECKS = 1");
-                DB::query("SET UNIQUE_CHECKS = 1");
-            } catch (Throwable $ignored) {
-                // ignore
-            }
-        }
-
-        $newOffset = ftell($handle);
-        if ($newOffset === false) {
-            $newOffset = $offset;
-        }
-
-
-	    // Progress (single-line bar on STDERR to avoid flooding the terminal)
-	    if ($totalSize > 0) {
-	        $pct = (int) floor(($newOffset / $totalSize) * 100);
-	        if ($pct > 100) {
-	            $pct = 100;
-	        }
-	        tpCliProgressBar($pct, $totalExecuted, $interactive);
-
-	        // Log progress in file every 10%
-	        static $lastLoggedPct = -1;
-	        if ($pct !== $lastLoggedPct && ($pct % 10 === 0 || $pct === 100)) {
-	            $lastLoggedPct = $pct;
-	            @file_put_contents(
-	                $logFile,
-	                '[' . date('c') . '][INFO] Progress: ' . $pct . '% (statements executed: ' . $totalExecuted . ')' . PHP_EOL,
-	                FILE_APPEND
-	            );
-	        }
-	    }
-
-        if (!empty($errors)) {
-            throw new RuntimeException('SQL restore failed: ' . implode(' | ', $errors));
-        }
-
-        // End conditions
-        if (feof($handle) || $newOffset >= $totalSize) {
-            break;
-        }
-
-        // Continue with next offset
-        $offset = $newOffset;
+        throw new TeamPassRecoveryException('BACKGROUND_TASKS_RUNNING');
     }
-
+    if (!$resume) {
+        $previousMaintenance = DB::queryFirstField('SELECT valeur FROM %b WHERE type=%s AND intitule=%s',
+            prefixTable('misc'), 'admin', 'maintenance_mode');
+        $payload['status'] = 'in_progress';
+        $payload['started_at'] = time();
+        if (!tpRestoreAuthorizationUpdatePayload($authId, $payload)) {
+            throw new TeamPassRecoveryException('RESTORE_AUTHORIZATION_FAILED');
+        }
+        $encryptedCandidates = [];
+        foreach ($keysToTry as $keyCandidate) {
+            $encryptedKey = cryption($keyCandidate, '', 'encrypt', $SETTINGS);
+            if (empty($encryptedKey['string'])) {
+                throw new TeamPassRecoveryException('RESTORE_HOLD_FAILED');
+            }
+            $encryptedCandidates[] = (string) $encryptedKey['string'];
+        }
+        // Atomically publish a complete owner-only journal before the first destructive statement.
+        tpBackupWriteRestoreJournal(['version' => 1, 'token_hash' => $tokenHash,
+            'payload' => $payload, 'settings' => $SETTINGS, 'key_candidates' => $encryptedCandidates]);
+        $holdCreated = true;
+        DB::update(prefixTable('misc'), ['valeur' => '1'], 'type=%s AND intitule=%s', 'admin', 'maintenance_mode');
+        ConfigManager::invalidateCache();
+    }
+    DB::query('SET SESSION sql_mode=%s', tpBackupRestoreSqlMode((string) DB::queryFirstField('SELECT @@SESSION.sql_mode')));
+    DB::query('SET SESSION FOREIGN_KEY_CHECKS=0');
+    $pendingInserts = 0;
+    try {
+        $statementCount = array_sum($inventory['rows']) + 2 * count($inventory['tables']);
+        foreach (tpRecoverySqlStatements($tmpSql) as $statement) {
+            $statementInfo = tpRecoverySqlStatementInfo($statement, prefixTable(''));
+            if ($statementInfo['type'] !== 'insert' && $pendingInserts > 0) {
+                DB::commit();
+                $pendingInserts = 0;
+            }
+            if ($statementInfo['type'] === 'insert' && $pendingInserts === 0) {
+                DB::startTransaction();
+            }
+            try {
+                $importStarted = true;
+                DB::query($statement);
+            } catch (Throwable $exception) {
+                // Driver messages can contain archived SQL values. Never put them in logs or token payloads.
+                throw new TeamPassRecoveryException('SQL_IMPORT_FAILED');
+            }
+            if ($statementInfo['type'] === 'insert' && ++$pendingInserts >= 500) {
+                DB::commit();
+                $pendingInserts = 0;
+            }
+            $totalExecuted++;
+            tpCliProgressBar((int) min(100, floor(100 * $totalExecuted / max(1, $statementCount))), $totalExecuted, $interactive);
+        }
+        if ($pendingInserts > 0) {
+            DB::commit();
+            $pendingInserts = 0;
+        }
+    } finally {
+        if ($pendingInserts > 0) {
+            DB::rollback();
+        }
+        DB::query('SET SESSION FOREIGN_KEY_CHECKS=1');
+    }
+    foreach ($inventory['rows'] as $table => $expectedRows) {
+        if ((int) DB::queryFirstField('SELECT COUNT(*) FROM %b', $table) !== $expectedRows) {
+            throw new TeamPassRecoveryException('DATABASE_ROW_COUNT_MISMATCH');
+        }
+    }
     $log('INFO', 'SQL import completed. Total statements executed: ' . $totalExecuted);
 
     if ($tmpPackageZip !== '') {
@@ -699,57 +653,73 @@ try {
         }
     }
 
-    $payload['status'] = 'success';
-    $payload['finished_at'] = time();
-    tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
+    tpBackupInvalidateRestoredState();
+    logEvents($SETTINGS, 'admin_action', 'dataBase restore', (string) $initiatorId,
+        (string) ($payload['initiator']['login'] ?? ''), basename($file));
+    $restoreCompleted = true;
+    $log('INFO', 'Restore completed. Credentials and queued work invalidated; maintenance remains enabled.');
     $exitCode = 0;
 } catch (Throwable $e) {
     $payload['status'] = 'failed';
     $payload['finished_at'] = time();
-    $payload['error'] = $e->getMessage();
-    tpRestoreAuthorizationUpdatePayload($authId, $payload);
+    $payload['error'] = $e instanceof TeamPassRecoveryException ? $e->reason : 'RESTORE_FAILED';
+    if (!$resume) {
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+    }
 
-    $log('ERROR', 'Restore failed: ' . $e->getMessage());
+    $restoreLanguage = new \TeampassClasses\Language\Language($SETTINGS['default_language'] ?? 'english');
+    $log('ERROR', $restoreLanguage->getShipped(tpBackupRestoreErrorLanguageKey($payload['error'])) . ' [' . $payload['error'] . ']');
     $exitCode = 50;
 } finally {
-    if (is_resource($handle)) {
-        fclose($handle);
-    }
-    @unlink($tmpSql);
+    tpBackupCleanupRestoreFile($tmpSql);
     if ($tmpPackageZip !== '') {
-        @unlink($tmpPackageZip);
+        tpBackupCleanupRestoreFile($tmpPackageZip);
     }
-    tpBackupCleanupExternalizedRestoreStage($restoreStage);
+    if ($restoreCompleted || (!$resume && !$importStarted)) {
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+    }
 
-    // Re-force maintenance mode ON at the end (dump may have restored it to 0).
-    try {
-        DB::update(
-            prefixTable('misc'),
-            [
-                'valeur' => '1',
-                'updated_at' => time(),
-            ],
-            'intitule = %s AND type = %s',
-            'maintenance_mode',
-            'admin'
-        );
-    } catch (Throwable $e) {
+    // Re-force maintenance only after import; preserve the original state on harmless failures.
+    $finalMaintenance = ($importStarted || $resume) ? '1' : $previousMaintenance;
+    if ($finalMaintenance !== null) {
         try {
             DB::update(
                 prefixTable('misc'),
                 [
-                    'valeur' => '1',
+                    'valeur' => (string) $finalMaintenance,
+                    'updated_at' => time(),
                 ],
                 'intitule = %s AND type = %s',
                 'maintenance_mode',
                 'admin'
             );
-        } catch (Throwable $ignored) {
-            // ignore
+        } catch (Throwable $e) {
+            try {
+                DB::update(
+                    prefixTable('misc'),
+                    [
+                        'valeur' => (string) $finalMaintenance,
+                    ],
+                    'intitule = %s AND type = %s',
+                    'maintenance_mode',
+                    'admin'
+                );
+            } catch (Throwable $ignored) {
+                // ignore
+            }
         }
+        ConfigManager::invalidateCache();
     }
 
+    if ($restoreCompleted || ($holdCreated && !$importStarted)) {
+        if (!@unlink(tpBackupRestoreGuardPath())) {
+            $log('ERROR', 'Restore completed but the persistent hold could not be removed.');
+            $exitCode = 50;
+        }
+    }
+    if ($tasksLock !== null) {
+        $tasksLock->release();
+    }
     // Release lock
     try {
         flock($lockHandle, LOCK_UN);

@@ -62,6 +62,22 @@ class ImportFormat
     public const FORMAT_KEEPASSXC  = 'keepassxc';
 
     /**
+     * Column names accepted for each field of a TeamPass generic CSV file.
+     *
+     * The first name is the documented one; "pw" and "description" are the
+     * names written by the TeamPass CSV export, so an export can be imported
+     * back.
+     */
+    private const TEAMPASS_CSV_COLUMNS = [
+        'label'       => ['label'],
+        'login'       => ['login'],
+        'pwd'         => ['password', 'pw'],
+        'url'         => ['url'],
+        'description' => ['comments', 'description'],
+        'folder'      => ['folder'],
+    ];
+
+    /**
      * Return the list of supported format identifiers.
      *
      * @return array<int,string>
@@ -205,7 +221,7 @@ class ImportFormat
         foreach ($rows as $row) {
             $url = self::pick($row, ['url']);
             // LastPass marks secure notes with the "http://sn" sentinel URL.
-            if (strcasecmp($url, 'http://sn') === 0) {
+            if (strcasecmp(trim($url), 'http://sn') === 0) {
                 $url = '';
             }
 
@@ -308,6 +324,85 @@ class ImportFormat
     }
 
     // ---------------------------------------------------------------------
+    // TeamPass generic CSV
+    // ---------------------------------------------------------------------
+
+    /**
+     * Normalise the header line of a TeamPass generic CSV file.
+     *
+     * Column names are matched case-insensitively: each name is trimmed and
+     * lower-cased, and the UTF-8 BOM that Excel's "CSV UTF-8" format writes
+     * before the first name is removed.
+     *
+     * @param array<int,mixed> $header Header cells as returned by fgetcsv().
+     *
+     * @return array<int,string> Normalised column names, in file order.
+     */
+    public static function normaliseTeampassCsvHeader(array $header): array
+    {
+        $keys = [];
+        foreach (array_values($header) as $index => $col) {
+            $col = (string) $col;
+            if ($index === 0) {
+                $col = preg_replace('/^\xEF\xBB\xBF/', '', $col) ?? $col;
+            }
+            $keys[] = strtolower(trim($col));
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Tell whether a normalised header has the column items are labelled from.
+     *
+     * @param array<int,string> $header Normalised header.
+     *
+     * @return bool True when the file can be imported.
+     */
+    public static function teampassCsvHeaderIsValid(array $header): bool
+    {
+        return array_intersect(self::TEAMPASS_CSV_COLUMNS['label'], $header) !== [];
+    }
+
+    /**
+     * Map one data row of a TeamPass generic CSV file onto a normalised row.
+     *
+     * The row is padded or cut to the header length, so a short or long line
+     * is still imported. Accepts the documented column names and those of the
+     * TeamPass CSV export (see TEAMPASS_CSV_COLUMNS). Every field but the
+     * password is trimmed.
+     *
+     * @param array<int,string> $header Normalised header (normaliseTeampassCsvHeader()).
+     * @param array<int,mixed>  $row    Data cells.
+     *
+     * @return array<string,string> Keys: label, login, pwd, url, description, folder.
+     */
+    public static function mapTeampassCsvRow(array $header, array $row): array
+    {
+        $colCount = count($header);
+        $cells = array_slice(array_pad(array_values($row), $colCount, ''), 0, $colCount);
+
+        $assoc = [];
+        foreach ($header as $index => $key) {
+            if ($key === '') {
+                continue;
+            }
+            $assoc[$key] = (string) ($cells[$index] ?? '');
+        }
+
+        $columns = self::TEAMPASS_CSV_COLUMNS;
+
+        return self::row(
+            self::pick($assoc, $columns['label']),
+            self::pick($assoc, $columns['login']),
+            self::pick($assoc, $columns['pwd']),
+            self::pick($assoc, $columns['url']),
+            trim(self::pick($assoc, $columns['description'])),
+            self::pick($assoc, $columns['folder'])
+        );
+    }
+
+    // ---------------------------------------------------------------------
     // Internal helpers
     // ---------------------------------------------------------------------
 
@@ -398,7 +493,9 @@ class ImportFormat
         fwrite($stream, $content);
         rewind($stream);
 
-        $header = fgetcsv($stream, 0, ',', '"', '\\');
+        // No backslash escape: the exporters only double quotes (RFC 4180), and a value
+        // ending in \ would otherwise swallow the next field.
+        $header = fgetcsv($stream, 0, ',', '"', '');
         if ($header === false || $header === null || $header === [null]) {
             fclose($stream);
             return null;
@@ -412,7 +509,7 @@ class ImportFormat
         $colCount = count($keys);
 
         $rows = [];
-        while (($data = fgetcsv($stream, 0, ',', '"', '\\')) !== false) {
+        while (($data = fgetcsv($stream, 0, ',', '"', '')) !== false) {
             // Skip fully empty lines.
             if ($data === [null]) {
                 continue;
@@ -434,21 +531,31 @@ class ImportFormat
     }
 
     /**
-     * Return the first non-empty value among the given candidate keys.
+     * Return the value of the first candidate key that is not blank.
+     *
+     * The value is returned untrimmed: a password may start or end with spaces,
+     * so trimming is left to row() for the fields where it is safe. When every
+     * candidate is blank, the first one present is returned as is, which keeps
+     * a password made only of spaces.
      *
      * @param array<string,string> $row  The associative row.
      * @param array<int,string>    $keys Candidate keys (already lower-case).
      *
-     * @return string The trimmed value or '' when none match.
+     * @return string The raw value or '' when none is present.
      */
     private static function pick(array $row, array $keys): string
     {
+        $fallback = null;
         foreach ($keys as $key) {
-            if (isset($row[$key]) && trim($row[$key]) !== '') {
-                return trim($row[$key]);
+            if (!isset($row[$key])) {
+                continue;
             }
+            if (trim($row[$key]) !== '') {
+                return $row[$key];
+            }
+            $fallback ??= $row[$key];
         }
-        return '';
+        return $fallback ?? '';
     }
 
     /**

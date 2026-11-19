@@ -130,6 +130,27 @@ class BackupFilePermissionsTest extends TestCase
         self::assertFalse(tpBackupOpenProtectedFile('php://memory', 'c+b'));
     }
 
+    public function testMetadataFailureIsReportedWithoutDestroyingTheEncryptedArchive(): void
+    {
+        $probe = $this->runProbe('sql', 0022, 'metadata');
+        foreach ($probe['results'] as $result) {
+            self::assertFalse($result['success']);
+            self::assertTrue($result['encrypted']);
+            self::assertFileExists($result['filepath']);
+            self::assertStringContainsString('metadata could not be written', $result['message']);
+        }
+    }
+
+    public function testRequestedDocumentBackupCannotSucceedWithAnIncompleteInventory(): void
+    {
+        $probe = $this->runProbe('tpbackup', 0022, 'documents');
+        foreach ($probe['results'] as $result) {
+            self::assertFalse($result['success']);
+            self::assertStringContainsString('Document collection is incomplete', $result['message']);
+        }
+        self::assertSame([], glob($this->root . '/*.tpbackup'));
+    }
+
     /** @return iterable<string,array{string,bool}> */
     public static function filesystemResponses(): iterable
     {

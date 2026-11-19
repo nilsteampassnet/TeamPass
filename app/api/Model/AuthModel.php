@@ -360,15 +360,18 @@ class AuthModel
         $originForDb = 'api | tp_src=api';
 
         try {
+            // qui and date are VARCHAR columns: compare them with strings, otherwise MySQL casts
+            // every row and cannot use idx_log_api_user_connection (full table scan, #5466).
+            // %ss adds the surrounding wildcards itself and escapes any '%' in its argument.
             $recentCount = (int) DB::queryFirstField(
                 'SELECT COUNT(*)
                 FROM ' . prefixTable('log_system') . '
-                WHERE type = %s AND label = %s AND qui = %i AND field_1 LIKE %ss AND date > %i',
+                WHERE type = %s AND label = %s AND qui = %s AND field_1 LIKE %ss AND date > %s',
                 'user_connection',
                 'user_connection',
-                (int) $userInfo['id'],
-                '%tp_src=api%',
-                time() - 2
+                (string) $userInfo['id'],
+                'tp_src=api',
+                (string) (time() - 2)
             );
         } catch (\Throwable $e) {
             // Logging checks must never break API auth

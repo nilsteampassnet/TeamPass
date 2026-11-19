@@ -1418,7 +1418,7 @@
             "get": {
                 "operationId": "secureSendPolicy",
                 "summary": "Secure Send policy for API clients",
-                "description": "Instance limits and options a client needs to build its Secure Send form. Always 200: hide the action when enabled or item_send_allowed is false. Not counted as user activity.",
+                "description": "Instance limits and options a client needs to build its Secure Send form. Always 200: hide the item action when enabled or item_send_allowed is false, and the note action when note_send_allowed is false. Not counted as user activity.",
                 "responses": {
                     "200": {
                         "description": "Policy",
@@ -1454,8 +1454,8 @@
         "/secureSend/create": {
             "post": {
                 "operationId": "secureSendCreate",
-                "summary": "Create a Secure Send link for an item",
-                "description": "Creates a limited-view, expiring link to a snapshot of an item the caller can read, with the same policy, audit and email delivery as the web interface. Requires the read right, one-time view links and the secure_send_api_enabled setting. The returned url is a bearer secret: never log it, and send the passphrase through another channel. No Idempotency-Key support: a lost response leaves at most one unused link, which expires on its own. Error responses carry a machine-readable reason member.",
+                "summary": "Create a Secure Send link for an item or a note",
+                "description": "Creates a limited-view, expiring link to a snapshot of an item the caller can read (type item, the default) or to a note whose content the caller supplies (type note, requires the note sends setting), with the same policy, audit and email delivery as the web interface. Requires the read right, one-time view links and the secure_send_api_enabled setting. The returned url is a bearer secret: never log it, and send the passphrase through another channel. No Idempotency-Key support: a lost response leaves at most one unused link, which expires on its own. Error responses carry a machine-readable reason member.",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1487,7 +1487,7 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid request (reason invalid_payload: body, types, unknown member, Idempotency-Key header or query-string parameters) or recipient (reason invalid_email)",
+                        "description": "Invalid request (reason invalid_payload: body, types, unknown member, member of the other send type, note above note_max_bytes, Idempotency-Key header or query-string parameters), recipient (reason invalid_email) or note without a secret nor a text (reason empty_note)",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -1500,7 +1500,7 @@
                         "$ref": "#/components/responses/Unauthorized"
                     },
                     "403": {
-                        "description": "Item not readable by the caller or administrator account (reason not_allowed), email invitations disabled (reason email_not_allowed), or read right missing (no reason member)",
+                        "description": "Item not readable by the caller or administrator account (reason not_allowed), note sends disabled (reason notes_not_allowed), email invitations disabled (reason email_not_allowed), or read right missing (no reason member)",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -1569,6 +1569,175 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/secureSend/list": {
+            "get": {
+                "operationId": "secureSendList",
+                "summary": "List the caller's Secure Send links",
+                "description": "The caller's links, created through the web or the API, that can still be opened or are suspended by a policy, newest first. Expired, exhausted and blocked links, and item links whose item the caller can no longer read, are left out. Never returns a link URL, which the server does not keep. Requires the read right only; does not depend on secure_send_api_enabled, so a client can find links to revoke. Empty while one-time view links are off.",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500,
+                            "default": 100
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "default": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The caller's links (empty array when none)",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/X-Total-Count"
+                            },
+                            "Cache-Control": {
+                                "description": "Always no-store",
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SecureSendLink"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid limit or offset, or another query-string parameter (reason invalid_payload)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "description": "Internal error (reason server_error); details are logged server-side only",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/secureSend/revoke": {
+            "delete": {
+                "operationId": "secureSendRevoke",
+                "summary": "Revoke one of the caller's Secure Send links",
+                "description": "Deletes a link the caller created, through the web or the API, and records a revoked event in the Secure Send audit journal. Requires the read right only, like create. Available whatever the Secure Send settings, like the web: removing a link only narrows exposure. A link that does not exist and a link of another user both answer 404 not_found, so a retry after a lost response also answers 404: treat it as revoked. No Idempotency-Key support.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "description": "Link identifier returned by create. No other parameter is accepted.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Link revoked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendRevoked"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid id, other query-string parameter, or Idempotency-Key header (reason invalid_payload)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "description": "No link with this id belongs to the caller (reason not_found)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "description": "Internal error (reason server_error): the link is kept; details are logged server-side only",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
                     }
                 }
             }
@@ -3212,8 +3381,10 @@
                 "required": [
                     "enabled",
                     "item_send_allowed",
+                    "note_send_allowed",
                     "require_passphrase",
                     "passphrase_max_bytes",
+                    "note_max_bytes",
                     "days",
                     "views",
                     "public_address_available",
@@ -3230,12 +3401,21 @@
                         "type": "boolean",
                         "description": "enabled, and the caller is not an administrator (administrators have no item access)"
                     },
+                    "note_send_allowed": {
+                        "type": "boolean",
+                        "description": "enabled, and note sends are allowed by the administrator (every account, administrators included)"
+                    },
                     "require_passphrase": {
                         "type": "boolean"
                     },
                     "passphrase_max_bytes": {
                         "type": "integer",
                         "const": 1024
+                    },
+                    "note_max_bytes": {
+                        "type": "integer",
+                        "const": 16000,
+                        "description": "Maximum size of a note, in UTF-8 bytes of its five members together"
                     },
                     "days": {
                         "type": "object",
@@ -3302,15 +3482,48 @@
             },
             "SecureSendCreateBody": {
                 "type": "object",
-                "required": [
-                    "item_id"
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "note"
+                                }
+                            },
+                            "required": [
+                                "type"
+                            ]
+                        },
+                        "then": {
+                            "required": [
+                                "note"
+                            ]
+                        },
+                        "else": {
+                            "required": [
+                                "item_id"
+                            ]
+                        }
+                    }
                 ],
                 "additionalProperties": false,
-                "description": "Unknown members are refused (400). A null optional member counts as omitted.",
+                "description": "Unknown members are refused (400). A null optional member counts as omitted. An item send needs item_id and refuses note; a note send needs note and refuses item_id and include_totp.",
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "item",
+                            "note"
+                        ],
+                        "default": "item"
+                    },
                     "item_id": {
                         "type": "integer",
-                        "minimum": 1
+                        "minimum": 1,
+                        "description": "Item to share (item sends only)"
+                    },
+                    "note": {
+                        "$ref": "#/components/schemas/SecureSendNote"
                     },
                     "days": {
                         "type": "integer",
@@ -3330,7 +3543,7 @@
                     "include_totp": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Copy the item's enabled TOTP into the snapshot; ignored for read-only accounts"
+                        "description": "Copy the item's enabled TOTP into the snapshot; ignored for read-only accounts (item sends only)"
                     },
                     "public_address": {
                         "type": "boolean",
@@ -3344,10 +3557,36 @@
                     }
                 }
             },
+            "SecureSendNote": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Content of a note send. Every member is an optional string (null = omitted); secret or note must be non-blank (else 400 empty_note). Together at most note_max_bytes UTF-8 bytes. title, login and url are trimmed.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Shown as the label"
+                    },
+                    "secret": {
+                        "type": "string",
+                        "description": "Shown as the password"
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "Shown as the description, line breaks kept"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                }
+            },
             "SecureSendCreated": {
                 "type": "object",
                 "required": [
                     "id",
+                    "type",
                     "url",
                     "item_id",
                     "expires_at",
@@ -3361,7 +3600,14 @@
                 "properties": {
                     "id": {
                         "type": "integer",
-                        "description": "Link identifier (revocable from the web interface)"
+                        "description": "Link identifier, the id of DELETE /secureSend/revoke"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "item",
+                            "note"
+                        ]
                     },
                     "url": {
                         "type": "string",
@@ -3369,7 +3615,11 @@
                         "description": "Bearer secret: anyone holding it (and the passphrase, if any) can open the link"
                     },
                     "item_id": {
-                        "type": "integer"
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "null for a note"
                     },
                     "expires_at": {
                         "type": "integer",
@@ -3385,14 +3635,110 @@
                         "type": "boolean"
                     },
                     "totp_included": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Always false for a note"
                     },
                     "description_truncated": {
                         "type": "boolean",
-                        "description": "The item description was shortened to fit the link storage"
+                        "description": "The item description was shortened to fit the link storage (always false for a note)"
                     },
                     "email_queued": {
                         "type": "boolean"
+                    }
+                }
+            },
+            "SecureSendLink": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "item_id",
+                    "folder_id",
+                    "label",
+                    "has_passphrase",
+                    "expires_at",
+                    "max_views",
+                    "remaining_views",
+                    "suspended",
+                    "email_status"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Link identifier, the id of DELETE /secureSend/revoke"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "item",
+                            "note"
+                        ]
+                    },
+                    "item_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "null for a note"
+                    },
+                    "folder_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Current folder of the item; null for a note"
+                    },
+                    "label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Current item label (HTML entities decoded: escape it when rendering); null for a note, whose title only exists inside the encrypted link"
+                    },
+                    "has_passphrase": {
+                        "type": "boolean"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "description": "Unix timestamp"
+                    },
+                    "max_views": {
+                        "type": "integer"
+                    },
+                    "remaining_views": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "suspended": {
+                        "type": "boolean",
+                        "description": "The link cannot be opened while a policy forbids it (note sends disabled, or a passphrase now required); it still counts and can be revoked"
+                    },
+                    "email_status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            null,
+                            "queued",
+                            "accepted",
+                            "failed",
+                            "not_sent",
+                            "unknown"
+                        ],
+                        "description": "Email invitation outcome; null when the link was not emailed. accepted means accepted by the mail server, not delivered"
+                    }
+                }
+            },
+            "SecureSendRevoked": {
+                "type": "object",
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Identifier of the revoked link"
                     }
                 }
             },

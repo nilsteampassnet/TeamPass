@@ -40,6 +40,24 @@ function folderCacheEmptyRow(int $userId): array
 }
 
 /**
+ * Check the presentation setting used to build a cached jsTree snapshot.
+ *
+ * Legacy snapshots have no marker and must be rebuilt once. Keeping the marker
+ * in jsTree's standard node data avoids a schema change and also detects an old
+ * build that finishes after the administrator changes the setting.
+ *
+ * @param string $data Cached jsTree JSON
+ * @param bool $treeCounters Whether folder counters are currently enabled
+ * @return bool Whether the snapshot was built with the current setting
+ */
+function folderCacheTreeMatchesCounters(string $data, bool $treeCounters): bool
+{
+    $tree = json_decode($data, true);
+    return is_array($tree)
+        && ($tree[0]['data']['tree_counters'] ?? null) === $treeCounters;
+}
+
+/**
  * Prepare a complete or partial cache write without erasing invalidation history.
  *
  * @param string $data JSON payload
