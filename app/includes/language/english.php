@@ -2184,7 +2184,7 @@ return array(
     'bck_restore_key_modal_body' => 'This backup cannot be decrypted with the current instance key. Please enter the key used to encrypt it.',
     'bck_restore_other_key_help' => 'Use a different backup encryption key if needed. This does not replace the instance master key. A backup from another master key requires the disaster-recovery procedure.',
     'bck_restore_master_key_mismatch' => 'This backup does not match the instance master key. Use the Disaster Recovery procedure with the original Recovery Package (docs/install/disaster-recovery.md).',
-    'bck_restore_schema_mismatch' => 'The backup database schema is not compatible with this installation. Use a compatible release or the disaster-recovery procedure.',
+    'bck_restore_preflight_schema_mismatch' => 'The backup database schema is not compatible with this installation. Use a compatible release or the disaster-recovery procedure.',
     'bck_restore_tables_missing' => 'The backup is incomplete: required TeamPass tables are missing. Select another complete backup.',
     'bck_restore_validation_failed' => 'The backup could not be validated or restored. Check the restore log for the diagnostic and keep the instance closed after an interrupted import.',
     'bck_restore_key_use' => 'Use this key',

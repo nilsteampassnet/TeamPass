@@ -17,7 +17,7 @@ function tpBackupRestoreErrorLanguageKey(string $reason): string
 {
     return match ($reason) {
         'MASTER_KEY_DATABASE_MISMATCH' => 'bck_restore_master_key_mismatch',
-        'SCHEMA_MISMATCH', 'DATABASE_VERSION_METADATA_MISMATCH', 'MISSING_SCHEMA' => 'bck_restore_schema_mismatch',
+        'SCHEMA_MISMATCH', 'DATABASE_VERSION_METADATA_MISMATCH', 'MISSING_SCHEMA' => 'bck_restore_preflight_schema_mismatch',
         'SQL_REQUIRED_TABLE_MISSING' => 'bck_restore_tables_missing',
         default => 'bck_restore_validation_failed',
     };

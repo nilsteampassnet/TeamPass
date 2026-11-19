@@ -299,7 +299,7 @@ class TaskWorker {
 
         // If launched by scheduler, update scheduler status in teampass_misc
         if (!empty($taskData['source']) && $taskData['source'] === 'scheduler') {
-            $scheduledMessage = 'Backup created: ' . ($this->taskData['backup_file'] ?? '');
+            $scheduledMessage = 'Backup created: ' . $this->taskData['backup_file'];
             $this->updateSchedulerState('completed', $scheduledMessage);
             $externalizedQueued = false;
             try {
