@@ -5217,7 +5217,6 @@ require __DIR__ . '/icon.picker.js.php';
                     'folder': parseInt($('#form-item-folder').val()),
                     'email': purifyRes.arrFields['email'],
                     'fields': fields,
-                    'folder_is_personal': store.get('teampassItem').IsPersonalFolder === 1 ? 1 : 0,
                     'id': store.get('teampassItem').id,
                     'label': purifyRes.arrFields['label'],
                     'login': purifyRes.arrFields['login'],
