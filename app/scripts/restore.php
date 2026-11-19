@@ -31,6 +31,14 @@ declare(strict_types=1);
 
 use TeampassClasses\ConfigManager\ConfigManager;
 
+// A retry must load its private journal before touching a partially imported misc table.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+if (!defined('TEAMPASS_FUNCTIONS_ONLY')) {
+    define('TEAMPASS_FUNCTIONS_ONLY', true);
+}
 require_once __DIR__ . '/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/backup.functions.php';
 

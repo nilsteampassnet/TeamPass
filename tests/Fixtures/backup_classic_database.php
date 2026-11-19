@@ -81,7 +81,8 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
             $refused = new \Symfony\Component\Process\Process($arguments, $root);
             $refused->run();
             if ($refused->getExitCode() !== 36) {
-                throw new RuntimeException('Resume accepted another authorization token.');
+                throw new RuntimeException('Resume did not safely reject another authorization token (exit '
+                    . $refused->getExitCode() . '): ' . $refused->getOutput() . $refused->getErrorOutput());
             }
             $arguments[5] = $authorization['token'];
             $originalArchive = file_get_contents($backup['filepath']);
@@ -90,7 +91,8 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
             $changed->run();
             file_put_contents($backup['filepath'], $originalArchive);
             if ($changed->getExitCode() !== 34 || !tpBackupRestoreIsInProgress()) {
-                throw new RuntimeException('Resume accepted a changed archive or released the hold.');
+                throw new RuntimeException('Resume did not safely reject a changed archive (exit '
+                    . $changed->getExitCode() . '): ' . $changed->getOutput() . $changed->getErrorOutput());
             }
             $process = new \Symfony\Component\Process\Process($arguments, $root);
             $process->setTimeout(180);
