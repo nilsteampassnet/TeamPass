@@ -843,8 +843,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             $backupSchema = (string) tpParseSchemaLevelFromBackupFilename($bn);
         }
 
-        // Upload restore has no meta => version cannot be verified by design
-        $warnings[] = 'VERSION_NOT_VERIFIED';
+        // Uploaded archives are classified with the common schema/version checks below.
     } elseif ($serverFile !== '') {
         $bn = basename(str_replace('\\', '/', $serverFile));
         $extension = strtolower((string) pathinfo($bn, PATHINFO_EXTENSION));

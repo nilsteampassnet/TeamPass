@@ -24,6 +24,16 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
     chmod($root . '/app/config/settings.php', 0600);
     chmod($root . '/secrets/fixture.key', 0600);
     try {
+        require_once $root . '/app/sources/upgrade_cli.functions.php';
+        $temporaryBefore = glob(sys_get_temp_dir() . '/tpbackup_tmp_*');
+        tpUpgradeCliVerifyBackup($backup['filepath'], [], $settings);
+        $instanceCandidates = tpGetBackupScriptPasskeyCandidates($settings, false);
+        file_put_contents($fixture . '/verify.sql', "DROP TABLE IF EXISTS `fixture_records`;\n");
+        \Defuse\Crypto\File::encryptFileWithPassword($fixture . '/verify.sql', $fixture . '/verify.encrypted.sql', $instanceCandidates[0]);
+        $verified = tpUpgradeCliVerifyBackup($fixture . '/verify.encrypted.sql', ['fixture_records' => 0], $settings);
+        if (!$verified['success'] || glob(sys_get_temp_dir() . '/tpbackup_tmp_*') !== $temporaryBefore) {
+            throw new RuntimeException('Upgrade backup verification left private staging directories behind.');
+        }
         $authorization = tpRestoreAuthorizationCreate(1, 'admin', $backup['filepath'], '', basename($backup['filepath']),
             0, 'synthetic-backup-password', '', ['expected_schema_level' => (string) UPGRADE_MIN_DATE], 3600, $settings);
         if (!$authorization['success']) { throw new RuntimeException('Could not authorize the classic restore fixture.'); }

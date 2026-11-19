@@ -736,9 +736,7 @@ function tpUpgradeCliVerifyBackup(string $file, array $inventory, array &$SETTIN
 
         return ['success' => true, 'message' => count($found) . ' tables verified'];
     } finally {
-        if (is_file($temporary) === true) {
-            @unlink($temporary);
-        }
+        tpBackupCleanupRestoreFile($temporary);
     }
 }
 

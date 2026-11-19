@@ -19,6 +19,9 @@ final class RecoveryPackageTrackingTest extends TestCase
 {
     public function testGeneratedRecoveryDownloadUsesOwnerOnlyPermissions(): void
     {
+        if (!class_exists('ZipArchive')) {
+            self::markTestSkipped('ZipArchive is required.');
+        }
         if (PHP_OS_FAMILY === 'Windows') { self::markTestSkipped('POSIX modes required.'); }
         self::assertSame(0600, $this->probe('create')['archive_mode']);
     }
