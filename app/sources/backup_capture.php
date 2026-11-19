@@ -46,7 +46,11 @@ final class TeamPassBackupCapture
             require_once __DIR__ . '/../scripts/backgroundTaskLock.php';
             self::$tasksLock = new BackgroundTaskLock(TASKS_LOCK_FILE);
             if (!self::$tasksLock->acquire()) {
+                $failureReason = self::$tasksLock->getFailureReason();
                 self::$tasksLock = null;
+                if (in_array($failureReason, ['open_failed', 'write_failed', 'lock_failed'], true)) {
+                    throw new RuntimeException('The background-task lock cannot be opened or written. Check storage/logs ownership and permissions for PHP and cron.');
+                }
                 throw new RuntimeException('Background tasks are running. Retry the backup after they finish.');
             }
         }

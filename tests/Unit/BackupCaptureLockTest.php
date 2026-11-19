@@ -20,7 +20,8 @@ final class BackupCaptureLockTest extends TestCase
         try {
             $process = new Process([PHP_BINARY, __DIR__ . '/../Fixtures/backup_capture_lock.php', $directory]);
             $process->mustRun();
-            self::assertSame(['blocked' => true, 'released' => true, 'refused' => true, 'releasedAfterFailure' => true],
+            self::assertSame(['blocked' => true, 'released' => true, 'refused' => true, 'releasedAfterFailure' => true,
+                'busyReason' => 'busy', 'permissionsReported' => true],
                 json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR));
         } finally {
             if (is_file($directory . '/handler.lock')) { unlink($directory . '/handler.lock'); }

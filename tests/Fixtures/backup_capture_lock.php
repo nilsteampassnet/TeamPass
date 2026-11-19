@@ -26,6 +26,7 @@ final class DB
 $capture = new TeamPassBackupCapture(true);
 $contender = new BackgroundTaskLock(TASKS_LOCK_FILE);
 $blocked = !$contender->acquire();
+$busyReason = $contender->getFailureReason();
 unset($capture);
 $released = $contender->acquire();
 $contender->release();
@@ -34,4 +35,13 @@ $refused = false;
 try { new TeamPassBackupCapture(true); } catch (RuntimeException $exception) { $refused = true; }
 $releasedAfterFailure = $contender->acquire();
 $contender->release();
-echo json_encode(compact('blocked', 'released', 'refused', 'releasedAfterFailure'), JSON_THROW_ON_ERROR);
+mkdir(TASKS_LOCK_FILE);
+$permissionsReported = false;
+try {
+    new TeamPassBackupCapture(true);
+} catch (RuntimeException $exception) {
+    $permissionsReported = str_contains($exception->getMessage(), 'permissions');
+} finally {
+    rmdir(TASKS_LOCK_FILE);
+}
+echo json_encode(compact('blocked', 'released', 'refused', 'releasedAfterFailure', 'busyReason', 'permissionsReported'), JSON_THROW_ON_ERROR);

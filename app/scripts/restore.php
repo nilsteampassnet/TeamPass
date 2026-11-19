@@ -525,6 +525,9 @@ try {
     require_once __DIR__ . '/backgroundTaskLock.php';
     $tasksLock = new BackgroundTaskLock(TASKS_LOCK_FILE);
     if (!$tasksLock->acquire()) {
+        if (in_array($tasksLock->getFailureReason(), ['open_failed', 'write_failed', 'lock_failed'], true)) {
+            throw new TeamPassRecoveryException('BACKGROUND_TASK_LOCK_UNWRITABLE');
+        }
         throw new TeamPassRecoveryException('BACKGROUND_TASKS_RUNNING');
     }
     if (!$resume) {

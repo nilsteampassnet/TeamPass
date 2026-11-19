@@ -42,6 +42,7 @@ final class BackgroundTaskLock
 {
     /** @var resource|null */
     private $handle = null;
+    private ?string $failureReason = null;
 
     /** @param string $path Trusted configured local path to the handler lock. */
     public function __construct(private string $path)
@@ -54,9 +55,11 @@ final class BackgroundTaskLock
         if (is_resource($this->handle)) {
             return true;
         }
+        $this->failureReason = null;
 
         $handle = tpOpenRuntimeFile($this->path);
         if ($handle === false) {
+            $this->failureReason = 'open_failed';
             error_log(
                 'Teampass Background Tasks: cannot open a valid lock file "' . $this->path
                 . '" - check that the web server user can write to this directory.'
@@ -73,7 +76,9 @@ final class BackgroundTaskLock
      */
     private function acquireHandle($handle): bool
     {
-        if (@flock($handle, LOCK_EX | LOCK_NB) === false) {
+        $wouldBlock = 0;
+        if (@flock($handle, LOCK_EX | LOCK_NB, $wouldBlock) === false) {
+            $this->failureReason = $wouldBlock === 1 ? 'busy' : 'lock_failed';
             fclose($handle);
             return false;
         }
@@ -81,18 +86,26 @@ final class BackgroundTaskLock
         // A finishing handler may have unlinked this inode after our open.
         $stat = @fstat($handle);
         if ($stat === false || tpRuntimeFileMatchesPath($this->path, $stat) === false) {
+            $this->failureReason = 'path_changed';
             fclose($handle);
             return false;
         }
 
         $pid = (string) getmypid();
         if (@ftruncate($handle, 0) === false || @fwrite($handle, $pid) !== strlen($pid) || @fflush($handle) === false) {
+            $this->failureReason = 'write_failed';
             fclose($handle);
             error_log('Teampass Background Tasks: cannot write lock file "' . $this->path . '".');
             return false;
         }
         $this->handle = $handle;
         return true;
+    }
+
+    /** Return the last acquisition diagnostic without treating file presence as activity. */
+    public function getFailureReason(): ?string
+    {
+        return $this->failureReason;
     }
 
     /** Remove only our own inode while locked, then release the descriptor. */
