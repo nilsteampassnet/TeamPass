@@ -54,7 +54,9 @@ The on-the-fly backup allows you to create an immediate backup of your database.
 > 💡 Store your encryption key in a safe place. Without it, you will not be able to restore the backup.
 
 Manual encryption keys are used exactly as entered, including special characters.
-The server refuses empty keys. Restore also tries the historical HTML-encoded
+The server refuses an empty key and a key longer than 4,096 bytes. A manual backup
+also refuses to start while background tasks are running: retry once they have
+finished. Restore also tries the historical HTML-encoded
 form for backups created by older releases. New SQL dumps preserve newlines,
 literal backslashes and binary bytes; this cannot repair data already changed
 inside an older dump.
@@ -182,7 +184,9 @@ A requested document backup fails if its inventory is incomplete or cannot be
 read; it does not publish a package presented as complete. SQL backups require
 their metadata write to succeed. If that write fails after encryption, the SQL
 archive is retained and the operation reports failure. A retention failure is
-also reported, even when the new archive was created successfully. Failed backup
+also reported, even when the new archive was created successfully; it does not
+prevent the externalized copy of that new archive, which is queued before
+retention runs. Failed backup
 runs do not purge previous archives: retention only runs after a successful new
 backup. Repair the reported storage or document problem before retrying.
 
@@ -267,7 +271,7 @@ Navigate to the `Externalized` tab to configure the external destination:
 | Target directory / remote path / object prefix | Where externalized backup files are stored |
 | Format | `.tpbackup` package or `Legacy encrypted SQL` |
 | Include documents | Force the `.tpbackup` format and include supported document files |
-| Run after scheduled backup | Queue an externalized backup after each successful scheduled backup |
+| Run after scheduled backup | After each successful scheduled backup, copy that exact encrypted archive to the destination (see [Email notifications](#email-notifications) for the details) |
 | Schedule externalized backups | Run externalized backups using their own schedule |
 | Frequency | `Daily`, `Weekly`, or `Monthly` |
 | Time | Time of day to run the externalized backup |
@@ -283,9 +287,9 @@ Navigate to the `Externalized` tab to configure the external destination:
 | Destination | Required information |
 |-------------|----------------------|
 | Local directory / mounted share | A writable directory outside Teampass directories |
-| SFTP | Host, port, username, authentication method, and writable remote path |
-| WebDAV | WebDAV URL, username, password, and writable remote path |
-| S3 | Endpoint, region, bucket, access key, secret key, path-style option, and optional object prefix |
+| SFTP | Host, port, server host key fingerprint (SHA256), username, authentication method, and writable remote path |
+| WebDAV | WebDAV URL, username, password, and writable remote path; *Allow an unencrypted HTTP endpoint* only for an `http://` URL on a trusted private network |
+| S3 | Endpoint, region, bucket, access key, secret key, path-style option, and optional object prefix; *Allow an unencrypted HTTP endpoint* only for an `http://` endpoint on a trusted private network |
 
 For SMB/CIFS shares without Unix permission support, configure restrictive mount
 options such as `file_mode=0600,dir_mode=0700`, with `uid`/`gid` matching the PHP

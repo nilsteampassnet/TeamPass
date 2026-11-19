@@ -96,10 +96,12 @@ For every entry, TeamPass maps:
 
 * the **title / name** → item label,
 * the **username / login** → item login,
-* the **password** → item password,
+* the **password** → item password, imported exactly as exported (spaces, quotes, `&`, backslashes and non-Latin characters included),
 * the **URL** → item URL,
 * the **notes** → item description,
 * the **folder / group / grouping** → folder path (created on import).
+
+In the CSV exports of LastPass, 1Password and KeePassXC, a quote inside a value is marked by doubling it; a backslash is kept as a plain character, so a value ending with `\` is imported whole.
 
 Folder handling follows the same rule as the CSV import: **folders are created only when the user has a `Manager` role**; otherwise items are imported flat into the selected target folder.
 

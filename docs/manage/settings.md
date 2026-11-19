@@ -183,7 +183,7 @@ Item and folder behaviour.
 | **Enable favourites** | Activates the Favourites feature (see [Favourites](../features/favourites.md)) |
 | **Show copy icons** | Displays quick copy-to-clipboard icons on the item list row |
 | **Show item description** | Displays the description field in the item list |
-| **Show folder tree counters** | Adds item counts next to folder names in the tree |
+| **Show counters in folder tree** | Shows three numbers next to each folder: items in the folder, items including its subfolders, and subfolders. A folder reached only through individual item access shows the number of items the user can open there. The option applies to every folder, read-only ones included. Changing it rebuilds each user's cached tree on their next folder load |
 | **Restricted search by default** | Search is scoped to a subset of folders unless the user explicitly widens it |
 | **Highlight selected items** | Highlights the currently selected item row |
 | **Highlight favourite items** | Applies a visual marker to favourite items in the item list |
