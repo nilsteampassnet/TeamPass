@@ -92,6 +92,10 @@ function tpTestClassicBackupRestore(string $root, string $fixture, array $backup
         if (!$process->isSuccessful()) {
             throw new RuntimeException('Classic restore failed: ' . $process->getOutput() . $process->getErrorOutput());
         }
+        if ((string) DB::queryFirstField('SELECT qui FROM ' . prefixTable('log_system') . ' WHERE type=%s AND label=%s',
+            'admin_action', 'dataBase restore') !== '1') {
+            throw new RuntimeException('The restore audit lost its original administrator identity.');
+        }
         if (tpBackupRestoreIsInProgress() || DB::queryFirstField('SELECT payload FROM ' . prefixTable('backup_bytes')) !== $bytes
             || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) !== 0
             || (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('device_pairings')) !== 0

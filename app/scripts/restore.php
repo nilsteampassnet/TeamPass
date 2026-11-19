@@ -278,6 +278,7 @@ register_shutdown_function(static function () use ($databaseLock): void {
     try { DB::queryFirstField('SELECT RELEASE_LOCK(%s)', $databaseLock); } catch (Throwable $exception) {}
 });
 // A resume is authorized by the private journal and original token, not the partial database.
+$initiatorId = (int) ($payload['initiator']['id'] ?? 0);
 if (!$resume) {
 $authorizer = DB::queryFirstRow('SELECT admin, disabled, deleted_at FROM %b WHERE id=%i',
     prefixTable('users'), (int) ($payload['initiator']['id'] ?? 0));
@@ -287,7 +288,6 @@ if (!is_array($authorizer) || (int) ($authorizer['admin'] ?? 0) !== 1
     exit(35);
 }
 // Always disconnect the restore initiator right away (so the admin can safely run the CLI).
-$initiatorId = (int) (($payload['initiator']['id'] ?? 0));
 if ($initiatorId > 0) {
     try {
         DB::update(
