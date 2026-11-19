@@ -1833,8 +1833,6 @@ class TaskWorker {
             }
             tpNotifyBackupFailure($this->taskId, 'externalized', $e->getMessage());
         }
-
-
     }
 
     /**

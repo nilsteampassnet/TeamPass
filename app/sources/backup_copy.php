@@ -36,13 +36,19 @@ function tpBackupCopyScheduledArchive(string $directory, string $filename, strin
             }
         } else {
             $work = tpBackupCreateTemporaryDirectory($target);
-            if ($work === '') { throw new RuntimeException('Could not stage the scheduled backup copy.'); }
+            if ($work === '') {
+                throw new RuntimeException('Could not stage the scheduled backup copy.');
+            }
             $temporary = $work . '/archive.encrypted';
             $output = tpBackupOpenProtectedFile($temporary);
             $input = fopen($source, 'rb');
             if (!is_resource($output) || !is_resource($input)) {
-                if (is_resource($output)) { fclose($output); }
-                if (is_resource($input)) { fclose($input); }
+                if (is_resource($output)) {
+                    fclose($output);
+                }
+                if (is_resource($input)) {
+                    fclose($input);
+                }
                 throw new RuntimeException('Could not open the scheduled backup copy streams.');
             }
             try {
@@ -70,6 +76,8 @@ function tpBackupCopyScheduledArchive(string $directory, string $filename, strin
         return ['success' => true, 'filename' => $name, 'filepath' => $destination, 'encrypted' => true,
             'size_bytes' => (int) filesize($destination), 'message' => ''];
     } finally {
-        if ($work !== '') { tpBackupRemoveTemporaryDirectory($work); }
+        if ($work !== '') {
+            tpBackupRemoveTemporaryDirectory($work);
+        }
     }
 }

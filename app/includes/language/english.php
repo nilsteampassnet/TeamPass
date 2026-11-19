@@ -2006,7 +2006,6 @@ return array(
     'bck_externalized_title' => 'Externalized backup settings',
     'bck_externalized_enabled' => 'Enable externalization',
     'bck_externalized_run_after_scheduled' => 'Run after scheduled backup',
-    'bck_externalized_run_after_scheduled_help' => 'Queue an externalized backup after each successful scheduled database backup. Cannot be combined with the dedicated externalized schedule.',
     'bck_externalized_schedule_enabled' => 'Schedule externalized backups',
     'bck_externalized_schedule_help' => 'Automatically queue externalized backups using the TeamPass background task scheduler. Cannot be combined with run after scheduled backup.',
     'bck_externalized_trigger_mode_exclusive_notice' => 'Only one externalized backup trigger can be active. The other trigger has been disabled.',

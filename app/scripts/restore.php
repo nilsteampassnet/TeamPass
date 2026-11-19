@@ -275,140 +275,144 @@ if ((string) DB::queryFirstField('SELECT GET_LOCK(%s, 0)', $databaseLock) !== '1
     exit(20);
 }
 register_shutdown_function(static function () use ($databaseLock): void {
-    try { DB::queryFirstField('SELECT RELEASE_LOCK(%s)', $databaseLock); } catch (Throwable $exception) {}
+    try {
+        DB::queryFirstField('SELECT RELEASE_LOCK(%s)', $databaseLock);
+    } catch (Throwable $exception) {
+        // The connection also releases its advisory lock when the process exits.
+    }
 });
 // A resume is authorized by the private journal and original token, not the partial database.
 $initiatorId = (int) ($payload['initiator']['id'] ?? 0);
 if (!$resume) {
-$authorizer = DB::queryFirstRow('SELECT admin, disabled, deleted_at FROM %b WHERE id=%i',
-    prefixTable('users'), (int) ($payload['initiator']['id'] ?? 0));
-if (!is_array($authorizer) || (int) ($authorizer['admin'] ?? 0) !== 1
-    || (int) ($authorizer['disabled'] ?? 0) !== 0 || ($authorizer['deleted_at'] ?? null) !== null) {
-    $log('ERROR', 'The authorizing administrator is no longer eligible.');
-    exit(35);
-}
-// Always disconnect the restore initiator right away (so the admin can safely run the CLI).
-if ($initiatorId > 0) {
-    try {
-        DB::update(
-            prefixTable('users'),
-            [
-                'timestamp' => '',
-                'key_tempo' => '',
-                'session_end' => '',
-            ],
-            'id = %i',
-            $initiatorId
-        );
-        // Invalidate the initiator's API sessions as well (web + API)
-        tpInvalidateUserApiSession($initiatorId);
-        $log('INFO', 'Disconnected restore initiator (user id=' . $initiatorId . ').');
-    } catch (Throwable $e) {
-        $log('WARN', 'Unable to disconnect restore initiator: ' . $e->getMessage());
+    $authorizer = DB::queryFirstRow('SELECT admin, disabled, deleted_at FROM %b WHERE id=%i',
+        prefixTable('users'), (int) ($payload['initiator']['id'] ?? 0));
+    if (!is_array($authorizer) || (int) ($authorizer['admin'] ?? 0) !== 1
+        || (int) ($authorizer['disabled'] ?? 0) !== 0 || ($authorizer['deleted_at'] ?? null) !== null) {
+        $log('ERROR', 'The authorizing administrator is no longer eligible.');
+        exit(35);
     }
-}
-
-// Connected users detection (web + API if possible)
-$webUsers = [];
-$apiUsers = [];
-try {
+    // Always disconnect the restore initiator right away (so the admin can safely run the CLI).
     if ($initiatorId > 0) {
-        $webUsers = DB::query(
-            'SELECT id, login, name, lastname, session_end
-             FROM ' . prefixTable('users') . '
-             WHERE session_end >= %i AND id != %i',
+        try {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'timestamp' => '',
+                    'key_tempo' => '',
+                    'session_end' => '',
+                ],
+                'id = %i',
+                $initiatorId
+            );
+            // Invalidate the initiator's API sessions as well (web + API)
+            tpInvalidateUserApiSession($initiatorId);
+            $log('INFO', 'Disconnected restore initiator (user id=' . $initiatorId . ').');
+        } catch (Throwable $e) {
+            $log('WARN', 'Unable to disconnect restore initiator: ' . $e->getMessage());
+        }
+    }
+
+    // Connected users detection (web + API if possible)
+    $webUsers = [];
+    $apiUsers = [];
+    try {
+        if ($initiatorId > 0) {
+            $webUsers = DB::query(
+                'SELECT id, login, name, lastname, session_end
+                 FROM ' . prefixTable('users') . '
+                 WHERE session_end >= %i AND id != %i',
+                $now,
+                $initiatorId
+            );
+        } else {
+            $webUsers = DB::query(
+                'SELECT id, login, name, lastname, session_end
+                 FROM ' . prefixTable('users') . '
+                 WHERE session_end >= %i',
+                $now
+            );
+        }
+    } catch (Throwable $e) {
+        // Ensure any in-place progress bar line is terminated before printing errors
+        if ($interactive) {
+            @fwrite(STDERR, PHP_EOL);
+        }
+        $log('WARN', 'Unable to check web sessions: ' . $e->getMessage());
+    }
+
+    try {
+        // API presence comes from teampass_api_sessions (one row per issued JWT):
+        // a session that is neither revoked nor expired means an active API client.
+        $apiUsers = DB::query(
+            'SELECT u.id, u.login, u.name, u.lastname, api_conn.last_api_date AS last_api
+             FROM ' . prefixTable('users') . ' u
+             INNER JOIN (
+                SELECT user_id, MAX(created_at) AS last_api_date
+                FROM ' . prefixTable('api_sessions') . '
+                WHERE revoked_at IS NULL
+                    AND expires_at >= %i
+                GROUP BY user_id
+             ) api_conn ON api_conn.user_id = u.id
+             WHERE (%i = 0 OR u.id != %i)',
             $now,
+            $initiatorId,
             $initiatorId
         );
-    } else {
-        $webUsers = DB::query(
-            'SELECT id, login, name, lastname, session_end
-             FROM ' . prefixTable('users') . '
-             WHERE session_end >= %i',
-            $now
-        );
-    }
-} catch (Throwable $e) {
-	// Ensure any in-place progress bar line is terminated before printing errors
-	if ($interactive) {
-	    @fwrite(STDERR, PHP_EOL);
-	}
-    $log('WARN', 'Unable to check web sessions: ' . $e->getMessage());
-}
-
-try {
-    // API presence comes from teampass_api_sessions (one row per issued JWT):
-    // a session that is neither revoked nor expired means an active API client.
-    $apiUsers = DB::query(
-        'SELECT u.id, u.login, u.name, u.lastname, api_conn.last_api_date AS last_api
-         FROM ' . prefixTable('users') . ' u
-         INNER JOIN (
-            SELECT user_id, MAX(created_at) AS last_api_date
-            FROM ' . prefixTable('api_sessions') . '
-            WHERE revoked_at IS NULL
-                AND expires_at >= %i
-            GROUP BY user_id
-         ) api_conn ON api_conn.user_id = u.id
-         WHERE (%i = 0 OR u.id != %i)',
-        $now,
-        $initiatorId,
-        $initiatorId
-    );
-} catch (Throwable $e) {
-    // Optional: ignore API checks if unavailable
-    $log('WARN', 'Unable to check API activity: ' . $e->getMessage());
-}
-
-// Enforce disconnect policy for web and API sessions
-if ((!empty($webUsers) || !empty($apiUsers)) && $forceDisconnect === false) {
-    $log('ERROR', 'Active sessions detected. Re-run with --force-disconnect or disconnect users first.');
-    foreach ($webUsers as $u) {
-        $log('ERROR', 'WEB user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
-    }
-    foreach ($apiUsers as $u) {
-        $log('ERROR', 'API user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
-    }
-    // IMPORTANT: keep token pending so the operator can retry after disconnecting users.
-    $payload['last_error'] = 'active_sessions';
-    $payload['last_error_at'] = time();
-    tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
-    exit(10);
-}
-
-if (!empty($webUsers) && $forceDisconnect === true) {
-    $log('INFO', 'Active web sessions detected: forcing disconnection.');
-    try {
-        DB::update(
-            prefixTable('users'),
-            [
-                'timestamp' => '',
-                'key_tempo' => '',
-                'session_end' => '',
-            ],
-            // By id: session_end is a varchar often holding '', which a numeric comparison
-            // rejects in an UPDATE under strict SQL mode, leaving every user connected.
-            'id IN %li',
-            array_map(static fn (array $user): int => (int) $user['id'], $webUsers)
-        );
     } catch (Throwable $e) {
-        $log('WARN', 'Failed to force-disconnect web users: ' . $e->getMessage());
+        // Optional: ignore API checks if unavailable
+        $log('WARN', 'Unable to check API activity: ' . $e->getMessage());
     }
-}
 
-if (!empty($apiUsers) && $forceDisconnect === true) {
-    $log('INFO', 'Active API sessions detected: forcing disconnection.');
-    foreach ($apiUsers as $u) {
-        $apiUserId = (int) ($u['id'] ?? 0);
-        if ($apiUserId > 0) {
-            try {
-                tpInvalidateUserApiSession($apiUserId);
-            } catch (Throwable $e) {
-                $log('WARN', 'Failed to force-disconnect API user ' . $apiUserId . ': ' . $e->getMessage());
+    // Enforce disconnect policy for web and API sessions
+    if ((!empty($webUsers) || !empty($apiUsers)) && $forceDisconnect === false) {
+        $log('ERROR', 'Active sessions detected. Re-run with --force-disconnect or disconnect users first.');
+        foreach ($webUsers as $u) {
+            $log('ERROR', 'WEB user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
+        }
+        foreach ($apiUsers as $u) {
+            $log('ERROR', 'API user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
+        }
+        // IMPORTANT: keep token pending so the operator can retry after disconnecting users.
+        $payload['last_error'] = 'active_sessions';
+        $payload['last_error_at'] = time();
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+
+        exit(10);
+    }
+
+    if (!empty($webUsers) && $forceDisconnect === true) {
+        $log('INFO', 'Active web sessions detected: forcing disconnection.');
+        try {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'timestamp' => '',
+                    'key_tempo' => '',
+                    'session_end' => '',
+                ],
+                // By id: session_end is a varchar often holding '', which a numeric comparison
+                // rejects in an UPDATE under strict SQL mode, leaving every user connected.
+                'id IN %li',
+                array_map(static fn (array $user): int => (int) $user['id'], $webUsers)
+            );
+        } catch (Throwable $e) {
+            $log('WARN', 'Failed to force-disconnect web users: ' . $e->getMessage());
+        }
+    }
+
+    if (!empty($apiUsers) && $forceDisconnect === true) {
+        $log('INFO', 'Active API sessions detected: forcing disconnection.');
+        foreach ($apiUsers as $u) {
+            $apiUserId = (int) ($u['id'] ?? 0);
+            if ($apiUserId > 0) {
+                try {
+                    tpInvalidateUserApiSession($apiUserId);
+                } catch (Throwable $e) {
+                    $log('WARN', 'Failed to force-disconnect API user ' . $apiUserId . ': ' . $e->getMessage());
+                }
             }
         }
     }
-}
 
 }
 
@@ -425,12 +429,16 @@ try {
         if (!empty($secrets['encryptionKey'])) {
             $tmp = cryption(strval($secrets['encryptionKey']), '', 'decrypt', $SETTINGS);
             $k = isset($tmp['string']) ? (string) $tmp['string'] : '';
-            if ($k !== '') $keysToTry[] = $k;
+            if ($k !== '') {
+                $keysToTry[] = $k;
+            }
         }
         if (!empty($secrets['overrideKey'])) {
             $tmp = cryption(strval($secrets['overrideKey']), '', 'decrypt', $SETTINGS);
             $k = isset($tmp['string']) ? (string) $tmp['string'] : '';
-            if ($k !== '') $keysToTry[] = $k;
+            if ($k !== '') {
+                $keysToTry[] = $k;
+            }
         }
     }
 } catch (Throwable $e) {
@@ -474,8 +482,12 @@ if ($tmpSql === '') {
     $payload['status'] = 'failed';
     $payload['finished_at'] = time();
     $payload['error'] = 'temp_file_failed';
-    if (!$resume) { tpRestoreAuthorizationUpdatePayload($authId, $payload); }
-    if (!$resume) { tpBackupCleanupExternalizedRestoreStage($restoreStage); }
+    if (!$resume) {
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+    }
+    if (!$resume) {
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+    }
     exit(40);
 }
 
@@ -488,8 +500,12 @@ if (tpBackupIsPackageFilename($file) === true) {
         $payload['status'] = 'failed';
         $payload['finished_at'] = time();
         $payload['error'] = $errorCode;
-        if (!$resume) { tpRestoreAuthorizationUpdatePayload($authId, $payload); }
-        if (!$resume) { tpBackupCleanupExternalizedRestoreStage($restoreStage); }
+        if (!$resume) {
+            tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        }
+        if (!$resume) {
+            tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        }
         exit($errorCode === 'DECRYPT_FAILED' ? 41 : 43);
     }
 
@@ -504,8 +520,12 @@ if (tpBackupIsPackageFilename($file) === true) {
         $payload['status'] = 'failed';
         $payload['finished_at'] = time();
         $payload['error'] = 'decrypt_failed';
-        if (!$resume) { tpRestoreAuthorizationUpdatePayload($authId, $payload); }
-        if (!$resume) { tpBackupCleanupExternalizedRestoreStage($restoreStage); }
+        if (!$resume) {
+            tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        }
+        if (!$resume) {
+            tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        }
         exit(41);
     }
 

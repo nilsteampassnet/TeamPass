@@ -2082,7 +2082,6 @@ return array(
     'bck_externalized_title' => 'Paramètres de sauvegarde externalisée',
     'bck_externalized_enabled' => 'Activer l’externalisation',
     'bck_externalized_run_after_scheduled' => 'Exécuter après la sauvegarde planifiée',
-    'bck_externalized_run_after_scheduled_help' => 'Met une sauvegarde externalisée en file après chaque sauvegarde planifiée réussie. Ne peut pas être combiné avec le planning externalisé dédié.',
     'bck_externalized_schedule_enabled' => 'Planifier les sauvegardes externalisées',
     'bck_externalized_schedule_help' => 'Met automatiquement les sauvegardes externalisées en file via le planificateur de tâches TeamPass. Ne peut pas être combiné avec l’exécution après sauvegarde planifiée.',
     'bck_externalized_trigger_mode_exclusive_notice' => 'Un seul déclencheur de sauvegarde externalisée peut être actif. L’autre déclencheur a été désactivé.',
