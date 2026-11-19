@@ -204,6 +204,19 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Column names are matched case-insensitively (BOM stripped). Without a
+        // label column every row would be skipped and the import would report
+        // 0 items with no error.
+        $header = ImportFormat::normaliseTeampassCsvHeader($header);
+        if (ImportFormat::teampassCsvHeaderIsValid($header) === false) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('import_error_invalid_structure')),
+                'encode'
+            );
+            unlink($file);
+            break;
+        }
+
         // Initialize the array to store values to import
         $valuesToImport = [];
 
@@ -291,16 +304,19 @@ switch ($inputData['type']) {
 
         // Get the data and ensure columns are correctly mapped
         $interpreter = new Interpreter();
+        // Each row is padded or cut to the header length, so rows of different sizes are fine
+        $interpreter->unstrict();
         $interpreter->addObserver(function (array $row) use (&$valuesToImport, $header) {
-            $rowData = array_combine($header, $row);
+            // Accepts the documented column names and those of the TeamPass CSV export
+            $item = ImportFormat::mapTeampassCsvRow($header, $row);
 
             $valuesToImport[] = array(
-                'Label' => isset($rowData['label']) ? trim($rowData['label']) : '',
-                'Login' => isset($rowData['login']) ? trim($rowData['login']) : '',
-                'Password' => isset($rowData['password']) ? trim($rowData['password']) : '',
-                'url' => isset($rowData['url']) ? trim($rowData['url']) : '',
-                'Comments' => isset($rowData['description']) ? trim($rowData['description']) : '',
-                'Folder' => isset($rowData['folder']) ? trim($rowData['folder']) : '',
+                'Label' => $item['label'],
+                'Login' => $item['login'],
+                'Password' => $item['pwd'], // verbatim, never trimmed
+                'url' => $item['url'],
+                'Comments' => $item['description'],
+                'Folder' => $item['folder'],
             );
         });
 
