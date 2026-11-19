@@ -117,11 +117,6 @@ function tpCliProgressBar(int $pct, int $totalExecuted, bool $interactive): void
     }
 }
 
-if (PHP_SAPI !== 'cli') {
-    tpCliErr('ERROR: This script must be executed in CLI.');
-    exit(2);
-}
-
 // Parse CLI options
 $options = getopt('', ['file:', 'auth-token:', 'force-disconnect', 'resume', 'help']);
 if (isset($options['help']) || empty($options['file']) || empty($options['auth-token'])) {
