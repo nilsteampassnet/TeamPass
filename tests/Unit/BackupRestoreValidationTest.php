@@ -126,4 +126,17 @@ final class BackupRestoreValidationTest extends TestCase
         self::assertStringNotContainsString('tpBackupPreflightRestoreSql(', $web);
         self::assertLessThan(strpos($cli, 'tpBackupWriteRestoreJournal('), strpos($cli, 'tpBackupPreflightRestoreSql('));
     }
+
+    public function testRestoreDiagnosticsHaveReadableEnglishAndFrenchMessages(): void
+    {
+        foreach (['english', 'french'] as $language) {
+            $catalog = new \TeampassClasses\Language\Language($language);
+            foreach (['MASTER_KEY_DATABASE_MISMATCH', 'SCHEMA_MISMATCH', 'SQL_REQUIRED_TABLE_MISSING', 'SQL_IMPORT_FAILED'] as $reason) {
+                $key = tpBackupRestoreErrorLanguageKey($reason);
+                self::assertNotSame($key, $catalog->getShipped($key));
+                self::assertStringNotContainsString($reason, $catalog->getShipped($key));
+            }
+            self::assertStringContainsString('disaster-recovery.md', $catalog->getShipped(tpBackupRestoreErrorLanguageKey('MASTER_KEY_DATABASE_MISMATCH')));
+        }
+    }
 }

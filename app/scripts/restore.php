@@ -641,7 +641,8 @@ try {
         tpRestoreAuthorizationUpdatePayload($authId, $payload);
     }
 
-    $log('ERROR', 'Restore failed: ' . $payload['error']);
+    $restoreLanguage = new \TeampassClasses\Language\Language($SETTINGS['default_language'] ?? 'english');
+    $log('ERROR', $restoreLanguage->getShipped(tpBackupRestoreErrorLanguageKey($payload['error'])) . ' [' . $payload['error'] . ']');
     $exitCode = 50;
 } finally {
     tpBackupCleanupRestoreFile($tmpSql);

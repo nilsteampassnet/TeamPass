@@ -3012,7 +3012,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId, $resolvedOverridePath);
                     if (!empty($chk['is_compatible']) === false) {
                         $cleanupRestoreStage();
-                        $compatMessage = $lang->get('bck_restore_incompatible_version_body');
+                        $compatMessage = $lang->get(tpBackupRestoreErrorLanguageKey((string) $chk['reason']));
                         if ((string) $chk['reason'] === 'PACKAGE_DOCUMENTS_RESTORE_NOT_SUPPORTED') {
                             $compatMessage = $lang->get('bck_restore_tpbackup_documents_not_supported');
                         } elseif ((string) $chk['reason'] === 'PACKAGE_TYPE_UNSUPPORTED') {
