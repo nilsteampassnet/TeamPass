@@ -27,11 +27,17 @@ While logged in as an administrator,
 
 In order to be imported, the CSV requires to be build following a specific format.
 
-* The first line must be a header,
-* The header must contain 5 or 6 columns (with or without folder),
+* The first line must be a header naming the columns,
 * The separator character is a comma `,`,
-* The encalupsation character is a double quotes `"`,
-* Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments` , `Folder` (is optional).
+* The enclosure character is a double quote `"`,
+* Expected columns are: `label` , `login` , `password` , `url` , `comments` , `folder` (is optional).
+
+Columns are matched by name, not by position, so their order does not matter:
+
+* Header names are case-insensitive (`Label` and `label` are the same column), and the byte order mark written by Excel's *CSV UTF-8* format is ignored.
+* `description` is accepted instead of `comments`, and `pw` instead of `password`. These are the names written by the TeamPass CSV export, so an exported file can be imported again; its other columns (`id`, `email`, `tag`, `totp`, ...) are ignored.
+* The `label` column is mandatory. A file without it is rejected with an error. A row with an empty label is skipped.
+* The password is imported exactly as written, including leading and trailing spaces.
 
 #### Example with folder
 
