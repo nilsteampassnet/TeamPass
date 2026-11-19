@@ -61,4 +61,18 @@ final class BackupTransportSecurityTest extends TestCase
         self::assertFalse(tpBackupRemoteUrlIsSecure(parse_url('https://user:password@host.test'), true));
         self::assertFalse(tpBackupRemoteUrlIsSecure(parse_url('ftp://host.test'), true));
     }
+
+    public function testHttpOptInRoundTripsThroughSubmittedAndPublicSettings(): void
+    {
+        $process = new Process([PHP_BINARY, __DIR__ . '/../Fixtures/backup_http_opt_in.php']);
+        $process->mustRun();
+        $results = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        foreach ([0, 1, 0] as $index => $optIn) {
+            [$webdavSubmitted, $s3Submitted, $webdavPublic, $s3Public] = $results[$index];
+            self::assertSame([$optIn, $optIn, $optIn, $optIn],
+                [$webdavSubmitted, $s3Submitted, $webdavPublic['allow_http'], $s3Public['allow_http']]);
+            self::assertArrayNotHasKey('password', $webdavPublic);
+            self::assertArrayNotHasKey('secret_key', $s3Public);
+        }
+    }
 }

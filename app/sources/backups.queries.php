@@ -1832,11 +1832,13 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                         'sftp' => tpExternalizedGetSftpPublicSettings($SETTINGS),
                         'webdav' => [
                             'url' => (string) $webdavConfig['url'],
+                            'allow_http' => (int) $webdavConfig['allow_http'],
                             'username' => (string) $webdavConfig['username'],
                             'has_password' => !empty($webdavConfig['password_available']),
                         ],
                         's3' => [
                             'endpoint' => (string) $s3Config['endpoint'],
+                            'allow_http' => (int) $s3Config['allow_http'],
                             'region' => (string) $s3Config['region'],
                             'bucket' => (string) $s3Config['bucket'],
                             'access_key' => (string) $s3Config['access_key'],
