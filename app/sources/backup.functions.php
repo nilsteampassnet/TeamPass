@@ -1679,15 +1679,15 @@ function tpBackupSftpHostKeyMatches(string $publicKey, string $expected): bool
     return hash_equals(rtrim(trim($expected), '='), 'SHA256:' . rtrim(base64_encode(hash('sha256', $blob, true)), '='));
 }
 
-/** Require TLS outside loopback development servers; never accept URL-embedded credentials. */
-function tpBackupRemoteUrlIsSecure(array $parts): bool
+/** Prefer TLS; accept explicit administrator HTTP opt-in, never URL-embedded credentials. */
+function tpBackupRemoteUrlIsSecure(array $parts, bool $allowHttp = false): bool
 {
     if (isset($parts['user']) || isset($parts['pass'])) {
         return false;
     }
     $scheme = strtolower((string) ($parts['scheme'] ?? ''));
     return $scheme === 'https' || ($scheme === 'http'
-        && in_array(strtolower((string) ($parts['host'] ?? '')), ['localhost', '127.0.0.1', '[::1]', '::1'], true));
+        && ($allowHttp || in_array(strtolower((string) ($parts['host'] ?? '')), ['localhost', '127.0.0.1', '[::1]', '::1'], true)));
 }
 
 /**
@@ -1775,7 +1775,7 @@ function tpBackupValidateExternalizedWebdavConfig(array $config): array
 
     $parts = parse_url($baseUrl);
     $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-    if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts)) {
+    if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts, (int) ($config['allow_http'] ?? 0) === 1)) {
         return ['success' => false, 'reason' => 'WEBDAV_URL_INVALID', 'path' => ''];
     }
 
@@ -1826,6 +1826,7 @@ function tpBackupOpenExternalizedWebdavConnection(array $config): array
 
     $cleanConfig = [
         'url' => rtrim(trim((string) ($config['url'] ?? '')), '/'),
+        'allow_http' => (int) ($config['allow_http'] ?? 0) === 1 ? 1 : 0,
         'username' => trim(str_replace("\0", '', (string) ($config['username'] ?? ''))),
         'password' => (string) ($config['password'] ?? ''),
         'remote_path' => (string) $validated['path'],
@@ -2178,7 +2179,7 @@ function tpBackupValidateExternalizedS3Config(array $config): array
 
         $parts = parse_url($endpoint);
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts)) {
+        if (empty($parts['host']) || !tpBackupRemoteUrlIsSecure($parts, (int) ($config['allow_http'] ?? 0) === 1)) {
             return ['success' => false, 'reason' => 'S3_ENDPOINT_INVALID', 'path' => ''];
         }
     }
@@ -2247,6 +2248,7 @@ function tpBackupOpenExternalizedS3Connection(array $config): array
 
     $cleanConfig = [
         'endpoint' => rtrim($endpoint, '/'),
+        'allow_http' => (int) ($config['allow_http'] ?? 0) === 1 ? 1 : 0,
         'region' => $region,
         'bucket' => trim(str_replace("\0", '', (string) ($config['bucket'] ?? ''))),
         'access_key' => trim(str_replace("\0", '', (string) ($config['access_key'] ?? ''))),

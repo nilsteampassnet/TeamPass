@@ -428,6 +428,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'url' => (string) tpGetSettingsValue('bck_externalized_webdav_url', ''),
+            'allow_http' => (int) tpGetSettingsValue('bck_externalized_allow_http', '0') === 1 ? 1 : 0,
             'username' => (string) tpGetSettingsValue('bck_externalized_webdav_username', ''),
             'password' => $password,
             'password_available' => $password !== '' || (string) tpGetSettingsValue('bck_externalized_webdav_password', '') !== '',
@@ -454,6 +455,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'username' => trim(str_replace("\0", '', (string)($dataReceived['webdav_username'] ?? $stored['username']))),
             'password' => $password,
             'password_available' => $password !== '' || !empty($stored['password_available']),
+            'allow_http' => (int) ($dataReceived['allow_http'] ?? $stored['allow_http']) === 1 ? 1 : 0,
         ];
     }
 
@@ -471,6 +473,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'url' => (string) $config['url'],
             'username' => (string) $config['username'],
             'has_password' => !empty($config['password_available']),
+            'allow_http' => (int) $config['allow_http'],
         ];
     }
 
@@ -486,6 +489,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
         return [
             'endpoint' => (string) tpGetSettingsValue('bck_externalized_s3_endpoint', ''),
+            'allow_http' => (int) tpGetSettingsValue('bck_externalized_allow_http', '0') === 1 ? 1 : 0,
             'region' => (string) tpGetSettingsValue('bck_externalized_s3_region', 'us-east-1'),
             'bucket' => (string) tpGetSettingsValue('bck_externalized_s3_bucket', ''),
             'access_key' => (string) tpGetSettingsValue('bck_externalized_s3_access_key', ''),
@@ -520,6 +524,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'secret_key' => $secretKey,
             'secret_key_available' => $secretKey !== '' || !empty($stored['secret_key_available']),
             'path_style' => $pathStyle === 1 ? 1 : 0,
+            'allow_http' => (int) ($dataReceived['allow_http'] ?? $stored['allow_http']) === 1 ? 1 : 0,
         ];
     }
 
@@ -540,6 +545,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
             'access_key' => (string) $config['access_key'],
             'has_secret_key' => !empty($config['secret_key_available']),
             'path_style' => (int) $config['path_style'],
+            'allow_http' => (int) $config['allow_http'],
         ];
     }
 
@@ -1791,6 +1797,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             tpExternalizedEncryptSecretSetting('bck_externalized_sftp_password', (string)($dataReceived['sftp_password'] ?? ''), $SETTINGS);
             tpExternalizedEncryptSecretSetting('bck_externalized_sftp_private_key', (string)($dataReceived['sftp_private_key'] ?? ''), $SETTINGS);
             tpExternalizedEncryptSecretSetting('bck_externalized_sftp_private_key_passphrase', (string)($dataReceived['sftp_private_key_passphrase'] ?? ''), $SETTINGS);
+            tpUpsertSettingsValue('bck_externalized_allow_http', (string) $webdavConfig['allow_http']);
             tpUpsertSettingsValue('bck_externalized_webdav_url', (string)$webdavConfig['url']);
             tpUpsertSettingsValue('bck_externalized_webdav_username', (string)$webdavConfig['username']);
             tpExternalizedEncryptSecretSetting('bck_externalized_webdav_password', (string)($dataReceived['webdav_password'] ?? ''), $SETTINGS);

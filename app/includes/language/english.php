@@ -2034,6 +2034,8 @@ return array(
     'bck_externalized_webdav_remote_path' => 'Remote path',
     'bck_externalized_webdav_remote_path_placeholder' => 'E.g. /backups/teampass',
     'bck_externalized_webdav_remote_path_help' => 'The remote WebDAV directory must already exist and be writable by the configured account.',
+    'bck_externalized_allow_http' => 'Allow an unencrypted HTTP endpoint',
+    'bck_externalized_allow_http_help' => 'HTTPS is recommended. Enable only for a trusted private network: HTTP exposes traffic and WebDAV credentials. Backup archives remain encrypted.',
     'bck_externalized_webdav_url' => 'WebDAV URL',
     'bck_externalized_webdav_url_placeholder' => 'E.g. https://cloud.example.com/remote.php/dav/files/user',
     'bck_externalized_webdav_username' => 'WebDAV username',

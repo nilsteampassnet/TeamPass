@@ -47,4 +47,18 @@ final class BackupTransportSecurityTest extends TestCase
         self::assertFalse($result['success']);
         self::assertSame('RETENTION_DELETE_FAILED', $result['reason']);
     }
+
+    public function testPrivateNetworkHttpRequiresAnExplicitOptInForBothTransports(): void
+    {
+        foreach (['http://minio:9000', 'http://192.168.1.10:9000', 'http://backup.example.test'] as $url) {
+            foreach ([0 => false, 1 => true] as $optIn => $allowed) {
+                self::assertSame($allowed, tpBackupValidateExternalizedS3Config(['endpoint' => $url,
+                    'bucket' => 'fixture', 'access_key' => 'fixture', 'secret_key' => 'fixture', 'allow_http' => $optIn])['success']);
+                self::assertSame($allowed, tpBackupValidateExternalizedWebdavConfig(['url' => $url,
+                    'username' => 'fixture', 'password' => 'fixture', 'remote_path' => '/backups', 'allow_http' => $optIn])['success']);
+            }
+        }
+        self::assertFalse(tpBackupRemoteUrlIsSecure(parse_url('https://user:password@host.test'), true));
+        self::assertFalse(tpBackupRemoteUrlIsSecure(parse_url('ftp://host.test'), true));
+    }
 }

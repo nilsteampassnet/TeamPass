@@ -1430,6 +1430,7 @@ class TaskWorker {
 
         return [
             'url' => $this->getMiscSetting('bck_externalized_webdav_url', ''),
+            'allow_http' => (int) $this->getMiscSetting('bck_externalized_allow_http', '0') === 1 ? 1 : 0,
             'username' => $this->getMiscSetting('bck_externalized_webdav_username', ''),
             'password' => $password,
             'password_available' => $password !== '' || $this->getMiscSetting('bck_externalized_webdav_password', '') !== '',
@@ -1447,6 +1448,7 @@ class TaskWorker {
 
         return [
             'endpoint' => $this->getMiscSetting('bck_externalized_s3_endpoint', ''),
+            'allow_http' => (int) $this->getMiscSetting('bck_externalized_allow_http', '0') === 1 ? 1 : 0,
             'region' => $this->getMiscSetting('bck_externalized_s3_region', 'us-east-1'),
             'bucket' => $this->getMiscSetting('bck_externalized_s3_bucket', ''),
             'access_key' => $this->getMiscSetting('bck_externalized_s3_access_key', ''),

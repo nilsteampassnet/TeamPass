@@ -297,10 +297,15 @@ A key rotation requires independent verification and an explicit settings update
 If the server offers several host key algorithms, configure the fingerprint of
 the key negotiated by the client; do not accept a new key merely to clear an error.
 
-WebDAV and custom S3 endpoints require HTTPS. Plain HTTP is accepted only for
-loopback development endpoints. URLs containing embedded credentials are refused;
-use the dedicated credential fields. Existing remote HTTP configurations must
-be migrated to TLS before further transfers.
+WebDAV and custom S3 endpoints use HTTPS by default. An administrator can explicitly
+enable **Allow an unencrypted HTTP endpoint** for trusted LAN/Docker endpoints
+(for example a private MinIO service). This opt-in is off by default; loopback
+development endpoints remain supported. HTTP exposes traffic, metadata and WebDAV
+Basic credentials to network observers. S3 signs requests rather than sending its
+secret key, and archives remain authenticated-encrypted, but HTTPS is recommended
+for both transports. URLs containing embedded credentials are always refused;
+use the dedicated credential fields. TLS certificate verification and redirect
+protections remain enabled independently of this opt-in.
 
 > 💡 Leave the S3 endpoint empty when using AWS S3. Set it when using an S3-compatible provider.
 

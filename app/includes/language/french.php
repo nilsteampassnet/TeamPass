@@ -2106,6 +2106,8 @@ return array(
     'bck_externalized_webdav_remote_path' => 'Chemin distant',
     'bck_externalized_webdav_remote_path_placeholder' => 'Ex. /backups/teampass',
     'bck_externalized_webdav_remote_path_help' => 'Le dossier distant WebDAV doit exister et être accessible en écriture par le compte configuré.',
+    'bck_externalized_allow_http' => 'Autoriser un endpoint HTTP non chiffré',
+    'bck_externalized_allow_http_help' => 'HTTPS est recommandé. À activer uniquement sur un réseau privé de confiance : HTTP expose le trafic et les identifiants WebDAV. Les archives de sauvegarde restent chiffrées.',
     'bck_externalized_webdav_url' => 'URL WebDAV',
     'bck_externalized_webdav_url_placeholder' => 'Ex. https://cloud.example.com/remote.php/dav/files/user',
     'bck_externalized_webdav_username' => 'Utilisateur WebDAV',

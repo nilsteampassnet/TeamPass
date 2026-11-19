@@ -2372,6 +2372,7 @@ var tpExternalized = {
     var isS3 = destinationType === 's3';
     $('#externalized-sftp-fields').toggle(isSftp);
     $('#externalized-webdav-fields').toggle(isWebdav);
+    $('#externalized-http-policy-fields').toggle(isWebdav || isS3);
     $('#externalized-s3-fields').toggle(isS3);
 
     var $target = $('#externalized-target-dir');
@@ -2473,6 +2474,7 @@ var tpExternalized = {
     $('#externalized-sftp-private-key').val('');
     $('#externalized-sftp-private-key-passphrase').val('');
     var webdav = s.webdav || {};
+    $('#externalized-allow-http').prop('checked', parseInt(webdav.allow_http || 0, 10) === 1);
     $('#externalized-webdav-url').val(webdav.url || '');
     $('#externalized-webdav-username').val(webdav.username || '');
     $('#externalized-webdav-password').val('');
@@ -2519,6 +2521,7 @@ var tpExternalized = {
       schedule_dom: parseInt($('#externalized-schedule-dom').val(), 10) || 1,
       destination_type: $('#externalized-destination-type').val() || 'local_directory',
       target_dir: $('#externalized-target-dir').val() || '',
+      allow_http: $('#externalized-allow-http').prop('checked') ? '1' : '0',
       sftp_host: $('#externalized-sftp-host').val() || '',
       sftp_host_key_sha256: $('#externalized-sftp-host-key').val() || '',
       sftp_port: parseInt($('#externalized-sftp-port').val(), 10) || 22,
