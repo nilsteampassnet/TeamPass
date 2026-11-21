@@ -37,6 +37,7 @@ require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_logic.php';
 require_once __DIR__ . '/secure_send_url.php';
 require_once __DIR__ . '/secure_send_audit.php';
+require_once __DIR__ . '/secure_send_attachments.php';
 
 /**
  * Generate recipient-safe TOTP fields from a copied profile at one timestamp.
@@ -194,6 +195,7 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
             DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
             DB::commit();
             secureSendEmitAudit($event, $settings);
+            secureSendPruneAttachments($settings, [(int) $link['id']]);
             return ['error' => 'invalid_link'];
         }
         if (!$isNote) {
@@ -203,6 +205,7 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
                 DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
                 DB::commit();
                 secureSendEmitAudit($event, $settings);
+                secureSendPruneAttachments($settings, [(int) $link['id']]);
                 return ['error' => 'invalid_link'];
             }
             if ((int) ($settings['enable_delete_after_consultation'] ?? 0) === 1) {
@@ -220,6 +223,7 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
                     DB::commit();
                     secureSendEmitAudit($event, $settings);
                     secureSendEmitItemAudit($item, $settings, false, true);
+                    secureSendPruneAttachments($settings, [(int) $link['id']]);
                     return ['error' => 'invalid_link'];
                 }
             }
@@ -244,6 +248,7 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
             secureSendEmitAudit($failedEvent, $settings);
             if (isset($invalidatedEvent)) {
                 secureSendEmitAudit($invalidatedEvent, $settings);
+                secureSendPruneAttachments($settings, [(int) $link['id']]);
             }
             return ['error' => $attempts >= 5 ? 'too_many_attempts' : ((int) ($link['has_passphrase'] ?? 0) === 1 ? 'wrong_passphrase' : 'invalid_link')];
         }
@@ -252,6 +257,15 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
             foreach (['label', 'login', 'url', 'description'] as $field) {
                 $fields[$field] = (string) ($item[$field] ?? '');
             }
+        }
+        $downloads = [];
+        if (isset($fields['attachments'])) {
+            if ((int) ($settings['secure_send_allow_attachments'] ?? 0) !== 1) {
+                DB::rollback();
+                return ['error' => 'invalid_link'];
+            }
+            $downloads = secureSendGrantDownloads($link, $fields['attachments'], $settings, time());
+            unset($fields['attachments']);
         }
         $reserved = DB::query(
             'UPDATE ' . prefixTable('otv') . ' SET views = views + 1
@@ -287,8 +301,12 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
         DB::commit();
         secureSendEmitAudit($event, $settings);
         secureSendEmitItemAudit($item, $settings, true, $itemDeleted);
-        return ['error' => '', 'fields' => $fields, 'send_type' => $isNote ? 'note' : 'item',
+        $result = ['error' => '', 'fields' => $fields, 'send_type' => $isNote ? 'note' : 'item',
             'time_limit' => (int) $link['time_limit'], 'remaining_views' => (int) $link['max_views'] - (int) $link['views'] - 1];
+        if ($downloads !== []) {
+            $result['downloads'] = $downloads;
+        }
+        return $result;
     } catch (Throwable $e) {
         DB::rollback();
         // Never include the URL, request, payload or exception message in public output/logs.

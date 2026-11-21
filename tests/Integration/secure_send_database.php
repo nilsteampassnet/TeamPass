@@ -111,7 +111,7 @@ function concurrentRedemptions(array $parameters, array $settings, int $count, s
 
 $settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_max_views' => 5,
     'otv_expiration_period' => 7, 'cpassman_url' => 'https://vault.example.com', 'otv_subdomain' => 'https://share.example.com'];
-$tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree',
+$tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree', 'secure_send_attachments',
     'secure_send_audit', 'secure_send_audit_unavailable', 'log_system', 'log_system_unavailable', 'misc'];
 try {
     // Execute the exact DDL shared by fresh installation and the 3.2.3 migration twice.
@@ -287,6 +287,8 @@ try {
     secureSendStatisticsDatabaseChecks($settings);
     require_once __DIR__ . '/secure_send_retention_database.php';
     secureSendRetentionDatabaseChecks();
+    require_once __DIR__ . '/secure_send_attachments_database.php';
+    secureSendAttachmentDatabaseChecks($settings);
 } finally {
     foreach ($tables as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));

@@ -7410,6 +7410,10 @@ switch ($inputData['type']) {
 
         // Policy, item access, encryption and storage are shared with the REST API.
         try {
+            $upload = $request->files->get('secure_send_file');
+            if ($upload !== null && !$upload instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
+                throw new SecureSendAttachmentRefusal('invalid_attachment');
+            }
             $secureSendResult = secureSendCreateLink(
                 $dataReceived,
                 [
@@ -7418,9 +7422,10 @@ switch ($inputData['type']) {
                     'public_key' => (string) $session->get('user-public_key'),
                     'read_only' => (int) $session->get('user-read_only') === 1,
                 ],
-                $SETTINGS
+                $SETTINGS,
+                $upload
             );
-        } catch (SecureSendCreateRefusal $e) {
+        } catch (SecureSendCreateRefusal | SecureSendAttachmentRefusal $e) {
             echo json_encode(['error' => $e->getMessage()]);
             break;
         }
@@ -7480,7 +7485,7 @@ switch ($inputData['type']) {
         }
 
         try {
-            $secureSendRows = secureSendActiveLinks($SETTINGS, (int) $session->get('user-id'), null, null, true);
+            $secureSendRows = secureSendActiveLinks($SETTINGS, (int) $session->get('user-id'), null, null, true, true);
             $secureSendEmailStatuses = secureSendEmailStatuses((int) $session->get('user-id'));
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send inventory failed (' . get_class($e) . ')');
@@ -7503,6 +7508,7 @@ switch ($inputData['type']) {
                 'email_status' => $secureSendEmailStatuses[(int) $secureSendRow['id']] ?? null,
                 'suspended' => $secureSendRow['suspended'],
                 'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
+                'download_pending' => (bool) ($secureSendRow['download_pending'] ?? false),
                 'expires_at' => (int) $secureSendRow['time_limit'],
                 'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),
             );

@@ -31,6 +31,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__.'/../sources/secure_send_retention.php';
+require_once __DIR__.'/../sources/secure_send_storage.php';
 require_once __DIR__.'/../sources/device_pairing.functions.php';
 
 // init
@@ -74,6 +75,13 @@ try {
     // Expiry is also enforced on every use; a failed batch cannot leave a usable handoff.
     error_log('[Device pairing] Maintenance failed');
 }
+
+try {
+    secureSendPurgeExpiredLinks($SETTINGS);
+} catch (Throwable $e) {
+    error_log('TEAMPASS Secure Send scheduled expiry failed (' . get_class($e) . ')');
+}
+secureSendPruneAttachments($SETTINGS);
 
 $prunedSecureSendEvents = 0;
 $secureSendRetentionFailed = false;

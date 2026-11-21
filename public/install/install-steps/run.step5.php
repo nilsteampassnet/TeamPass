@@ -672,6 +672,7 @@ class DatabaseInstaller
             array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'secure_send_show_sender_name', '1'),
             array('admin', 'secure_send_allow_email', '0'),
+            array('admin', 'secure_send_allow_attachments', '0'),
             array('admin', 'secure_send_api_enabled', '0'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
@@ -1600,6 +1601,13 @@ class DatabaseInstaller
     {
         require_once TEAMPASS_ROOT . '/app/sources/secure_send_email.php';
         DB::query(secureSendEmailSchemaSql($this->inputData['tablePrefix'] . 'secure_send_email'));
+    }
+
+    /** Create storage records for transient Secure Send file sets. */
+    private function secure_send_attachments()
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/secure_send_attachments.php';
+        DB::query(secureSendAttachmentSchemaSql($this->inputData['tablePrefix'] . 'secure_send_attachments'));
     }
 
     // Create table suggestion
