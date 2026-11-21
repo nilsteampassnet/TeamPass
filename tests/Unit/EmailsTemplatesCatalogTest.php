@@ -114,6 +114,9 @@ class EmailsTemplatesCatalogTest extends TestCase
             'email_bodyalt_item_updated',
             'email_subject',
             'email_body3',
+            // Sent only by the removed send_email 'request_access_to_author' branch (GHSA-6qg7-w2p8-7rw4).
+            'email_request_access_subject',
+            'email_request_access_mail',
         ];
 
         $declared = [];

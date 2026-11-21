@@ -386,20 +386,6 @@ return [
         'trigger' => 'app/sources/items.queries.php:4005',
     ],
 
-    'item_access_request' => [
-        'group' => 'items',
-        'subject_key' => 'email_request_access_subject',
-        'subject_prefix' => '',
-        'body_key' => 'email_request_access_mail',
-        // The shipped English body also contains '#tp_reason#', which the call
-        // site never substitutes. It is not advertised here on purpose.
-        'tokens' => ['#tp_item_author#', '#tp_user#', '#tp_item#'],
-        'required_tokens' => [],
-        'label' => 'email_tpl_item_access_request',
-        'description' => 'email_tpl_item_access_request_desc',
-        'trigger' => 'app/sources/items.queries.php:6541',
-    ],
-
     'item_shared' => [
         'group' => 'items',
         'subject_key' => 'email_share_item_subject',
