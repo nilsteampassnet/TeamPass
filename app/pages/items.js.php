@@ -9262,6 +9262,79 @@ require __DIR__ . '/icon.picker.js.php';
             : secureSendErrorLabel('invalid_public_url'));
     }
 
+    /** Keep the file name and remove action in sync with the native picker. */
+    function renderSecureSendNoteFile(file) {
+        $('#secure-send-note-file-name').text(file?.name ?? '');
+        $('#secure-send-note-file-selection').toggleClass('hidden', !file);
+    }
+
+    function resetSecureSendNoteFile() {
+        const picker = document.getElementById('form-secure-send-file');
+        if (picker) picker.value = '';
+        $('#secure-send-note-dropzone').removeClass('is-dragover');
+        renderSecureSendNoteFile();
+    }
+
+    function secureSendNoteFileError(file, picker) {
+        if (file.size === 0) return 'invalid_attachment';
+        return file.size > Number(picker.dataset.maxSize) ? 'attachment_too_large' : '';
+    }
+
+    $(document).on('click', '#secure-send-note-dropzone', function() {
+        document.getElementById('form-secure-send-file').click();
+    }).on('change', '#form-secure-send-file', function() {
+        const file = this.files[0];
+        const error = file ? secureSendNoteFileError(file, this) : '';
+        if (error) {
+            resetSecureSendNoteFile();
+            toastr.error(secureSendErrorLabel(error));
+            return;
+        }
+        renderSecureSendNoteFile(file);
+    }).on('click', '#secure-send-note-file-remove', function() {
+        resetSecureSendNoteFile();
+        invalidateSecureSendLink();
+        $('#secure-send-note-dropzone').trigger('focus');
+    }).on('dragenter dragover dragleave drop', '#secure-send-note-dropzone', function(event) {
+        const transfer = event.originalEvent?.dataTransfer;
+        const $zone = $(this);
+        if (event.type === 'dragleave') {
+            $zone.removeClass('is-dragover');
+            return;
+        }
+        if (!Array.from(transfer?.types ?? []).includes('Files')) return;
+        event.preventDefault();
+        const picker = document.getElementById('form-secure-send-file');
+        if (picker.disabled) return;
+        if (event.type !== 'drop') {
+            transfer.dropEffect = 'copy';
+            $zone.addClass('is-dragover');
+            return;
+        }
+        $zone.removeClass('is-dragover');
+        if (transfer.files.length !== 1) {
+            toastr.error(<?php echo json_encode($lang->get('secure_send_single_attachment'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+            return;
+        }
+        const file = transfer.files[0];
+        const error = secureSendNoteFileError(file, picker);
+        if (error) {
+            toastr.error(secureSendErrorLabel(error));
+            return;
+        }
+        picker.files = transfer.files;
+        renderSecureSendNoteFile(file);
+        invalidateSecureSendLink();
+    });
+
+    // A missed file drop must not navigate away from a draft note.
+    $('#modal-item-otv').on('dragover drop', function(event) {
+        if ($('#form-secure-send-mode').val() === 'note'
+            && document.getElementById('form-secure-send-file')
+            && Array.from(event.originalEvent?.dataTransfer?.types ?? []).includes('Files')) {
+            event.preventDefault();
+        }
+    });
     $(document).on('input change ifChanged', '#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea', invalidateSecureSendLink);
     $('#modal-item-otv').on('hide.bs.modal', function(event) {
         if (secureSendEmailGenerating) event.preventDefault();
@@ -9271,7 +9344,7 @@ require __DIR__ . '/icon.picker.js.php';
         secureSendListVersion += 1;
         $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
         $('#form-secure-send-email-recipient').val('');
-        $('#form-secure-send-file').val('');
+        resetSecureSendNoteFile();
     });
 
     /**
@@ -9287,7 +9360,7 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-item-otv-link').val('').data('otv-id', 0);
         $('#form-secure-send-passphrase').val('');
         $('#form-secure-send-email-recipient').val('');
-        $('#form-secure-send-file').val('');
+        resetSecureSendNoteFile();
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
@@ -9375,8 +9448,9 @@ require __DIR__ . '/icon.picker.js.php';
         var mode = $('#form-secure-send-mode').val();
         const picker = document.getElementById('form-secure-send-file');
         const file = mode === 'note' ? picker?.files?.[0] : undefined;
-        if (file && (file.size === 0 || file.size > Number(picker.dataset.maxSize))) {
-            toastr.error(secureSendErrorLabel(file.size === 0 ? 'invalid_attachment' : 'attachment_too_large'));
+        const fileError = file ? secureSendNoteFileError(file, picker) : '';
+        if (fileError) {
+            toastr.error(secureSendErrorLabel(fileError));
             return;
         }
         var passphrase = $('#form-secure-send-passphrase').val();
@@ -9437,7 +9511,8 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-secure-send-generate').prop('disabled', true);
         $('#form-secure-send-email').prop('disabled', true);
         if (sendEmail) {
-            $('#modal-item-otv input:not(:disabled), #modal-item-otv textarea:not(:disabled), #modal-item-otv button[data-dismiss="modal"]').attr('data-email-busy', '1').prop('disabled', true);
+            $('#modal-item-otv input:not(:disabled), #modal-item-otv textarea:not(:disabled), #modal-item-otv button[data-dismiss="modal"], #secure-send-note-dropzone, #secure-send-note-file-remove')
+                .attr('data-email-busy', '1').prop('disabled', true);
             $('#modal-item-otv').attr('aria-busy', 'true');
             $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_preparing'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
         }
