@@ -160,17 +160,19 @@ function secureSendRevokeLink(int $sendId, int $userId, array $settings): bool
 function secureSendPurgeExpiredLinks(array $settings, ?int $now = null): int
 {
     $now ??= time();
+    // A diagnostic read must not establish an InnoDB snapshot before locking the
+    // rows. Another worker may commit a purge between those two reads.
+    $invalidId = DB::queryFirstField(
+        'SELECT id FROM ' . prefixTable('otv') . '
+        WHERE time_limit < %i AND (id <= 0 OR originator <= 0 OR originator IS NULL) LIMIT 1',
+        $now
+    );
+    if ($invalidId !== null) {
+        // Do not copy historical row contents or identifiers into diagnostics.
+        error_log('TEAMPASS Secure Send cleanup skipped invalid metadata (InvalidArgumentException)');
+    }
     DB::startTransaction();
     try {
-        $invalidId = DB::queryFirstField(
-            'SELECT id FROM ' . prefixTable('otv') . '
-            WHERE time_limit < %i AND (id <= 0 OR originator <= 0 OR originator IS NULL) LIMIT 1',
-            $now
-        );
-        if ($invalidId !== null) {
-            // Do not copy historical row contents or identifiers into diagnostics.
-            error_log('TEAMPASS Secure Send cleanup skipped invalid metadata (InvalidArgumentException)');
-        }
         $links = DB::query(
             'SELECT id, originator, item_id, send_type, timestamp, has_passphrase,
                 shared_globaly, max_views, time_limit, views, failed_attempts
