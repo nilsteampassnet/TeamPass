@@ -88,13 +88,43 @@ if (!$request->isMethod('GET') && !$request->isMethod('POST')) {
 }
 
 $input = $request->isMethod('POST') ? $request->request->all() : $request->query->all();
+$host = (string) $request->headers->get('host', '');
+$now = time();
+$downloadGrants = array_filter((array) $session->get('otv-downloads', []), static function ($grant) use ($now): bool {
+    return is_array($grant) && (int) ($grant['expires'] ?? 0) > $now;
+});
+if ($request->isMethod('POST') && array_key_exists('download', $input)) {
+    $session->save();
+    try {
+        $file = secureSendAuthorizeDownload($input, $downloadGrants, $SETTINGS, $host, $now);
+        if ($file === null) {
+            http_response_code(404);
+            exit;
+        }
+        secureSendStreamAttachment($file);
+    } catch (Throwable $e) {
+        error_log('TEAMPASS Secure Send download failed (' . get_class($e) . ')');
+        if (!headers_sent()) {
+            header_remove('Content-Disposition');
+            header_remove('Content-Length');
+            http_response_code(404);
+        }
+    }
+    exit;
+}
 $confirmations = (array) $session->get('otv-confirmations', []);
-$page = secureSendPrepareRecipient($input, $request->getMethod(), $SETTINGS, $confirmations, (string) $request->headers->get('host', ''));
+$page = secureSendPrepareRecipient($input, $request->getMethod(), $SETTINGS, $confirmations, $host);
 $session->set('otv-confirmations', $confirmations);
 $parameters = $page['parameters'];
 $link = $page['link'];
 $sender = is_array($page['sender']) ? $page['sender'] : null;
 $result = $page['result'];
+$downloads = $result['downloads'] ?? [];
+if ($downloads !== []) {
+    $downloadGrants = array_slice($downloadGrants, -9, null, true);
+    $downloadGrants[$downloads['token']] = $downloads['grant'];
+}
+$session->set('otv-downloads', $downloadGrants);
 $error = $page['error'];
 $token = $page['token'];
 $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -446,6 +476,9 @@ $poweredBy = str_replace(
                 $isNote = $result['send_type'] === 'note';
                 if ($isNote) {
                     $rows = ['label' => $escape($fields['title']), 'password' => $escape($fields['secret']), 'login' => $escape($fields['login']), 'url' => $escape($fields['url']), 'description' => nl2br($escape($fields['note']))];
+                    if ($downloads !== []) {
+                        $rows = array_filter($rows, static fn (string $value): bool => $value !== '');
+                    }
                 } else {
                     $rows = ['label' => otvRenderPlainField($fields['label']), 'password' => $escape($fields['password'])];
                     if (($fields['otp_code'] ?? '') !== '') {
@@ -469,6 +502,7 @@ $poweredBy = str_replace(
                 <?php if (($fields['description_truncated'] ?? false) === true) { ?>
                     <p class="alert alert-warning"><?php echo $escape($lang->get('secure_send_description_truncated')); ?></p>
                 <?php } ?>
+                <?php if ($rows !== []) { ?>
                 <div class="table-responsive">
                     <table class="table secure-send-fields">
                         <tbody>
@@ -478,6 +512,23 @@ $poweredBy = str_replace(
                         </tbody>
                     </table>
                 </div>
+                <?php } ?>
+                <?php if ($downloads !== []) { ?>
+                    <h2 class="h6"><?php echo $escape($lang->get('secure_send_attachments')); ?></h2>
+                    <ul class="list-unstyled">
+                    <?php foreach ($downloads['names'] as $index => $filename) { ?>
+                        <li class="mb-2">
+                            <form method="post" action="index.php?otv=1">
+                                <input type="hidden" name="download" value="<?php echo $escape($downloads['token']); ?>">
+                                <input type="hidden" name="attachment" value="<?php echo (int) $index; ?>">
+                                <button type="submit" class="btn btn-outline-primary text-break text-left">
+                                    <i class="fa-solid fa-download mr-2" aria-hidden="true"></i><?php echo $escape($filename); ?>
+                                </button>
+                            </form>
+                        </li>
+                    <?php } ?>
+                    </ul>
+                <?php } ?>
                 <p class="secure-send-help"><?php echo $escape($lang->get('secure_send_copy_carefully')); ?></p>
                 <p class="text-info mb-0"><?php echo $escape(str_replace(
                     ['#DATE#', '#VIEWS#'],

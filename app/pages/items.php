@@ -825,6 +825,21 @@ if ((int) $session_user_admin === 1) {
                             <label for="form-secure-send-note"><?php echo $lang->get('description'); ?></label>
                             <textarea class="form-control clear-me-val" id="form-secure-send-note" rows="3"></textarea>
                         </div>
+                        <?php if ((int) ($SETTINGS['secure_send_allow_attachments'] ?? 0) === 1) {
+                            require_once __DIR__ . '/../sources/secure_send_attachments.php';
+                            $secureSendFileLimit = secureSendUploadLimit($SETTINGS);
+                            if ($secureSendFileLimit > 0) { ?>
+                                <div class="form-group mt-3 mb-0">
+                                    <label for="form-secure-send-file"><?php echo htmlspecialchars($lang->get('secure_send_choose_attachment'), ENT_QUOTES, 'UTF-8'); ?></label>
+                                    <input type="file" id="form-secure-send-file" class="form-control-file"
+                                           data-max-size="<?php echo $secureSendFileLimit; ?>" aria-describedby="secure-send-file-limit">
+                                    <small class="form-text text-muted" id="secure-send-file-limit"><?php
+                                        echo htmlspecialchars(str_replace('#SIZE#', (string) ($secureSendFileLimit / 1048576),
+                                            $lang->get('secure_send_attachment_limit')), ENT_QUOTES, 'UTF-8');
+                                    ?></small>
+                                </div>
+                            <?php }
+                        } ?>
                     </fieldset>
 
                     <fieldset class="mb-4">

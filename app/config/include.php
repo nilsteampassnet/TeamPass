@@ -27,7 +27,7 @@
  */
 
 define('TP_VERSION', '3.2.4');
-define("UPGRADE_MIN_DATE", "1794554343");
+define("UPGRADE_MIN_DATE", "1795251080");
 define('TP_VERSION_MINOR', '4');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);

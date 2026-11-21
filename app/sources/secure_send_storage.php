@@ -30,6 +30,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/secure_send_audit.php';
+require_once __DIR__ . '/secure_send_attachments.php';
 
 /**
  * Store an already encrypted, authorized link and its creation evidence atomically.
@@ -40,10 +41,16 @@ require_once __DIR__ . '/secure_send_audit.php';
  * @param array $link Validated link with encrypted payload
  * @param array $settings Application settings
  * @param array|null $delivery Server-built URL and single recipient, or null for clipboard sharing
+ * @param string|null $attachmentReference Private staged file set
  * @return int New link identifier
  * @throws Throwable When the link or audit cannot be persisted
  */
-function secureSendStoreLink(array $link, array $settings, ?array $delivery = null): int
+function secureSendStoreLink(
+    array $link,
+    array $settings,
+    ?array $delivery = null,
+    ?string $attachmentReference = null
+): int
 {
     $message = null;
     if ($delivery !== null) {
@@ -58,6 +65,14 @@ function secureSendStoreLink(array $link, array $settings, ?array $delivery = nu
         DB::insert(prefixTable('otv'), $link);
         $id = (int) DB::insertId();
         $link['id'] = $id;
+        if ($attachmentReference !== null && DB::update(
+            prefixTable('secure_send_attachments'),
+            ['send_id' => $id],
+            'reference = %s AND send_id IS NULL',
+            $attachmentReference
+        ) !== 1) {
+            throw new RuntimeException('attachment_publish_failed');
+        }
         $event = secureSendAudit($link, 'created', '', (int) $link['originator']);
         if ($message !== null) {
             secureSendEmailQueue($message, $link, $settings, time());
@@ -113,6 +128,7 @@ function secureSendRevokeLink(int $sendId, int $userId, array $settings): bool
         throw $e;
     }
     secureSendEmitAudit($event, $settings);
+    secureSendPruneAttachments($settings, [$sendId]);
     return true;
 }
 
@@ -163,6 +179,9 @@ function secureSendPurgeExpiredLinks(array $settings, ?int $now = null): int
     }
     foreach ($events as $event) {
         secureSendEmitAudit($event, $settings);
+    }
+    if ($links !== []) {
+        secureSendPruneAttachments($settings, array_map('intval', array_column($links, 'id')));
     }
     return count($links);
 }

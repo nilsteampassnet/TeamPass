@@ -9217,6 +9217,9 @@ require __DIR__ . '/icon.picker.js.php';
             'email_not_allowed': <?php echo json_encode($lang->get('secure_send_email_not_allowed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': <?php echo json_encode($lang->get('secure_send_passphrase_required_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'empty_note': <?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'invalid_attachment': <?php echo json_encode($lang->get('secure_send_invalid_attachment'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'attachment_too_large': <?php echo json_encode($lang->get('secure_send_attachment_too_large'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'attachments_not_allowed': <?php echo json_encode($lang->get('secure_send_attachments_not_allowed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'invalid_public_url': <?php echo json_encode($lang->get('secure_send_invalid_public_url'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -9287,7 +9290,9 @@ require __DIR__ . '/icon.picker.js.php';
                     html += '<li class="secure-send-entry d-flex align-items-center">' +
                         '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +
                         '<div class="secure-send-entry-content flex-grow-1"><span class="d-block font-weight-bold">' + htmlEncode(s.label) + lock + '</span>' +
-                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + email + '</div>' +
+                        '<span class="d-block text-muted mt-1">' + (s.download_pending === true
+                            ? htmlEncode(<?php echo json_encode($lang->get('secure_send_download_pending'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+                            : Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + email + '</div>' +
                         '<button type="button" class="btn btn-sm btn-outline-danger secure-send-revoke ml-3" data-id="' + Number(s.id) + '"><i class="fa-solid fa-trash mr-1" aria-hidden="true"></i>' + htmlEncode(<?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</button>' +
                         '</li>';
                 });
@@ -9325,6 +9330,7 @@ require __DIR__ . '/icon.picker.js.php';
         secureSendListVersion += 1;
         $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
         $('#form-secure-send-email-recipient').val('');
+        $('#form-secure-send-file').val('');
     });
 
     /**
@@ -9340,6 +9346,7 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-item-otv-link').val('').data('otv-id', 0);
         $('#form-secure-send-passphrase').val('');
         $('#form-secure-send-email-recipient').val('');
+        $('#form-secure-send-file').val('');
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
@@ -9402,6 +9409,12 @@ require __DIR__ . '/icon.picker.js.php';
             if (!valid) return;
         }
         var mode = $('#form-secure-send-mode').val();
+        const picker = document.getElementById('form-secure-send-file');
+        const file = mode === 'note' ? picker?.files?.[0] : undefined;
+        if (file && (file.size === 0 || file.size > Number(picker.dataset.maxSize))) {
+            toastr.error(secureSendErrorLabel(file.size === 0 ? 'invalid_attachment' : 'attachment_too_large'));
+            return;
+        }
         var passphrase = $('#form-secure-send-passphrase').val();
         if ($('#form-secure-send-passphrase').prop('required') === true && passphrase.trim() === '') {
             toastr.error(secureSendErrorLabel('passphrase_required'), '', { timeOut: 3000, progressBar: true });
@@ -9427,7 +9440,7 @@ require __DIR__ . '/icon.picker.js.php';
         if (mode === 'note') {
             var secret = $('#form-secure-send-secret').val();
             var note = $('#form-secure-send-note').val();
-            if (secret.trim() === '' && note.trim() === '') {
+            if (!file && secret.trim() === '' && note.trim() === '') {
                 toastr.error(<?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 3000, progressBar: true });
                 return;
             }
@@ -9454,16 +9467,25 @@ require __DIR__ . '/icon.picker.js.php';
             $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_preparing'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
         }
 
+        const requestData = {
+            type: "generate_OTV_url",
+            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        };
+        let uploadData;
+        if (file) {
+            uploadData = new FormData();
+            Object.entries(requestData).forEach(([name, value]) => uploadData.append(name, value));
+            uploadData.append('secure_send_file', file);
+        }
         $.ajax({
             url: 'sources/items.queries.php',
             method: 'POST',
             dataType: 'json',
-            timeout: 30000,
-            data: {
-                type: "generate_OTV_url",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: "<?php echo $session->get('key'); ?>"
-            }
+            timeout: file ? 0 : 30000,
+            processData: !file,
+            contentType: file ? false : 'application/x-www-form-urlencoded; charset=UTF-8',
+            data: uploadData || requestData
         }).done(function(data) {
             if (sendEmail) $('#secure-send-email-result').text('').addClass('hidden');
             const responseId = data !== null && typeof data === 'object' && !Array.isArray(data)
@@ -9503,8 +9525,12 @@ require __DIR__ . '/icon.picker.js.php';
             } else {
                 toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
             }
-        }).fail(function() {
+        }).fail(function(xhr) {
             if (formVersion === secureSendFormVersion) {
+                if (file && xhr.status === 413) {
+                    toastr.error(secureSendErrorLabel('attachment_too_large'));
+                    return;
+                }
                 if (sendEmail) $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_network_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
                 toastr.error(sendEmail ? <?php echo json_encode($lang->get('secure_send_email_network_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?> : secureSendErrorLabel('server_error'), '', { timeOut: 10000 });
             }

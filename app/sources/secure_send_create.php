@@ -69,12 +69,19 @@ final class SecureSendCreateRefusal extends RuntimeException
  *                     shared_globaly, include_totp (int), recipient_email?, payload? (note)
  * @param array $sender ['id' => int, 'private_key' => string, 'public_key' => string, 'read_only' => bool]
  * @param array $settings TeamPass settings
+ * @param \Symfony\Component\HttpFoundation\File\UploadedFile|null $upload Verified by the upload adapter
  * @return array{url: string, otv_id: int, send_type: string, item_id: ?int, has_passphrase: int,
  *               description_truncated: bool, totp_included: bool, email_queued: bool,
  *               expires_at: int, max_views: int, public_address: bool}
  * @throws SecureSendCreateRefusal On every functional refusal (message = error code)
+ * @throws SecureSendAttachmentRefusal For invalid Web attachments
  */
-function secureSendCreateLink(array $input, array $sender, array $settings): array
+function secureSendCreateLink(
+    array $input,
+    array $sender,
+    array $settings,
+    ?\Symfony\Component\HttpFoundation\File\UploadedFile $upload = null
+): array
 {
     // Master gate: Secure Send relies on the OTV engine
     if ((int) ($settings['otv_is_enabled'] ?? 0) !== 1) {
@@ -109,6 +116,13 @@ function secureSendCreateLink(array $input, array $sender, array $settings): arr
     $secureSendType = (isset($input['send_type']) === true && $input['send_type'] === 'note') ? 'note' : 'item';
     if ($secureSendType === 'note' && (int) ($settings['secure_send_allow_notes'] ?? 0) !== 1) {
         throw new SecureSendCreateRefusal('notes_not_allowed');
+    }
+    $files = [];
+    if ($upload !== null) {
+        if ($secureSendType !== 'note' || (int) ($settings['secure_send_allow_attachments'] ?? 0) !== 1) {
+            throw new SecureSendAttachmentRefusal('attachments_not_allowed');
+        }
+        $files[] = secureSendReadUpload($upload, $settings);
     }
 
     // Optional recipient passphrase (transmitted out-of-band by the sender)
@@ -155,7 +169,7 @@ function secureSendCreateLink(array $input, array $sender, array $settings): arr
         $secureSendPayload = (isset($input['payload']) === true && is_array($input['payload']) === true)
             ? $input['payload']
             : array();
-        if (trim((string) ($secureSendPayload['secret'] ?? '')) === ''
+        if ($files === [] && trim((string) ($secureSendPayload['secret'] ?? '')) === ''
             && trim((string) ($secureSendPayload['note'] ?? '')) === ''
         ) {
             throw new SecureSendCreateRefusal('empty_note');
@@ -195,16 +209,6 @@ function secureSendCreateLink(array $input, array $sender, array $settings): arr
         $secureSendProtectedKey
     );
 
-    // Encrypt the payload with DEFUSE using the wrapped key
-    $passwd = cryption(
-        (string) $secureSendPlaintext,
-        $secureSendKeyEncoded,
-        'encrypt',
-        $settings
-    );
-    if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
-        throw new SecureSendCreateRefusal('invalid_payload');
-    }
     $timestampReference = time();
 
     // Item copies and standalone notes use the same administrator-controlled address.
@@ -217,7 +221,19 @@ function secureSendCreateLink(array $input, array $sender, array $settings): arr
     } catch (InvalidArgumentException $e) {
         throw new SecureSendCreateRefusal('invalid_public_url');
     }
+    $attachmentReference = null;
     try {
+        if ($files !== []) {
+            $staged = secureSendStageAttachments($files, $settings);
+            $attachmentReference = $staged['reference'];
+            $payload = json_decode($secureSendPlaintext, true, 16, JSON_THROW_ON_ERROR);
+            $payload['attachments'] = $staged['manifest'];
+            $secureSendPlaintext = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        $passwd = cryption($secureSendPlaintext, $secureSendKeyEncoded, 'encrypt', $settings);
+        if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
+            throw new SecureSendCreateRefusal('invalid_payload');
+        }
         $newID = secureSendStoreLink(
             array(
                 'id' => null,
@@ -235,8 +251,12 @@ function secureSendCreateLink(array $input, array $sender, array $settings): arr
                 'shared_globaly' => $secureSendShared,
             ),
             $settings,
-            $secureSendRecipient === null ? null : ['recipient' => $secureSendRecipient, 'url' => $url]
+            $secureSendRecipient === null ? null : ['recipient' => $secureSendRecipient, 'url' => $url],
+            $attachmentReference
         );
+        $attachmentReference = null;
+    } catch (SecureSendCreateRefusal $e) {
+        throw $e;
     } catch (InvalidArgumentException $e) {
         // email_not_allowed: the setting was switched off after the recipient check above.
         throw new SecureSendCreateRefusal(in_array($e->getMessage(), [
@@ -246,6 +266,10 @@ function secureSendCreateLink(array $input, array $sender, array $settings): arr
     } catch (Throwable $e) {
         error_log('TEAMPASS Secure Send creation failed (' . get_class($e) . ')');
         throw new SecureSendCreateRefusal('server_error');
+    } finally {
+        if ($attachmentReference !== null) {
+            secureSendDiscardStagedAttachments($attachmentReference, $settings);
+        }
     }
 
     return [
