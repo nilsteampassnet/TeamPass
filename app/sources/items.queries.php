@@ -7282,69 +7282,54 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        $item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+        $item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
         $label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $date = filter_var($dataReceived['date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $time = filter_var($dataReceived['time'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-        // Get all informations for this item
-        $dataItem = DB::queryFirstRow(
-            'SELECT i.*,
-            IFNULL(l.id_user, 0) AS id_user
-            FROM ' . prefixTable('items') . ' as i
-            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
-            WHERE i.id=%i',
-            'at_creation',
-            $item_id
-        );
-        // check that actual user can access this item
-        $restrictionActive = true;
-        $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-        if (in_array($session->get('user-id'), $restrictedTo)) {
-            $restrictionActive = false;
-        }
-        if (empty($dataItem['restricted_to'])) {
-            $restrictionActive = false;
-        }
-
-        if (((in_array($dataItem['id_tree'], $session->get('user-accessible_folders'))) && (intval($dataItem['perso']) === 0 || (intval($dataItem['perso']) === 1 && $dataItem['id_user'] === $session->get('user-id'))) && $restrictionActive === false)
-            || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && intval($dataItem['anyone_can_modify']) === 1 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || intval($session->get('user-admin')) === 1) && $restrictionActive === false)
+        // A manual entry becomes part of the item's audit trail: it needs the feature setting and
+        // the same edit right as update_item, per-item restriction (users and roles) included
+        // (GHSA-4hrh-wjp5-wrph). No edition lock is taken.
+        $dataItem = (int) ($SETTINGS['insert_manual_entry_item_history'] ?? 0) === 1
+            ? DB::queryFirstRow(
+                'SELECT label, id_tree
+                FROM ' . prefixTable('items') . '
+                WHERE id = %i AND inactif = %i AND deleted_at IS NULL',
+                $item_id,
+                0
+            )
+            : null;
+        if ($dataItem === null
+            || getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                $item_id,
+                (int) $dataItem['id_tree']
+            )['edit'] !== true
         ) {
-            // Query
-            logItems(
-                $SETTINGS,
-                intval($item_id),
-                $dataItem['label'],
-                $session->get('user-id'),
-                'at_manual',
-                $session->get('user-login'),
-                htmlspecialchars_decode($label, ENT_QUOTES),
-                null,
-                (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
-            );
-            // Prepare new line
-            $data = DB::queryFirstRow(
-                'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
-                $item_id
-            );
-            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($data['date'])) . ' - ' . $session->get('user-login') . ' - ' . $lang->get(strval($data['action'])) . ' - ' . strval($data['raison']);
-            // send back
-            $data = array(
-                'error' => '',
-                'new_line' => '<br>' . addslashes($historic),
-            );
             echo (string) prepareExchangedData(
-                $data,
-                'encode'
-            );
-        } else {
-            $data = array('error' => 'something_wrong');
-            echo (string) prepareExchangedData(
-                $data,
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
                 'encode'
             );
             break;
         }
+
+        logItems(
+            $SETTINGS,
+            $item_id,
+            $dataItem['label'],
+            $session->get('user-id'),
+            'at_manual',
+            $session->get('user-login'),
+            htmlspecialchars_decode($label, ENT_QUOTES),
+            null,
+            (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
+        );
+
+        // Never read the history back: the newest row by date belongs to whoever wrote it last.
+        echo (string) prepareExchangedData(
+            array('error' => false, 'message' => ''),
+            'encode'
+        );
         break;
 
     /*
