@@ -8880,6 +8880,18 @@ require __DIR__ . '/icon.picker.js.php';
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'history_entry_add');
                         if (debugJavascript === true) console.log(data);
+
+                        if (data.error !== false) {
+                            toastr.remove();
+                            toastr.error(
+                                data.message || '<?php echo $lang->get('error'); ?>',
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            return false;
+                        }
                         $('#warningModal .history').val('');
 
                         // Reload history
