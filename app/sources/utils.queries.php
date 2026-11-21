@@ -95,7 +95,8 @@ $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_freq = filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT);
-$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_ids =filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
@@ -200,8 +201,8 @@ if (null !== $post_type) {
 
         case 'server_auto_update_password_frequency':
             if ($post_key !== $session->get('key')
-                || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-                || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                || null === $post_id
+                || null === $post_freq
             ) {
                 echo prepareExchangedData(
                     array(
@@ -213,15 +214,54 @@ if (null !== $post_type) {
                 break;
             }
 
+            // The setting gates the feature itself, not only its UI. Only the
+            // frequencies offered by the form are accepted (GHSA-ccc7-vc5r-qp79).
+            $itemId = (int) $post_id;
+            $frequency = filter_var($post_freq, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 4]]);
+            if ((int) ($SETTINGS['enable_server_password_change'] ?? 0) !== 1
+                || $itemId <= 0
+                || $frequency === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Only a live item the caller may edit can be rescheduled. The empty
+            // action checks the rights without taking an edition lock.
+            $item = DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('items') . '
+                WHERE id = %i AND inactif = %i AND deleted_at IS NULL',
+                $itemId,
+                0
+            );
+            if ($item === null
+                || userCanEditItem((int) $session->get('user-id'), $itemId, '') === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // store new frequency
             DB::update(
                 prefixTable('items'),
                 [
-                    'auto_update_pwd_frequency' => $post_freq,
-                    'auto_update_pwd_next_date' => time() + (2592000 * $post_freq),
+                    'auto_update_pwd_frequency' => $frequency,
+                    'auto_update_pwd_next_date' => time() + (2592000 * $frequency),
                 ],
                 'id = %i',
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                $itemId
             );
 
             echo '[{"error" : ""}]';

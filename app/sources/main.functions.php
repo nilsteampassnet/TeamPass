@@ -10594,9 +10594,11 @@ function userHasAccessToFile(int $userId, int $fileId): bool
  *
  * @param integer $userId
  * @param integer $itemId
+ * @param string $action 'edit' takes or refreshes the edition lock, as opening the
+ *                       edit form does; '' only checks the rights
  * @return boolean
  */
-function userCanEditItem(int $userId, int $itemId): bool
+function userCanEditItem(int $userId, int $itemId, string $action = 'edit'): bool
 {
     $item = DB::queryFirstRow(
         'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
@@ -10615,7 +10617,7 @@ function userCanEditItem(int $userId, int $itemId): bool
         $userId,
         $itemId,
         (int) $item['id_tree'],
-        'edit'
+        $action
     );
     return $access['edit'] === true;
 }
