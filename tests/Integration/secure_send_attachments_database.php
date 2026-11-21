@@ -143,7 +143,7 @@ function secureSendItemAttachmentDatabaseChecks(array $settings): void
         ) ENGINE=InnoDB');
     }
     DB::insert(prefixTable('items'), ['id' => 901, 'id_tree' => 7, 'label' => 'Item with documents',
-        'login' => '', 'url' => '', 'description' => '', 'pw' => '']);
+        'login' => '', 'url' => '', 'description' => str_repeat('Long &amp; item description. ', 2000), 'pw' => '']);
     DB::insert(prefixTable('sharekeys_items'), ['user_id' => 42, 'object_id' => 901, 'share_key' => 'fixture-item-key']);
     DB::insert(prefixTable('automatic_del'), ['item_id' => 901, 'del_enabled' => 1, 'del_type' => 1, 'del_value' => 1]);
     $settings['enable_delete_after_consultation'] = 1;
@@ -184,6 +184,7 @@ function secureSendItemAttachmentDatabaseChecks(array $settings): void
             DB::update(prefixTable('users'), ['admin' => 0], 'id = %i', 42);
         }
         $created = secureSendCreateLink($item + ['attachment_ids' => [9010, 9011]], $sender, $settings);
+        check($created['description_truncated'] === true, 'A large item snapshot did not reserve space for its file manifest');
         parse_str((string) parse_url($created['url'], PHP_URL_QUERY), $query);
         $parameters = secureSendRequestParameters($query);
         $result = secureSendRedeem($parameters, '', $settings);

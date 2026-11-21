@@ -234,8 +234,14 @@ function secureSendCreateLink(
             $staged = secureSendStageAttachments($files, $settings);
             $attachmentReference = $staged['reference'];
             $payload = json_decode($secureSendPlaintext, true, 16, JSON_THROW_ON_ERROR);
-            $payload['attachments'] = $staged['manifest'];
-            $secureSendPlaintext = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($secureSendItemId !== null) {
+                $snapshot = secureSendEncodeSnapshot($itemQ, $payload['password'], $secureSendTotp, $staged['manifest']);
+                $secureSendPlaintext = $snapshot['plaintext'];
+                $secureSendDescriptionTruncated = $snapshot['description_truncated'];
+            } else {
+                $payload['attachments'] = $staged['manifest'];
+                $secureSendPlaintext = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
         }
         $passwd = cryption($secureSendPlaintext, $secureSendKeyEncoded, 'encrypt', $settings);
         if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
@@ -269,7 +275,7 @@ function secureSendCreateLink(
         // email_not_allowed: the setting was switched off after the recipient check above.
         throw new SecureSendCreateRefusal(in_array($e->getMessage(), [
             'invalid_email', 'email_rate_limited', 'email_not_configured', 'email_requires_https', 'not_allowed',
-            'email_not_allowed',
+            'email_not_allowed', 'invalid_payload',
         ], true) ? $e->getMessage() : 'server_error');
     } catch (Throwable $e) {
         error_log('TEAMPASS Secure Send creation failed (' . get_class($e) . ')');
