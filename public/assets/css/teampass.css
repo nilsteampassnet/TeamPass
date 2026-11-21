@@ -2262,6 +2262,13 @@ body.tp-navigating .dropdown-item {
     cursor: pointer;
     transition: border-color .15s ease-in-out, background-color .15s ease-in-out;
 }
+button.tp-item-dropzone {
+    background-color: transparent;
+}
+button.tp-item-dropzone:disabled {
+    cursor: default;
+    opacity: .65;
+}
 .tp-item-dropzone:hover,
 .tp-item-dropzone:focus,
 .tp-item-dropzone.is-dragover {

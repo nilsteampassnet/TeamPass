@@ -830,7 +830,7 @@ if ((int) $session_user_admin === 1) {
                             $secureSendFileLimit = secureSendUploadLimit($SETTINGS);
                             if ($secureSendFileLimit > 0) { ?>
                                 <div class="form-group mt-3 mb-0">
-                                    <button type="button" class="btn tp-item-dropzone w-100" id="secure-send-note-dropzone"
+                                    <button type="button" class="tp-item-dropzone w-100" id="secure-send-note-dropzone"
                                             aria-labelledby="secure-send-note-drop-label" aria-describedby="secure-send-file-limit">
                                         <i class="fa-solid fa-cloud-arrow-up tp-item-dropzone-icon" aria-hidden="true"></i>
                                         <span class="font-weight-bold" id="secure-send-note-drop-label"><?php echo htmlspecialchars($lang->get('secure_send_choose_attachment'), ENT_QUOTES, 'UTF-8'); ?></span>
