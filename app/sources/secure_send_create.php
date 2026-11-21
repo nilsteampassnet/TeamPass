@@ -66,7 +66,7 @@ final class SecureSendCreateRefusal extends RuntimeException
  * Relies on the main.functions.php helpers (GenerateCryptKey, cryption, defuse_*) being loaded.
  *
  * @param array $input Request in the web payload shape: send_type, id, passphrase, days, views,
- *                     shared_globaly, include_totp (int), recipient_email?, payload? (note)
+ *                     shared_globaly, include_totp (int), recipient_email?, payload? (note), attachment_ids? (item)
  * @param array $sender ['id' => int, 'private_key' => string, 'public_key' => string, 'read_only' => bool]
  * @param array $settings TeamPass settings
  * @param \Symfony\Component\HttpFoundation\File\UploadedFile|null $upload Verified by the upload adapter
@@ -118,6 +118,10 @@ function secureSendCreateLink(
         throw new SecureSendCreateRefusal('notes_not_allowed');
     }
     $files = [];
+    $sourceIds = secureSendItemAttachmentSelection($input['attachment_ids'] ?? []);
+    if ($sourceIds !== [] && ($secureSendType !== 'item' || (int) ($settings['secure_send_allow_attachments'] ?? 0) !== 1)) {
+        throw new SecureSendAttachmentRefusal('attachments_not_allowed');
+    }
     if ($upload !== null) {
         if ($secureSendType !== 'note' || (int) ($settings['secure_send_allow_attachments'] ?? 0) !== 1) {
             throw new SecureSendAttachmentRefusal('attachments_not_allowed');
@@ -142,6 +146,9 @@ function secureSendCreateLink(
         $itemQ = secureSendReadItem($secureSendItemId, $senderId);
         if ($itemQ === []) {
             throw new SecureSendCreateRefusal('not_allowed');
+        }
+        if ($sourceIds !== []) {
+            $files = secureSendItemAttachmentInputs($secureSendItemId, $sourceIds, $sender, $settings);
         }
         try {
             $secureSendPlaintext = secureSendItemPassword(
@@ -252,10 +259,11 @@ function secureSendCreateLink(
             ),
             $settings,
             $secureSendRecipient === null ? null : ['recipient' => $secureSendRecipient, 'url' => $url],
-            $attachmentReference
+            $attachmentReference,
+            $sourceIds
         );
         $attachmentReference = null;
-    } catch (SecureSendCreateRefusal $e) {
+    } catch (SecureSendCreateRefusal | SecureSendAttachmentRefusal $e) {
         throw $e;
     } catch (InvalidArgumentException $e) {
         // email_not_allowed: the setting was switched off after the recipient check above.

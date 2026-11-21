@@ -42,6 +42,7 @@ require_once __DIR__ . '/secure_send_attachments.php';
  * @param array $settings Application settings
  * @param array|null $delivery Server-built URL and single recipient, or null for clipboard sharing
  * @param string|null $attachmentReference Private staged file set
+ * @param list<int> $sourceIds Selected item files; checked again before publication
  * @return int New link identifier
  * @throws Throwable When the link or audit cannot be persisted
  */
@@ -49,7 +50,8 @@ function secureSendStoreLink(
     array $link,
     array $settings,
     ?array $delivery = null,
-    ?string $attachmentReference = null
+    ?string $attachmentReference = null,
+    array $sourceIds = []
 ): int
 {
     $message = null;
@@ -59,6 +61,15 @@ function secureSendStoreLink(
     }
     DB::startTransaction();
     try {
+        if ($sourceIds !== []) {
+            $itemId = (int) $link['item_id'];
+            if (secureSendReadItem($itemId, (int) $link['originator'], true) === []) {
+                throw new SecureSendCreateRefusal('not_allowed');
+            }
+            if (count(secureSendExistingItemAttachmentIds($itemId, $sourceIds, true)) !== count($sourceIds)) {
+                throw new SecureSendAttachmentRefusal('invalid_attachment');
+            }
+        }
         if ($message !== null) {
             secureSendEmailReserve((int) $link['originator'], time());
         }

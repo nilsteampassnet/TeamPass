@@ -7500,14 +7500,15 @@ switch ($inputData['type']) {
                 'id' => (int) $secureSendRow['id'],
                 'send_type' => $isNote === true ? 'note' : 'item',
                 'item_id' => $isNote === true ? null : (int) $secureSendRow['item_id'],
-                'folder_id' => $isNote === true ? null : (int) $secureSendRow['folder_id'],
+                'folder_id' => $isNote || $secureSendRow['folder_id'] === null ? null : (int) $secureSendRow['folder_id'],
                 'label' => $isNote === true
                     ? $lang->get('secure_send_note')
-                    : $secureSendRow['item_label'],
+                    : ($secureSendRow['item_label'] !== '' ? $secureSendRow['item_label'] : $lang->get('item')),
                 'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
                 'email_status' => $secureSendEmailStatuses[(int) $secureSendRow['id']] ?? null,
                 'suspended' => $secureSendRow['suspended'],
-                'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
+                'remaining_views' => ($secureSendRow['download_pending'] ?? false) ? 0
+                    : max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
                 'download_pending' => (bool) ($secureSendRow['download_pending'] ?? false),
                 'expires_at' => (int) $secureSendRow['time_limit'],
                 'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),

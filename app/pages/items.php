@@ -842,6 +842,14 @@ if ((int) $session_user_admin === 1) {
                         } ?>
                     </fieldset>
 
+                    <?php if ((int) ($SETTINGS['secure_send_allow_attachments'] ?? 0) === 1) {
+                        require_once __DIR__ . '/../sources/secure_send_attachments.php'; ?>
+                        <fieldset id="secure-send-item-files" class="hidden mb-4" data-max-files="<?php echo SECURE_SEND_MAX_ATTACHMENTS; ?>">
+                            <legend class="h6 border-bottom pb-2 mb-3"><?php echo htmlspecialchars($lang->get('secure_send_attachments'), ENT_QUOTES, 'UTF-8'); ?></legend>
+                            <div id="secure-send-item-file-list"></div>
+                        </fieldset>
+                    <?php } ?>
+
                     <fieldset class="mb-4">
                         <legend class="h6 border-bottom pb-2 mb-3"><i class="fa-solid fa-sliders mr-2" aria-hidden="true"></i><?php echo $lang->get('secure_send_access_settings'); ?></legend>
                         <div class="form-row align-items-end">

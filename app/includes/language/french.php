@@ -4282,6 +4282,7 @@ return array(
     'secure_send_attachments' => 'Pièces jointes',
     'secure_send_choose_attachment' => 'Joindre un fichier',
     'secure_send_attachment_limit' => 'Taille maximale par fichier : #SIZE# Mo',
+    'secure_send_attachment_count_limit' => 'Sélectionnez au plus #COUNT# pièces jointes.',
     'secure_send_invalid_attachment' => 'La pièce jointe n’a pas pu être lue.',
     'secure_send_attachment_too_large' => 'La pièce jointe dépasse la taille maximale autorisée.',
     'secure_send_attachments_not_allowed' => 'Les pièces jointes de Secure Send sont indisponibles.',

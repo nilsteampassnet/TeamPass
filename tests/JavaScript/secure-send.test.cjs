@@ -51,7 +51,16 @@ function harness(item = { id: 123 }, emailAvailable = true) {
   const copied = []
   const notices = []
   let listLoads = 0
-  const document = { getElementById(id) { return { reportValidity: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#' + id).val()) } } }
+  const filePicker = { files: [], dataset: { maxSize: '1024' } }
+  const selectedFiles = []
+  const document = { getElementById(id) {
+    if (id === 'form-secure-send-file') return filePicker
+    if (id === 'secure-send-item-files') return { dataset: { maxFiles: '10' }, querySelectorAll: () => selectedFiles }
+    return { reportValidity: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#' + id).val()) }
+  } }
+  class FormData extends Map {
+    append(name, value) { this.set(name, value) }
+  }
   const $ = selector => {
     if (selector?.node) return selector
     if (!nodes.has(selector)) nodes.set(selector, {
@@ -89,7 +98,7 @@ function harness(item = { id: 123 }, emailAvailable = true) {
   }
   $('#form-item-otv-days').attr('max', '7')
   const context = {
-    $, document, TextEncoder, store: { get: () => item },
+    $, document, FormData, TextEncoder, store: { get: () => item },
     htmlEncode: value => String(value)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -106,9 +115,36 @@ function harness(item = { id: 123 }, emailAvailable = true) {
   const edit = () => handlers.get('#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea|input change ifChanged')()
   const generate = () => click('#form-secure-send-generate')
   const email = () => click('#form-secure-send-email')
-  return { $, context, handlers, requests, copied, notices, click, edit, generate, email, loadList,
+  return { $, context, handlers, requests, copied, notices, click, edit, generate, email, loadList, filePicker, selectedFiles,
     get listLoads() { return listLoads } }
 }
+
+test('A note can send a document alone and uses the configured size limit', () => {
+  const h = harness()
+  h.context.openSecureSendModal('note')
+  h.filePicker.files = [{ name: 'too large.txt', size: 1025 }]
+  h.generate()
+  assert.equal(h.requests.length, 0)
+  assert.deepEqual(h.notices, ['secure_send_attachment_too_large'])
+
+  const file = { name: 'R&D — résumé.txt', size: 1024 }
+  h.filePicker.files = [file]
+  h.generate()
+  assert.equal(h.requests.length, 1)
+  assert.equal(h.requests[0].options.contentType, false)
+  assert.equal(h.requests[0].options.processData, false)
+  assert.equal(h.requests[0].data.get('secure_send_file'), file)
+  assert.equal(JSON.parse(h.requests[0].data.get('data')).payload.note, '')
+})
+
+test('An item shares only the attachment IDs selected by the sender', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.selectedFiles.push({ value: '101' }, { value: '104' })
+  h.generate()
+  assert.deepEqual(JSON.parse(h.requests[0].data.data).attachment_ids, [101, 104])
+  assert.equal(h.requests[0].options.processData, true)
+})
 
 test('Each new item or note form starts on the internal address', () => {
   const h = harness()

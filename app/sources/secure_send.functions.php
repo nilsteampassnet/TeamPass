@@ -201,6 +201,10 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
         if (!$isNote) {
             $item = secureSendReadItem((int) $link['item_id'], (int) $link['originator'], true);
             if ($item === []) {
+                if (secureSendHasDownloadWindow((int) $link['id'], $settings)) {
+                    DB::rollback();
+                    return ['error' => 'invalid_link'];
+                }
                 $event = secureSendAudit($link, 'invalidated', 'item_access_lost');
                 DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
                 DB::commit();
@@ -258,13 +262,15 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
                 $fields[$field] = (string) ($item[$field] ?? '');
             }
         }
+        $autoDeletedAt = (int) ($automatic['del_enabled'] ?? 0) === 1
+            && (int) $automatic['del_type'] === 1 && (int) $automatic['del_value'] === 1 ? time() : 0;
         $downloads = [];
         if (isset($fields['attachments'])) {
             if ((int) ($settings['secure_send_allow_attachments'] ?? 0) !== 1) {
                 DB::rollback();
                 return ['error' => 'invalid_link'];
             }
-            $downloads = secureSendGrantDownloads($link, $fields['attachments'], $settings, time());
+            $downloads = secureSendGrantDownloads($link, $fields['attachments'], $settings, time(), $autoDeletedAt);
             unset($fields['attachments']);
         }
         $reserved = DB::query(
@@ -291,11 +297,9 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
             (int) OTV_USER_ID, 'at_shown', 'otv', null, null, null, null, false, true);
         $event = secureSendAudit(array_replace($link, ['views' => (int) $link['views'] + 1]), 'revealed');
         $itemDeleted = false;
-        if ((int) ($automatic['del_enabled'] ?? 0) === 1
-            && (int) $automatic['del_type'] === 1 && (int) $automatic['del_value'] === 1
-        ) {
+        if ($autoDeletedAt > 0) {
             // The final permitted reveal succeeds; subsequent links cannot read the inactive item.
-            secureSendDeactivateItem($item, $settings);
+            secureSendDeactivateItem($item, $settings, $autoDeletedAt);
             $itemDeleted = true;
         }
         DB::commit();
@@ -322,9 +326,9 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
  * @param array $settings Application settings
  * @return void
  */
-function secureSendDeactivateItem(array $item, array $settings): void
+function secureSendDeactivateItem(array $item, array $settings, ?int $deletedAt = null): void
 {
-    DB::update(prefixTable('items'), ['inactif' => 1, 'deleted_at' => time()], 'id = %i', (int) $item['id']);
+    DB::update(prefixTable('items'), ['inactif' => 1, 'deleted_at' => $deletedAt ?? time()], 'id = %i', (int) $item['id']);
     // Keep the automatic-deletion settings, as the authenticated item-view path does.
     logItems($settings, (int) $item['id'], $item['label'], (int) OTV_USER_ID,
         'at_delete', 'otv', 'at_automatically_deleted', null, null, null, false, true);

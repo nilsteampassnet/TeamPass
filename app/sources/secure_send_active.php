@@ -52,7 +52,7 @@ function secureSendActiveLinks(
     $downloadColumn = '';
     $downloadJoin = '';
     if ($withLabels && $withDownloads && array_key_exists('secure_send_allow_attachments', $settings)) {
-        $downloadColumn = ', (a.send_id IS NOT NULL AND o.views >= o.max_views) AS download_pending';
+        $downloadColumn = ', (a.send_id IS NOT NULL) AS download_window';
         $downloadJoin = ' LEFT JOIN ' . prefixTable('secure_send_attachments') . ' a
             ON a.send_id = o.id AND a.download_until > %i';
         $viewFilter = '(o.views < o.max_views OR a.send_id IS NOT NULL)';
@@ -110,21 +110,27 @@ function secureSendActiveLinks(
     }
     $active = [];
     foreach ($rows as $row) {
+        $downloadWindow = (int) ($row['download_window'] ?? 0) === 1;
+        $downloadPending = $downloadWindow && (int) $row['views'] >= (int) $row['max_views'];
         if ($row['send_type'] !== 'note') {
             $item = $accessible[(int) $row['originator']][(int) $row['item_id']] ?? null;
-            if ($item === null) {
+            if ($item === null && !$downloadWindow) {
                 continue;
             }
+            $downloadPending = $downloadPending || $item === null;
             if ($withLabels) {
-                $row['item_label'] = html_entity_decode((string) $item['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                $row['folder_id'] = (int) $item['id_tree'];
+                $row['item_label'] = html_entity_decode((string) ($item['label'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $row['folder_id'] = $item === null ? null : (int) $item['id_tree'];
             }
         }
         if ($withLabels) {
             $row['suspended'] = ($row['send_type'] === 'note' && (int) ($settings['secure_send_allow_notes'] ?? 0) !== 1)
                 || ((int) ($settings['secure_send_require_passphrase'] ?? 0) === 1 && (int) $row['has_passphrase'] !== 1);
         }
-        unset($row['sender_admin']);
+        if ($withDownloads) {
+            $row['download_pending'] = $downloadPending;
+        }
+        unset($row['sender_admin'], $row['download_window']);
         $active[] = $row;
     }
     return $active;
