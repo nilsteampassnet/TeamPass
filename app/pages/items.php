@@ -830,13 +830,25 @@ if ((int) $session_user_admin === 1) {
                             $secureSendFileLimit = secureSendUploadLimit($SETTINGS);
                             if ($secureSendFileLimit > 0) { ?>
                                 <div class="form-group mt-3 mb-0">
-                                    <label for="form-secure-send-file"><?php echo htmlspecialchars($lang->get('secure_send_choose_attachment'), ENT_QUOTES, 'UTF-8'); ?></label>
-                                    <input type="file" id="form-secure-send-file" class="form-control-file"
-                                           data-max-size="<?php echo $secureSendFileLimit; ?>" aria-describedby="secure-send-file-limit">
-                                    <small class="form-text text-muted" id="secure-send-file-limit"><?php
-                                        echo htmlspecialchars(str_replace('#SIZE#', (string) ($secureSendFileLimit / 1048576),
-                                            $lang->get('secure_send_attachment_limit')), ENT_QUOTES, 'UTF-8');
-                                    ?></small>
+                                    <button type="button" class="btn tp-item-dropzone w-100" id="secure-send-note-dropzone"
+                                            aria-labelledby="secure-send-note-drop-label" aria-describedby="secure-send-file-limit">
+                                        <i class="fa-solid fa-cloud-arrow-up tp-item-dropzone-icon" aria-hidden="true"></i>
+                                        <span class="font-weight-bold" id="secure-send-note-drop-label"><?php echo htmlspecialchars($lang->get('secure_send_choose_attachment'), ENT_QUOTES, 'UTF-8'); ?></span>
+                                        <small class="text-muted" id="secure-send-file-limit"><?php
+                                            echo htmlspecialchars(str_replace('#SIZE#', (string) ($secureSendFileLimit / 1048576),
+                                                $lang->get('secure_send_attachment_limit')), ENT_QUOTES, 'UTF-8');
+                                        ?></small>
+                                    </button>
+                                    <input type="file" id="form-secure-send-file" hidden data-max-size="<?php echo $secureSendFileLimit; ?>">
+                                    <div aria-live="polite">
+                                        <div class="hidden mt-2" id="secure-send-note-file-selection">
+                                            <div class="tp-item-file">
+                                                <span class="tp-item-file-icon"><i class="fa-solid fa-paperclip" aria-hidden="true"></i></span>
+                                                <div class="tp-item-file-body text-break" id="secure-send-note-file-name"></div>
+                                                <button type="button" id="secure-send-note-file-remove" class="btn btn-sm btn-default text-nowrap"><?php echo htmlspecialchars($lang->get('secure_send_remove_attachment'), ENT_QUOTES, 'UTF-8'); ?></button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             <?php }
                         } ?>
