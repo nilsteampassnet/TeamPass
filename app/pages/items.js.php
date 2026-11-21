@@ -8396,6 +8396,12 @@ require __DIR__ . '/icon.picker.js.php';
                     console.log(data);
                 }
 
+                if (Number(store.get('teampassItem')?.id) === Number(id)) {
+                    secureSendItemFiles = {itemId: Number(id), files: Array.isArray(data?.attachments) ? data.attachments : []};
+                    if ($('#modal-item-otv').hasClass('show') && $('#form-secure-send-mode').val() === 'item') {
+                        renderSecureSendItemFiles(secureSendItemFiles.files);
+                    }
+                }
                 // Attachments: the same cards in the view and in the edit form; no file, no section
                 $('#card-item-section-attachments').toggleClass('hidden', data === false || data.attachments.length === 0);
                 if (data !== false) {
@@ -9236,6 +9242,7 @@ require __DIR__ . '/icon.picker.js.php';
     }
 
     let secureSendFormVersion = 0;
+    let secureSendItemFiles = {itemId: 0, files: []};
     let secureSendListVersion = 0;
     let secureSendGenerating = false;
     let secureSendEmailGenerating = false;
@@ -9354,6 +9361,9 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-secure-send-include-totp').iCheck('uncheck');
         invalidateSecureSendLink();
         $('#secure-send-modal-title').text(<?php echo json_encode($lang->get('secure_send'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+        const itemFiles = mode === 'item' && secureSendItemFiles.itemId === Number(store.get('teampassItem')?.id)
+            ? secureSendItemFiles.files : [];
+        renderSecureSendItemFiles(itemFiles, false);
 
         if (mode === 'note') {
             $('#secure-send-note-fields').removeClass('hidden');
@@ -9372,6 +9382,26 @@ require __DIR__ . '/icon.picker.js.php';
 
         loadSecureSendsList();
         $('#modal-item-otv').modal('show');
+    }
+
+    /** Populate the picker without carrying selections from a previously opened share. */
+    function renderSecureSendItemFiles(files, preserveSelection = true) {
+        const $list = $('#secure-send-item-file-list');
+        if (!$list.length) return;
+        const selected = preserveSelection ? new Set($list.find('input:checked').map(function() { return this.value; }).get()) : new Set();
+        $list.empty();
+        files.forEach(function(attachment) {
+            const $row = $('<div>', {class: 'form-check'});
+            const value = String(attachment.id);
+            const inputId = 'secure-send-file-' + value;
+            $('<input>', {type: 'checkbox', class: 'form-check-input', id: inputId, value})
+                .prop('checked', selected.has(value)).appendTo($row);
+            $('<label>', {class: 'form-check-label text-break', for: inputId})
+                .text(decodeFilename(attachment.filename) + '.' + attachment.extension).appendTo($row);
+            $row.appendTo($list);
+        });
+        $('#secure-send-item-files').toggleClass('hidden', files.length === 0);
+        if (selected.size !== $list.find('input:checked').length) invalidateSecureSendLink();
     }
 
     /**
@@ -9453,6 +9483,17 @@ require __DIR__ . '/icon.picker.js.php';
             };
         } else {
             data.id = store.get('teampassItem').id;
+            const fileList = document.getElementById('secure-send-item-files');
+            if (fileList && typeof fileList.querySelectorAll === 'function') {
+                const selected = Array.from(fileList.querySelectorAll('input:checked'), input => Number(input.value));
+                const maxFiles = Number(fileList.dataset.maxFiles);
+                if (selected.length > maxFiles) {
+                    const message = <?php echo json_encode($lang->get('secure_send_attachment_count_limit'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+                    toastr.error(message.replace('#COUNT#', String(maxFiles)));
+                    return;
+                }
+                if (selected.length > 0) data.attachment_ids = selected;
+            }
         }
 
         invalidateSecureSendLink();

@@ -30,6 +30,8 @@ use Defuse\Crypto\Key;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 
+require_once __DIR__ . '/secure_send_item_attachments.php';
+
 const SECURE_SEND_DOWNLOAD_SECONDS = 300;
 const SECURE_SEND_MAX_ATTACHMENTS = 10;
 
@@ -70,7 +72,7 @@ function secureSendUploadLimit(array $settings): int
 /**
  * Reject unusable uploads before reserving a file set or creating a link.
  *
- * @return array{name: string, size: int, path: string, source_id: int}
+ * @return array{name: string, source_id: int, open: Closure}
  */
 function secureSendReadUpload(UploadedFile $upload, array $settings): array
 {
@@ -89,8 +91,8 @@ function secureSendReadUpload(UploadedFile $upload, array $settings): array
         throw new SecureSendAttachmentRefusal('attachment_too_large');
     }
 
-    return ['name' => secureSendAttachmentName($upload->getClientOriginalName()), 'size' => $size,
-        'path' => $path, 'source_id' => 0];
+    return ['name' => secureSendAttachmentName($upload->getClientOriginalName()), 'source_id' => 0,
+        'open' => static fn () => @fopen($path, 'rb')];
 }
 
 /**
@@ -145,7 +147,7 @@ function secureSendAttachmentDirectory(array $settings, string $reference, bool 
 /**
  * Encrypt the supplied files before they become reachable through a committed share.
  *
- * @param list<array{name: string, size: int, path: string, source_id: int}> $files
+ * @param list<array{name: string, source_id: int, open: Closure}> $files
  * @return array{reference: string, manifest: list<array{name: string, size: int, key: string, source_id: int}>}
  */
 function secureSendStageAttachments(array $files, array $settings): array
@@ -157,8 +159,28 @@ function secureSendStageAttachments(array $files, array $settings): array
         $manifest = [];
         foreach ($files as $index => $file) {
             $key = Key::createNewRandomKey();
-            File::encryptFile($file['path'], $directory . DIRECTORY_SEPARATOR . $index . '.enc', $key);
-            $manifest[] = ['name' => $file['name'], 'size' => $file['size'], 'source_id' => $file['source_id'],
+            $input = ($file['open'])();
+            if (!is_resource($input)) {
+                throw new SecureSendAttachmentRefusal('invalid_attachment');
+            }
+            $output = null;
+            try {
+                $size = (int) (fstat($input)['size'] ?? 0);
+                if ($size <= 0) {
+                    throw new SecureSendAttachmentRefusal('invalid_attachment');
+                }
+                $output = @fopen($directory . DIRECTORY_SEPARATOR . $index . '.enc', 'xb');
+                if ($output === false) {
+                    throw new RuntimeException('attachment_storage_unavailable');
+                }
+                File::encryptResource($input, $output, $key);
+            } finally {
+                if (is_resource($output)) {
+                    fclose($output);
+                }
+                fclose($input);
+            }
+            $manifest[] = ['name' => $file['name'], 'size' => $size, 'source_id' => $file['source_id'],
                 'key' => $key->saveToAsciiSafeString()];
         }
 
@@ -233,15 +255,21 @@ function secureSendPruneAttachments(array $settings, array $sendIds = []): void
         $filter = $sendIds === []
             ? 'a.send_id IS NOT NULL OR a.created_at < %i'
             : 'a.send_id IN %li';
-        $rows = DB::query(
-            'SELECT a.reference FROM ' . $table . ' a LEFT JOIN ' . $linkTable . ' o ON o.id = a.send_id
-            WHERE o.id IS NULL AND (' . $filter . ') ORDER BY a.created_at LIMIT 100',
-            $sendIds === [] ? time() - 86400 : $sendIds
-        );
+        $candidate = 'SELECT a.reference FROM ' . $table . ' a LEFT JOIN ' . $linkTable . ' o ON o.id = a.send_id
+            WHERE o.id IS NULL AND (' . $filter . ')';
+        $value = $sendIds === [] ? time() - 86400 : $sendIds;
+        $rows = DB::query($candidate . ' ORDER BY a.created_at LIMIT 100', $value);
         foreach ($rows as $row) {
+            DB::startTransaction();
             try {
-                secureSendRemoveAttachmentSet((string) $row['reference'], $settings);
+                // A request may still publish a staging record while maintenance is inspecting it.
+                $reference = DB::queryFirstField($candidate . ' AND a.reference = %s FOR UPDATE', $value, $row['reference']);
+                if (is_string($reference)) {
+                    secureSendRemoveAttachmentSet($reference, $settings);
+                }
+                DB::commit();
             } catch (Throwable $e) {
+                DB::rollback();
                 error_log('TEAMPASS Secure Send attachment cleanup failed (' . get_class($e) . ')');
             }
         }
@@ -253,7 +281,7 @@ function secureSendPruneAttachments(array $settings, array $sendIds = []): void
 /**
  * Seal a short-lived, session-owned download grant before committing a successful reveal.
  */
-function secureSendGrantDownloads(array $link, array $manifest, array $settings, int $now): array
+function secureSendGrantDownloads(array $link, array $manifest, array $settings, int $now, int $autoDeletedAt = 0): array
 {
     if (!array_is_list($manifest) || $manifest === [] || count($manifest) > SECURE_SEND_MAX_ATTACHMENTS) {
         throw new UnexpectedValueException('invalid_attachment_manifest');
@@ -264,8 +292,8 @@ function secureSendGrantDownloads(array $link, array $manifest, array $settings,
         // A restore can retain the link while its transient file store was intentionally excluded.
         throw new RuntimeException('attachment_storage_unavailable');
     }
-    $downloads = [];
-    foreach ($manifest as $index => $entry) {
+    $sourceIds = [];
+    foreach ($manifest as $entry) {
         if (!is_array($entry)
             || !is_string($entry['name'] ?? null)
             || !is_string($entry['key'] ?? null)
@@ -274,11 +302,21 @@ function secureSendGrantDownloads(array $link, array $manifest, array $settings,
         ) {
             throw new UnexpectedValueException('invalid_attachment_manifest');
         }
-        $downloads[$index] = $entry['name'];
+        if ($entry['source_id'] > 0) {
+            $sourceIds[] = $entry['source_id'];
+        }
+    }
+    if ($sourceIds !== []) {
+        $existing = secureSendExistingItemAttachmentIds((int) $link['item_id'], $sourceIds);
+        $manifest = array_filter($manifest, static fn (array $file): bool => in_array($file['source_id'], $existing, true));
+    }
+    if ($manifest === []) {
+        return [];
     }
     $expires = min((int) $link['time_limit'], $now + SECURE_SEND_DOWNLOAD_SECONDS);
     $sealed = cryption(json_encode([
         'id' => (int) $link['id'], 'reference' => $reference, 'files' => $manifest, 'expires' => $expires,
+        'auto_deleted_at' => $autoDeletedAt,
     ], JSON_THROW_ON_ERROR), '', 'encrypt', $settings);
     if (!empty($sealed['error'])) {
         throw new RuntimeException('attachment_grant_failed');
@@ -289,8 +327,19 @@ function secureSendGrantDownloads(array $link, array $manifest, array $settings,
     return [
         'token' => bin2hex(random_bytes(32)),
         'grant' => ['expires' => $expires, 'sealed' => $sealed['string']],
-        'names' => $downloads,
+        'names' => array_map(static fn (array $file): string => $file['name'], $manifest),
     ];
+}
+
+/**
+ * Keep an existing file grant revocable while refusing any further reveal of an unavailable item.
+ */
+function secureSendHasDownloadWindow(int $sendId, array $settings): bool
+{
+    return array_key_exists('secure_send_allow_attachments', $settings) && DB::queryFirstField(
+        'SELECT send_id FROM ' . prefixTable('secure_send_attachments') . ' WHERE send_id = %i AND download_until > %i',
+        $sendId, time()
+    ) !== null;
 }
 
 /**
@@ -327,8 +376,16 @@ function secureSendAuthorizeDownload(array $input, array $grants, array $setting
         $data['id'], $data['reference'], $now);
     if (!$link || !secureSendIsAvailable($link, $settings, $now, false)
         || !secureSendHostIsAllowed($settings, $link, $host)
-        || secureSendPublicSender($link, false) === null
     ) {
+        return null;
+    }
+    if ($file['source_id'] > 0) {
+        if (!secureSendCanDownloadItemFiles($link, (int) ($data['auto_deleted_at'] ?? 0))
+            || secureSendExistingItemAttachmentIds((int) $link['item_id'], [$file['source_id']]) === []
+        ) {
+            return null;
+        }
+    } elseif (secureSendPublicSender($link, false) === null) {
         return null;
     }
 

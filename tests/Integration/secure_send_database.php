@@ -112,6 +112,7 @@ function concurrentRedemptions(array $parameters, array $settings, int $count, s
 $settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_max_views' => 5,
     'otv_expiration_period' => 7, 'cpassman_url' => 'https://vault.example.com', 'otv_subdomain' => 'https://share.example.com'];
 $tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree', 'secure_send_attachments',
+    'files', 'sharekeys_files', 'sharekeys_items',
     'secure_send_audit', 'secure_send_audit_unavailable', 'log_system', 'log_system_unavailable', 'misc'];
 try {
     // Execute the exact DDL shared by fresh installation and the 3.2.3 migration twice.
@@ -131,7 +132,7 @@ try {
         admin INT DEFAULT 0, disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('send_audit') . ' (item_id INT, action VARCHAR(30)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('items') . ' (
-        id INT PRIMARY KEY, id_tree INT, label TEXT, login TEXT, url TEXT, description TEXT,
+        id INT PRIMARY KEY, id_tree INT, label TEXT, login TEXT, url TEXT, description TEXT, pw TEXT NULL,
         inactif INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('automatic_del') . ' (
         item_id INT PRIMARY KEY, del_enabled INT, del_type INT, del_value BIGINT) ENGINE=InnoDB');

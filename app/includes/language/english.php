@@ -4298,6 +4298,7 @@ return array(
     'secure_send_attachments' => 'Attachments',
     'secure_send_choose_attachment' => 'Attach a file',
     'secure_send_attachment_limit' => 'Maximum file size: #SIZE# MB',
+    'secure_send_attachment_count_limit' => 'Select up to #COUNT# attachments.',
     'secure_send_invalid_attachment' => 'The attachment could not be read.',
     'secure_send_attachment_too_large' => 'The attachment exceeds the upload limit.',
     'secure_send_attachments_not_allowed' => 'Secure Send attachments are unavailable.',
