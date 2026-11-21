@@ -54,13 +54,14 @@ function secureSendRecipientLanguage(?string $sessionLanguage, array $settings):
  * @param array $link Stored link
  * @param array $settings Application settings
  * @param int $now Current timestamp
+ * @param bool $checkViews Whether this request needs to reserve a new reveal
  * @return bool Whether the link is still usable
  */
-function secureSendIsAvailable(array $link, array $settings, int $now): bool
+function secureSendIsAvailable(array $link, array $settings, int $now, bool $checkViews = true): bool
 {
     return (int) ($settings['otv_is_enabled'] ?? 0) === 1
         && (int) ($link['time_limit'] ?? 0) > $now
-        && (int) ($link['views'] ?? 0) < (int) ($link['max_views'] ?? 0)
+        && (!$checkViews || (int) ($link['views'] ?? 0) < (int) ($link['max_views'] ?? 0))
         && (int) ($link['failed_attempts'] ?? 0) < 5
         && ((int) ($link['has_passphrase'] ?? 0) !== 1 || !empty($link['protected_key']))
         && in_array($link['send_type'] ?? 'item', ['item', 'item_v2', 'note'], true)

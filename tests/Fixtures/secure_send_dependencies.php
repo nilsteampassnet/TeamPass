@@ -100,7 +100,17 @@ function securityPostureItemAccessSql(int $userId, string $alias): string
 /** Independently model the authenticated sender's item key. */
 function decryptUserObjectKeyWithMigration(...$arguments): string
 {
-    return DB::$objectKey;
+    if (($arguments[4] ?? '') === 'sharekeys_files') {
+        return $arguments[0];
+    }
+    return property_exists('DB', 'objectKey') ? DB::$objectKey : 'fixture-item-key';
+}
+
+/** Recognize the canonical base64 names used by the item attachment fixture. */
+function isBase64(string $value): bool
+{
+    $decoded = base64_decode($value, true);
+    return $decoded !== false && $decoded !== '' && base64_encode($decoded) === $value;
 }
 
 /** Item RSA/AES formats have their own cryptography tests. */

@@ -30,6 +30,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/secure_send_audit.php';
+require_once __DIR__ . '/secure_send_attachments.php';
 
 /**
  * Store an already encrypted, authorized link and its creation evidence atomically.
@@ -40,10 +41,18 @@ require_once __DIR__ . '/secure_send_audit.php';
  * @param array $link Validated link with encrypted payload
  * @param array $settings Application settings
  * @param array|null $delivery Server-built URL and single recipient, or null for clipboard sharing
+ * @param string|null $attachmentReference Private staged file set
+ * @param list<int> $sourceIds Selected item files; checked again before publication
  * @return int New link identifier
  * @throws Throwable When the link or audit cannot be persisted
  */
-function secureSendStoreLink(array $link, array $settings, ?array $delivery = null): int
+function secureSendStoreLink(
+    array $link,
+    array $settings,
+    ?array $delivery = null,
+    ?string $attachmentReference = null,
+    array $sourceIds = []
+): int
 {
     $message = null;
     if ($delivery !== null) {
@@ -52,12 +61,29 @@ function secureSendStoreLink(array $link, array $settings, ?array $delivery = nu
     }
     DB::startTransaction();
     try {
+        if ($sourceIds !== []) {
+            $itemId = (int) $link['item_id'];
+            if (secureSendReadItem($itemId, (int) $link['originator'], true) === []) {
+                throw new SecureSendCreateRefusal('not_allowed');
+            }
+            if (count(secureSendExistingItemAttachmentIds($itemId, $sourceIds, true)) !== count($sourceIds)) {
+                throw new SecureSendAttachmentRefusal('invalid_attachment');
+            }
+        }
         if ($message !== null) {
             secureSendEmailReserve((int) $link['originator'], time());
         }
         DB::insert(prefixTable('otv'), $link);
         $id = (int) DB::insertId();
         $link['id'] = $id;
+        if ($attachmentReference !== null && DB::update(
+            prefixTable('secure_send_attachments'),
+            ['send_id' => $id],
+            'reference = %s AND send_id IS NULL',
+            $attachmentReference
+        ) !== 1) {
+            throw new RuntimeException('attachment_publish_failed');
+        }
         $event = secureSendAudit($link, 'created', '', (int) $link['originator']);
         if ($message !== null) {
             secureSendEmailQueue($message, $link, $settings, time());
@@ -113,6 +139,7 @@ function secureSendRevokeLink(int $sendId, int $userId, array $settings): bool
         throw $e;
     }
     secureSendEmitAudit($event, $settings);
+    secureSendPruneAttachments($settings, [$sendId]);
     return true;
 }
 
@@ -133,17 +160,19 @@ function secureSendRevokeLink(int $sendId, int $userId, array $settings): bool
 function secureSendPurgeExpiredLinks(array $settings, ?int $now = null): int
 {
     $now ??= time();
+    // A diagnostic read must not establish an InnoDB snapshot before locking the
+    // rows. Another worker may commit a purge between those two reads.
+    $invalidId = DB::queryFirstField(
+        'SELECT id FROM ' . prefixTable('otv') . '
+        WHERE time_limit < %i AND (id <= 0 OR originator <= 0 OR originator IS NULL) LIMIT 1',
+        $now
+    );
+    if ($invalidId !== null) {
+        // Do not copy historical row contents or identifiers into diagnostics.
+        error_log('TEAMPASS Secure Send cleanup skipped invalid metadata (InvalidArgumentException)');
+    }
     DB::startTransaction();
     try {
-        $invalidId = DB::queryFirstField(
-            'SELECT id FROM ' . prefixTable('otv') . '
-            WHERE time_limit < %i AND (id <= 0 OR originator <= 0 OR originator IS NULL) LIMIT 1',
-            $now
-        );
-        if ($invalidId !== null) {
-            // Do not copy historical row contents or identifiers into diagnostics.
-            error_log('TEAMPASS Secure Send cleanup skipped invalid metadata (InvalidArgumentException)');
-        }
         $links = DB::query(
             'SELECT id, originator, item_id, send_type, timestamp, has_passphrase,
                 shared_globaly, max_views, time_limit, views, failed_attempts
@@ -163,6 +192,9 @@ function secureSendPurgeExpiredLinks(array $settings, ?int $now = null): int
     }
     foreach ($events as $event) {
         secureSendEmitAudit($event, $settings);
+    }
+    if ($links !== []) {
+        secureSendPruneAttachments($settings, array_map('intval', array_column($links, 'id')));
     }
     return count($links);
 }

@@ -221,6 +221,17 @@ if (mysqli_query($db_link,
     $emailUpgradeFailure('Unable to initialize the Secure Send API setting.');
 }
 
+require_once TEAMPASS_ROOT . '/app/sources/secure_send_attachments.php';
+if (mysqli_query($db_link, secureSendAttachmentSchemaSql($pre . 'secure_send_attachments')) === false
+    || mysqli_query($db_link,
+        "INSERT IGNORE INTO " . $pre . "misc (type, intitule, valeur)
+         VALUES ('admin', 'secure_send_allow_attachments', '0')"
+    ) === false
+) {
+    $emailUpgradeFailure('Unable to initialize Secure Send attachment storage.');
+}
+ConfigManager::invalidateCache();
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

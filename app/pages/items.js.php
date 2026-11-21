@@ -8396,6 +8396,12 @@ require __DIR__ . '/icon.picker.js.php';
                     console.log(data);
                 }
 
+                if (Number(store.get('teampassItem')?.id) === Number(id)) {
+                    secureSendItemFiles = {itemId: Number(id), files: Array.isArray(data?.attachments) ? data.attachments : []};
+                    if ($('#modal-item-otv').hasClass('show') && $('#form-secure-send-mode').val() === 'item') {
+                        renderSecureSendItemFiles(secureSendItemFiles.files);
+                    }
+                }
                 // Attachments: the same cards in the view and in the edit form; no file, no section
                 $('#card-item-section-attachments').toggleClass('hidden', data === false || data.attachments.length === 0);
                 if (data !== false) {
@@ -9217,6 +9223,9 @@ require __DIR__ . '/icon.picker.js.php';
             'email_not_allowed': <?php echo json_encode($lang->get('secure_send_email_not_allowed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': <?php echo json_encode($lang->get('secure_send_passphrase_required_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'empty_note': <?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'invalid_attachment': <?php echo json_encode($lang->get('secure_send_invalid_attachment'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'attachment_too_large': <?php echo json_encode($lang->get('secure_send_attachment_too_large'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'attachments_not_allowed': <?php echo json_encode($lang->get('secure_send_attachments_not_allowed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'invalid_public_url': <?php echo json_encode($lang->get('secure_send_invalid_public_url'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -9233,6 +9242,7 @@ require __DIR__ . '/icon.picker.js.php';
     }
 
     let secureSendFormVersion = 0;
+    let secureSendItemFiles = {itemId: 0, files: []};
     let secureSendListVersion = 0;
     let secureSendGenerating = false;
     let secureSendEmailGenerating = false;
@@ -9287,7 +9297,9 @@ require __DIR__ . '/icon.picker.js.php';
                     html += '<li class="secure-send-entry d-flex align-items-center">' +
                         '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +
                         '<div class="secure-send-entry-content flex-grow-1"><span class="d-block font-weight-bold">' + htmlEncode(s.label) + lock + '</span>' +
-                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + email + '</div>' +
+                        '<span class="d-block text-muted mt-1">' + (s.download_pending === true
+                            ? htmlEncode(<?php echo json_encode($lang->get('secure_send_download_pending'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+                            : Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + email + '</div>' +
                         '<button type="button" class="btn btn-sm btn-outline-danger secure-send-revoke ml-3" data-id="' + Number(s.id) + '"><i class="fa-solid fa-trash mr-1" aria-hidden="true"></i>' + htmlEncode(<?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</button>' +
                         '</li>';
                 });
@@ -9316,6 +9328,79 @@ require __DIR__ . '/icon.picker.js.php';
             : secureSendErrorLabel('invalid_public_url'));
     }
 
+    /** Keep the file name and remove action in sync with the native picker. */
+    function renderSecureSendNoteFile(file) {
+        $('#secure-send-note-file-name').text(file?.name ?? '');
+        $('#secure-send-note-file-selection').toggleClass('hidden', !file);
+    }
+
+    function resetSecureSendNoteFile() {
+        const picker = document.getElementById('form-secure-send-file');
+        if (picker) picker.value = '';
+        $('#secure-send-note-dropzone').removeClass('is-dragover');
+        renderSecureSendNoteFile();
+    }
+
+    function secureSendNoteFileError(file, picker) {
+        if (file.size === 0) return 'invalid_attachment';
+        return file.size > Number(picker.dataset.maxSize) ? 'attachment_too_large' : '';
+    }
+
+    $(document).on('click', '#secure-send-note-dropzone', function() {
+        document.getElementById('form-secure-send-file').click();
+    }).on('change', '#form-secure-send-file', function() {
+        const file = this.files[0];
+        const error = file ? secureSendNoteFileError(file, this) : '';
+        if (error) {
+            resetSecureSendNoteFile();
+            toastr.error(secureSendErrorLabel(error));
+            return;
+        }
+        renderSecureSendNoteFile(file);
+    }).on('click', '#secure-send-note-file-remove', function() {
+        resetSecureSendNoteFile();
+        invalidateSecureSendLink();
+        $('#secure-send-note-dropzone').trigger('focus');
+    }).on('dragenter dragover dragleave drop', '#secure-send-note-dropzone', function(event) {
+        const transfer = event.originalEvent?.dataTransfer;
+        const $zone = $(this);
+        if (event.type === 'dragleave') {
+            $zone.removeClass('is-dragover');
+            return;
+        }
+        if (!Array.from(transfer?.types ?? []).includes('Files')) return;
+        event.preventDefault();
+        const picker = document.getElementById('form-secure-send-file');
+        if (picker.disabled) return;
+        if (event.type !== 'drop') {
+            transfer.dropEffect = 'copy';
+            $zone.addClass('is-dragover');
+            return;
+        }
+        $zone.removeClass('is-dragover');
+        if (transfer.files.length !== 1) {
+            toastr.error(<?php echo json_encode($lang->get('secure_send_single_attachment'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+            return;
+        }
+        const file = transfer.files[0];
+        const error = secureSendNoteFileError(file, picker);
+        if (error) {
+            toastr.error(secureSendErrorLabel(error));
+            return;
+        }
+        picker.files = transfer.files;
+        renderSecureSendNoteFile(file);
+        invalidateSecureSendLink();
+    });
+
+    // A missed file drop must not navigate away from a draft note.
+    $('#modal-item-otv').on('dragover drop', function(event) {
+        if ($('#form-secure-send-mode').val() === 'note'
+            && document.getElementById('form-secure-send-file')
+            && Array.from(event.originalEvent?.dataTransfer?.types ?? []).includes('Files')) {
+            event.preventDefault();
+        }
+    });
     $(document).on('input change ifChanged', '#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea', invalidateSecureSendLink);
     $('#modal-item-otv').on('hide.bs.modal', function(event) {
         if (secureSendEmailGenerating) event.preventDefault();
@@ -9325,6 +9410,7 @@ require __DIR__ . '/icon.picker.js.php';
         secureSendListVersion += 1;
         $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
         $('#form-secure-send-email-recipient').val('');
+        resetSecureSendNoteFile();
     });
 
     /**
@@ -9340,6 +9426,7 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-item-otv-link').val('').data('otv-id', 0);
         $('#form-secure-send-passphrase').val('');
         $('#form-secure-send-email-recipient').val('');
+        resetSecureSendNoteFile();
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
@@ -9347,6 +9434,9 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-secure-send-include-totp').iCheck('uncheck');
         invalidateSecureSendLink();
         $('#secure-send-modal-title').text(<?php echo json_encode($lang->get('secure_send'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+        const itemFiles = mode === 'item' && secureSendItemFiles.itemId === Number(store.get('teampassItem')?.id)
+            ? secureSendItemFiles.files : [];
+        renderSecureSendItemFiles(itemFiles, false);
 
         if (mode === 'note') {
             $('#secure-send-note-fields').removeClass('hidden');
@@ -9365,6 +9455,26 @@ require __DIR__ . '/icon.picker.js.php';
 
         loadSecureSendsList();
         $('#modal-item-otv').modal('show');
+    }
+
+    /** Populate the picker without carrying selections from a previously opened share. */
+    function renderSecureSendItemFiles(files, preserveSelection = true) {
+        const $list = $('#secure-send-item-file-list');
+        if (!$list.length) return;
+        const selected = preserveSelection ? new Set($list.find('input:checked').map(function() { return this.value; }).get()) : new Set();
+        $list.empty();
+        files.forEach(function(attachment) {
+            const $row = $('<div>', {class: 'form-check'});
+            const value = String(attachment.id);
+            const inputId = 'secure-send-file-' + value;
+            $('<input>', {type: 'checkbox', class: 'form-check-input', id: inputId, value})
+                .prop('checked', selected.has(value)).appendTo($row);
+            $('<label>', {class: 'form-check-label text-break', for: inputId})
+                .text(decodeFilename(attachment.filename) + '.' + attachment.extension).appendTo($row);
+            $row.appendTo($list);
+        });
+        $('#secure-send-item-files').toggleClass('hidden', files.length === 0);
+        if (selected.size !== $list.find('input:checked').length) invalidateSecureSendLink();
     }
 
     /**
@@ -9402,6 +9512,13 @@ require __DIR__ . '/icon.picker.js.php';
             if (!valid) return;
         }
         var mode = $('#form-secure-send-mode').val();
+        const picker = document.getElementById('form-secure-send-file');
+        const file = mode === 'note' ? picker?.files?.[0] : undefined;
+        const fileError = file ? secureSendNoteFileError(file, picker) : '';
+        if (fileError) {
+            toastr.error(secureSendErrorLabel(fileError));
+            return;
+        }
         var passphrase = $('#form-secure-send-passphrase').val();
         if ($('#form-secure-send-passphrase').prop('required') === true && passphrase.trim() === '') {
             toastr.error(secureSendErrorLabel('passphrase_required'), '', { timeOut: 3000, progressBar: true });
@@ -9427,7 +9544,7 @@ require __DIR__ . '/icon.picker.js.php';
         if (mode === 'note') {
             var secret = $('#form-secure-send-secret').val();
             var note = $('#form-secure-send-note').val();
-            if (secret.trim() === '' && note.trim() === '') {
+            if (!file && secret.trim() === '' && note.trim() === '') {
                 toastr.error(<?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 3000, progressBar: true });
                 return;
             }
@@ -9440,6 +9557,17 @@ require __DIR__ . '/icon.picker.js.php';
             };
         } else {
             data.id = store.get('teampassItem').id;
+            const fileList = document.getElementById('secure-send-item-files');
+            if (fileList && typeof fileList.querySelectorAll === 'function') {
+                const selected = Array.from(fileList.querySelectorAll('input:checked'), input => Number(input.value));
+                const maxFiles = Number(fileList.dataset.maxFiles);
+                if (selected.length > maxFiles) {
+                    const message = <?php echo json_encode($lang->get('secure_send_attachment_count_limit'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+                    toastr.error(message.replace('#COUNT#', String(maxFiles)));
+                    return;
+                }
+                if (selected.length > 0) data.attachment_ids = selected;
+            }
         }
 
         invalidateSecureSendLink();
@@ -9449,21 +9577,31 @@ require __DIR__ . '/icon.picker.js.php';
         $('#form-secure-send-generate').prop('disabled', true);
         $('#form-secure-send-email').prop('disabled', true);
         if (sendEmail) {
-            $('#modal-item-otv input:not(:disabled), #modal-item-otv textarea:not(:disabled), #modal-item-otv button[data-dismiss="modal"]').attr('data-email-busy', '1').prop('disabled', true);
+            $('#modal-item-otv input:not(:disabled), #modal-item-otv textarea:not(:disabled), #modal-item-otv button[data-dismiss="modal"], #secure-send-note-dropzone, #secure-send-note-file-remove')
+                .attr('data-email-busy', '1').prop('disabled', true);
             $('#modal-item-otv').attr('aria-busy', 'true');
             $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_preparing'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
         }
 
+        const requestData = {
+            type: "generate_OTV_url",
+            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        };
+        let uploadData;
+        if (file) {
+            uploadData = new FormData();
+            Object.entries(requestData).forEach(([name, value]) => uploadData.append(name, value));
+            uploadData.append('secure_send_file', file);
+        }
         $.ajax({
             url: 'sources/items.queries.php',
             method: 'POST',
             dataType: 'json',
-            timeout: 30000,
-            data: {
-                type: "generate_OTV_url",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: "<?php echo $session->get('key'); ?>"
-            }
+            timeout: file ? 0 : 30000,
+            processData: !file,
+            contentType: file ? false : 'application/x-www-form-urlencoded; charset=UTF-8',
+            data: uploadData || requestData
         }).done(function(data) {
             if (sendEmail) $('#secure-send-email-result').text('').addClass('hidden');
             const responseId = data !== null && typeof data === 'object' && !Array.isArray(data)
@@ -9503,8 +9641,12 @@ require __DIR__ . '/icon.picker.js.php';
             } else {
                 toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
             }
-        }).fail(function() {
+        }).fail(function(xhr) {
             if (formVersion === secureSendFormVersion) {
+                if (file && xhr.status === 413) {
+                    toastr.error(secureSendErrorLabel('attachment_too_large'));
+                    return;
+                }
                 if (sendEmail) $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_network_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
                 toastr.error(sendEmail ? <?php echo json_encode($lang->get('secure_send_email_network_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?> : secureSendErrorLabel('server_error'), '', { timeOut: 10000 });
             }
