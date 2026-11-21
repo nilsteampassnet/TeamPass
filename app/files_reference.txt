@@ -1,4 +1,4 @@
-Dockerfile 49ca3ae9deb4463bff209809e144009b
+Dockerfile a8b503b32ca13390d06e38b72b0b4e6d
 app/api/Controller/Api/AuthController.php c436f7f92546a424a36fd96830370d47
 app/api/Controller/Api/BaseController.php 5ca2002316646bb7b48ffa797581e181
 app/api/Controller/Api/DevicePairingController.php 3eb77a567a8af32da6b355dd55fc4829
@@ -26,8 +26,8 @@ app/api/inc/jwt_utils.php c4fdb16d884ae2f661f1bf263bd095b2
 app/api/index.php 5a04afed13afdcee7901d002c672c125
 app/api/openapi.json 50a7dec0840223828bedaad3c84f7b61
 app/config/.htaccess 81594a7af3d0a392c24aada056204b79
-app/config/emails_templates.php ebdc10bc400970a342a958086c3b3fe7
-app/config/include.php 7c4707b269ae55cb81f4f648c323bd57
+app/config/emails_templates.php 601a2f6676e10c0dcf4aecec51549885
+app/config/include.php 9d31d6711d614e82f4e684f090421558
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/config/settings.sample.php 15ed7c39ba4b70e0157292265f938860
 app/core/command-palette.js.php e4e3fd01a173bfdcbd02c96ea679375a
@@ -344,7 +344,7 @@ app/pages/icon.picker.js.php f19a1fac7174663075fef6d3895fa54f
 app/pages/import.js.php 388a576939af277cd3a0c40c1aa2831e
 app/pages/import.php 05753cd24613cac4399c5b2da740d975
 app/pages/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
-app/pages/items.js.php 16255244dff0f536be4f6df8222314b3
+app/pages/items.js.php 2566a90a718d537fb84760506e484b7b
 app/pages/items.php ca91706b2229ef7939af00d212300ffb
 app/pages/kb.js.php 7125f302325882c45dc68c528efb1452
 app/pages/kb.php 8eea4ca2a4731aad553d760dcda9e5ff
@@ -500,7 +500,7 @@ app/sources/item_restriction_logic.php 0eab0335ab5d947e19696f4d29b467bf
 app/sources/item_revisions_logic.php fccb52144b217d13608b64e1e4f8a7d6
 app/sources/item_update_logic.php e283d1f1e5e0a0f8ce26f19d60345726
 app/sources/items.logs.php d6d8651775aea37bb0a5310c689871a6
-app/sources/items.queries.php 1f83cdf4a9683408e7b067ed87ce18e1
+app/sources/items.queries.php 36f272c0aacc0c3eab9e6b35cd69e188
 app/sources/kb.queries.php 9e6c9c638f336bfada50a1fc97f956b4
 app/sources/kb_dates.php c95cb4dcb3f2db6df0ec85628675c4e8
 app/sources/lapr.functions.php 2602fd72504fe83ceab30c9769030018
@@ -518,7 +518,7 @@ app/sources/licence_trial_logic.php 43b4373fbea5506ff0f22f8c84690d0f
 app/sources/log_display_logic.php 1c207a143e4a974a1dd774459a8bda2e
 app/sources/logs.datatables.php bcdd11062b02411d7062f6351d2cb6b9
 app/sources/logs_filter_logic.php 31b7dce3da41c71da1072ee40cffd44c
-app/sources/main.functions.php e9d787c8ba23bfac14e41d587d57c0a2
+app/sources/main.functions.php af89246fcd22e84cf2a57a35f86a1154
 app/sources/main.queries.php da7e4ad78ae120584939932b165e83a2
 app/sources/main_queries_logic.php 3451ce5285deb9b777e05bd083f12b6c
 app/sources/network_acl_guard.php f5c99bc25a19671b8ec7be1fb3af3243
@@ -598,7 +598,7 @@ app/sources/users.logs.datatable.php 1122041deee60cb071c6a167ee1593a6
 app/sources/users.queries.php 30bc12a6873519323cdc211ad0034e1f
 app/sources/users_purge.functions.php bab85904f68fad7158b0ca367667d929
 app/sources/utilities.queries.php 7cdb1e6952ee0df0a3d348b1b88e2a38
-app/sources/utils.queries.php 0c07337f9987f5ef4b5d0602bc66a805
+app/sources/utils.queries.php 4a321fa2d2c610f828057ac447c40fb0
 app/sources/webauthn.functions.php 29eabd35a03dfc4af43463aceb2695a9
 app/sources/webauthn_login.functions.php 1dd47d5d4e4a9ea8cde52adac2bc48d1
 app/sources/webauthn_login_logic.php eb17be2f67bc34dd997ba45bf8150bf7

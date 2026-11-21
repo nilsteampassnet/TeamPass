@@ -165,4 +165,67 @@ class WebItemRestrictionEnforcementTest extends TestCase
             'The page check alone is bypassed by posting to the handler.'
         );
     }
+
+    /**
+     * GHSA-6qg7-w2p8-7rw4: sharing by email sends the label, the folder path and a link to any
+     * address, so it needs read access to the item, not only to its folder.
+     */
+    public function testShareByEmailRequiresReadAccessToTheItem(): void
+    {
+        $block = $this->block('items.queries.php', "case 'send_email':", 'prepareSendingEmail(');
+
+        self::assertMatchesRegularExpression(
+            '/getCurrentAccessRights\(\s*\(int\) \$session->get\(\'user-id\'\),\s*\$inputData\[\'id\'\],'
+            . '\s*\(int\) \$dataItem\[\'id_tree\'\]\s*\)\[\'access\'\] !== true/',
+            $block
+        );
+        self::assertStringContainsString('inactif = %i AND deleted_at IS NULL', $block, 'A deleted item is not shared.');
+        self::assertStringNotContainsString('accessToItemIsGranted(', $block);
+    }
+
+    /**
+     * GHSA-6qg7-w2p8-7rw4: the 'request_access_to_author' category emailed the label and path of any
+     * item id to any user id, without any check. Only sharing is accepted now.
+     */
+    public function testSendEmailAcceptsOnlyTheShareCategory(): void
+    {
+        $case = $this->block('items.queries.php', "case 'send_email':", "case 'history_entry_add':");
+
+        self::assertStringContainsString("if (\$inputData['cat'] !== 'share_this_item') {", $case);
+        self::assertStringNotContainsString("=== 'request_access_to_author'", $case);
+        self::assertStringNotContainsString('$post_content', $case);
+    }
+
+    /**
+     * GHSA-9375-g3m3-9jvg: a change notification sends the label and the folder path on every edit,
+     * so subscribing needs read access to the item.
+     */
+    public function testNotificationSubscriptionRequiresReadAccessToTheItem(): void
+    {
+        $block = $this->block('items.queries.php', "case 'save_notification_status':", "prefixTable('notification')");
+
+        self::assertMatchesRegularExpression(
+            '/getCurrentAccessRights\(\s*\(int\) \$session->get\(\'user-id\'\),\s*\$inputData\[\'itemId\'\],'
+            . '\s*\(int\) \$notifiedItem\[\'id_tree\'\]\s*\)\[\'access\'\] !== true/',
+            $block
+        );
+        self::assertStringContainsString('inactif = %i AND deleted_at IS NULL', $block);
+        self::assertStringNotContainsString('accessToItemIsGranted(', $block);
+    }
+
+    /**
+     * GHSA-9375-g3m3-9jvg: subscriptions taken before the fix, or before a restriction or a role
+     * change, must not keep receiving notifications.
+     */
+    public function testChangeNotificationsSkipSubscribersWhoCannotReadTheItem(): void
+    {
+        $block = $this->block('main.functions.php', 'function notifyChangesToSubscribers(', 'prepareSendingEmail(');
+
+        self::assertStringContainsString("'SELECT u.id, u.email,", $block);
+        self::assertMatchesRegularExpression(
+            '/WHERE i\.id = %i AND \' \. securityPostureItemAccessSql\(\(int\) \$subscriber\[\'id\'\], \'i\'\),'
+            . '\s*\$item_id\s*\);\s*if \(\(int\) \$canRead === 0\) \{\s*continue;/',
+            $block
+        );
+    }
 }

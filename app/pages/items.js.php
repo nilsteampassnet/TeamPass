@@ -3395,84 +3395,6 @@ require __DIR__ . '/icon.picker.js.php';
 
 
     /**
-     * SUGGESTION - perform new suggestion on item
-     */
-    $('#form-item-suggestion-perform').click(function() {
-        var form = $('#form-item-suggestion');
-
-        if (form[0].checkValidity() === false) {
-            form.addClass('was-validated');
-
-            // Send alert to user
-            toastr.remove();
-            toastr.error(
-                '<?php echo $lang->get('form_presents_inconsistencies'); ?>',
-                '', {
-                    timeOut: 10000,
-                    progressBar: true
-                }
-            );
-
-            return false;
-        }
-
-        // Show cog
-        loadingToast = toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
-
-        // Force user did a change to false
-        userDidAChange = false;
-        userUploadedFile = false;
-
-        var data = {
-            'label': DOMPurify.sanitize($('#form-item-suggestion-label').val()),
-            'login': DOMPurify.sanitize($('#form-item-suggestion-login').val()),
-            // IMPORTANT: Do NOT sanitize passwords - they must be stored exactly as entered (fix 3.1.5.10)
-            'password': encodeTransportSecret($('#form-item-suggestion-password').val()),
-            'password_is_b64': 1,
-            'email': DOMPurify.sanitize($('#form-item-suggestion-email').val()),
-            'url': DOMPurify.sanitize($('#form-item-suggestion-url').val()),
-            'description': DOMPurify.sanitize($('#form-item-suggestion-description').summernote('code'), {USE_PROFILES: {html: true}}),
-            'comment': DOMPurify.sanitize($('#form-item-suggestion-comment').val(), {USE_PROFILES: {html: true}}),
-            'folder_id': selectedFolderId,
-            'item_id': store.get('teampassItem').id
-        }
-
-        // Launch action
-        $.post(
-            'sources/items.queries.php', {
-                type: 'suggest_item_change',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'suggest_item_change');
-
-                if (data.error === true) {
-                    // ERROR
-                    toastrUpdate(loadingToast, 'error',
-                        data.message,
-                        { timeOut: 5000 }
-                    );
-                } else {
-                    // Warn user
-                    toastrUpdate(loadingToast, 'success',
-                        '<?php echo $lang->get('success'); ?>',
-                        { timeOut: 1000 }
-                    );
-                    // Clear form
-                    $('.form-item-suggestion').html('');
-
-                    // Collapse form
-                    //$('.card-item-extra').collapse('toggle');
-                }
-            }
-        );
-    });
-
-
-    /**
      * FOLDER NEW - Add a new folder
      */
     $('#form-folder-add-perform').click(function() {
@@ -8958,6 +8880,18 @@ require __DIR__ . '/icon.picker.js.php';
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'history_entry_add');
                         if (debugJavascript === true) console.log(data);
+
+                        if (data.error !== false) {
+                            toastr.remove();
+                            toastr.error(
+                                data.message || '<?php echo $lang->get('error'); ?>',
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            return false;
+                        }
                         $('#warningModal .history').val('');
 
                         // Reload history

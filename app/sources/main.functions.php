@@ -4130,7 +4130,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsName = $session->get('user-name');
 
     $subscribers = DB::query(
-        'SELECT u.email, u.name, u.lastname, u.login
+        'SELECT u.id, u.email, u.name, u.lastname, u.login
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i
@@ -4184,6 +4184,17 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     foreach ($subscribers as $subscriber) {
         $email = trim((string) ($subscriber['email'] ?? ''));
         if ($email === '') {
+            continue;
+        }
+
+        // A subscription is not a grant: it may predate a restriction or a role change, or have
+        // been taken without access. Notify only users who may read the item now (GHSA-9375-g3m3-9jvg).
+        $canRead = DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS i
+            WHERE i.id = %i AND ' . securityPostureItemAccessSql((int) $subscriber['id'], 'i'),
+            $item_id
+        );
+        if ((int) $canRead === 0) {
             continue;
         }
 
@@ -10594,9 +10605,11 @@ function userHasAccessToFile(int $userId, int $fileId): bool
  *
  * @param integer $userId
  * @param integer $itemId
+ * @param string $action 'edit' takes or refreshes the edition lock, as opening the
+ *                       edit form does; '' only checks the rights
  * @return boolean
  */
-function userCanEditItem(int $userId, int $itemId): bool
+function userCanEditItem(int $userId, int $itemId, string $action = 'edit'): bool
 {
     $item = DB::queryFirstRow(
         'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
@@ -10615,7 +10628,7 @@ function userCanEditItem(int $userId, int $itemId): bool
         $userId,
         $itemId,
         (int) $item['id_tree'],
-        'edit'
+        $action
     );
     return $access['edit'] === true;
 }

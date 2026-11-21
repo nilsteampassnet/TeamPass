@@ -494,7 +494,7 @@ class LaprSafetyWiringTest extends TestCase
         $english = $this->source('app/includes/language/english.php');
         $french = $this->source('app/includes/language/french.php');
         $historyStart = strpos($items, "case 'load_item_history':");
-        $historyEnd = strpos($items, "case 'suggest_item_change':", (int) $historyStart);
+        $historyEnd = strpos($items, "case 'send_request_access':", (int) $historyStart);
         self::assertIsInt($historyStart);
         self::assertIsInt($historyEnd);
         $history = substr($items, $historyStart, $historyEnd - $historyStart);

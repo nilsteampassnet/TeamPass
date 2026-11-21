@@ -7183,95 +7183,75 @@ switch ($inputData['type']) {
         );
 
         // Prepare variables
-        $inputData['id'] = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['id'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['receipt'] = filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $inputData['cat'] = filter_var($dataReceived['cat'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_content = $request->request->has('name') ? explode(',', $request->request->filter('content', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
 
         // get links url
         if (empty($SETTINGS['email_server_url']) === true) {
             $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
         }
-        if ($inputData['cat'] === 'request_access_to_author') {
-            // Variables
-            $dataAuthor = DB::queryFirstRow(
-                'SELECT email,login
-                FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $post_content[1]
-            );
 
-            $dataItem = DB::queryFirstRow(
-                'SELECT label, id_tree
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
-                $post_content[0]
+        // Sharing an item is the only email this handler sends. The former
+        // 'request_access_to_author' category had no caller and no access check (GHSA-6qg7-w2p8-7rw4).
+        if ($inputData['cat'] !== 'share_this_item') {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
             );
-
-            // Get path
-            $path = geItemReadablePath(
-                intval($dataItem['id_tree']),
-                $dataItem['label'],
-                $SETTINGS
-            );
-
-            // Prepare email
-            prepareSendingEmail(
-                $lang->get('email_request_access_subject'),
-                str_replace(
-                    array('#tp_item_author#', '#tp_user#', '#tp_item#'),
-                    array(' ' . addslashes($dataAuthor['login']), addslashes($session->get('user-login')), $path),
-                    $lang->get('email_request_access_mail')
-                ),
-                $dataAuthor['email'],
-                ""
-            );
-        } elseif ($inputData['cat'] === 'share_this_item') {
-            // Verify the current user can access this item's folder before sharing its details.
-            $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
-            if ($granted !== true) {
-                echo (string) prepareExchangedData(
-                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
-                    'encode'
-                );
-                break;
-            }
-
-            $dataItem = DB::queryFirstRow(
-                'SELECT label,id_tree
-                FROM ' . prefixTable('items') . '
-                WHERE id= %i',
-                $inputData['id']
-            );
-
-            // Get path
-            $path = geItemReadablePath(
-                intval($dataItem['id_tree']),
-                $dataItem['label'],
-                $SETTINGS
-            );
-
-            // Prepare email
-            prepareSendingEmail(
-                $lang->get('email_share_item_subject'),
-                str_replace(
-                    array(
-                        '#tp_link#',
-                        '#tp_user#',
-                        '#tp_item#',
-                    ),
-                    array(
-                        empty($SETTINGS['email_server_url']) === false ?
-                            $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . strval($dataItem['id_tree']) . '&id=' . strval($inputData['id']) : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . strval($dataItem['id_tree']) . '&id=' . strval($inputData['id']),
-                        addslashes($session->get('user-login')),
-                        addslashes($path),
-                    ),
-                    $lang->get('email_share_item_mail')
-                ),
-                $inputData['receipt'],
-                ""
-            );
+            break;
         }
+
+        // The email discloses the label, the folder path and a link: require the same read
+        // access as the item itself, per-item restriction included (GHSA-6qg7-w2p8-7rw4).
+        $dataItem = DB::queryFirstRow(
+            'SELECT label, id_tree
+            FROM ' . prefixTable('items') . '
+            WHERE id = %i AND inactif = %i AND deleted_at IS NULL',
+            $inputData['id'],
+            0
+        );
+        if ($dataItem === null
+            || getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                $inputData['id'],
+                (int) $dataItem['id_tree']
+            )['access'] !== true
+        ) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
+        // Get path
+        $path = geItemReadablePath(
+            intval($dataItem['id_tree']),
+            $dataItem['label'],
+            $SETTINGS
+        );
+
+        // Prepare email
+        prepareSendingEmail(
+            $lang->get('email_share_item_subject'),
+            str_replace(
+                array(
+                    '#tp_link#',
+                    '#tp_user#',
+                    '#tp_item#',
+                ),
+                array(
+                    empty($SETTINGS['email_server_url']) === false ?
+                        $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . strval($dataItem['id_tree']) . '&id=' . strval($inputData['id']) : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . strval($dataItem['id_tree']) . '&id=' . strval($inputData['id']),
+                    addslashes($session->get('user-login')),
+                    addslashes($path),
+                ),
+                $lang->get('email_share_item_mail')
+            ),
+            $inputData['receipt'],
+            ""
+        );
 
         echo (string) prepareExchangedData(
             array(
@@ -7302,69 +7282,54 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        $item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+        $item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
         $label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $date = filter_var($dataReceived['date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $time = filter_var($dataReceived['time'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-        // Get all informations for this item
-        $dataItem = DB::queryFirstRow(
-            'SELECT i.*,
-            IFNULL(l.id_user, 0) AS id_user
-            FROM ' . prefixTable('items') . ' as i
-            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
-            WHERE i.id=%i',
-            'at_creation',
-            $item_id
-        );
-        // check that actual user can access this item
-        $restrictionActive = true;
-        $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-        if (in_array($session->get('user-id'), $restrictedTo)) {
-            $restrictionActive = false;
-        }
-        if (empty($dataItem['restricted_to'])) {
-            $restrictionActive = false;
-        }
-
-        if (((in_array($dataItem['id_tree'], $session->get('user-accessible_folders'))) && (intval($dataItem['perso']) === 0 || (intval($dataItem['perso']) === 1 && $dataItem['id_user'] === $session->get('user-id'))) && $restrictionActive === false)
-            || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && intval($dataItem['anyone_can_modify']) === 1 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || intval($session->get('user-admin')) === 1) && $restrictionActive === false)
+        // A manual entry becomes part of the item's audit trail: it needs the feature setting and
+        // the same edit right as update_item, per-item restriction (users and roles) included
+        // (GHSA-4hrh-wjp5-wrph). No edition lock is taken.
+        $dataItem = (int) ($SETTINGS['insert_manual_entry_item_history'] ?? 0) === 1
+            ? DB::queryFirstRow(
+                'SELECT label, id_tree
+                FROM ' . prefixTable('items') . '
+                WHERE id = %i AND inactif = %i AND deleted_at IS NULL',
+                $item_id,
+                0
+            )
+            : null;
+        if ($dataItem === null
+            || getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                $item_id,
+                (int) $dataItem['id_tree']
+            )['edit'] !== true
         ) {
-            // Query
-            logItems(
-                $SETTINGS,
-                intval($item_id),
-                $dataItem['label'],
-                $session->get('user-id'),
-                'at_manual',
-                $session->get('user-login'),
-                htmlspecialchars_decode($label, ENT_QUOTES),
-                null,
-                (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
-            );
-            // Prepare new line
-            $data = DB::queryFirstRow(
-                'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
-                $item_id
-            );
-            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($data['date'])) . ' - ' . $session->get('user-login') . ' - ' . $lang->get(strval($data['action'])) . ' - ' . strval($data['raison']);
-            // send back
-            $data = array(
-                'error' => '',
-                'new_line' => '<br>' . addslashes($historic),
-            );
             echo (string) prepareExchangedData(
-                $data,
-                'encode'
-            );
-        } else {
-            $data = array('error' => 'something_wrong');
-            echo (string) prepareExchangedData(
-                $data,
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
                 'encode'
             );
             break;
         }
+
+        logItems(
+            $SETTINGS,
+            $item_id,
+            $dataItem['label'],
+            $session->get('user-id'),
+            'at_manual',
+            $session->get('user-login'),
+            htmlspecialchars_decode($label, ENT_QUOTES),
+            null,
+            (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
+        );
+
+        // Never read the history back: the newest row by date belongs to whoever wrote it last.
+        echo (string) prepareExchangedData(
+            array('error' => false, 'message' => ''),
+            'encode'
+        );
         break;
 
     /*
@@ -8130,119 +8095,6 @@ switch ($inputData['type']) {
 
         break;
 
-    case 'suggest_item_change':
-        // Check KEY
-        if ($inputData['key'] !== $session->get('key')) {
-            echo (string) prepareExchangedData(
-                array(
-                    'error' => 'key_not_conform',
-                    'message' => $lang->get('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        // decrypt and retrieve data in JSON format
-        $data_received = prepareExchangedData(
-            $inputData['data'],
-            'decode'
-        );
-
-        // prepare variables
-        $label = htmlspecialchars_decode($data_received['label'], ENT_QUOTES);
-        $pwd = teampassDecodeTransportSecret(
-            isset($data_received['password']) && is_string($data_received['password']) ? $data_received['password'] : '',
-            isset($data_received['password_is_b64']) && (int) $data_received['password_is_b64'] === 1
-        );
-        $login = htmlspecialchars_decode($data_received['login'], ENT_QUOTES);
-        $email = htmlspecialchars_decode($data_received['email']);
-        $url = htmlspecialchars_decode($data_received['url']);
-        $folder = htmlspecialchars_decode($data_received['folder_id']);
-        $comment = htmlspecialchars_decode($data_received['comment']);
-        $item_id = htmlspecialchars_decode($data_received['item_id']);
-
-        // Verify the current user can access this item's folder.
-        $granted = accessToItemIsGranted((int) $item_id, $SETTINGS);
-        if ($granted !== true) {
-            echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
-                'encode'
-            );
-            break;
-        }
-
-        if (empty($pwd)) {
-            $cryptedStuff['encrypted'] = '';
-            $cryptedStuff['objectKey'] = '';
-        } else {
-            // items_change has no pw_iv column and its pw is never read via doDataDecryption($meta),
-            // so it must stay in the legacy format (no meta to persist).
-            $cryptedStuff = doDataEncryption($pwd, null, true);
-        }
-
-        // query
-        DB::insert(
-            prefixTable('items_change'),
-            array(
-                'item_id' => $item_id,
-                'label' => $label,
-                'pw' => $cryptedStuff['encrypted'],
-                'login' => $login,
-                'email' => $email,
-                'url' => $url,
-                'description' => '',
-                'comment' => $comment,
-                'folder_id' => $folder,
-                'user_id' => (int) $session->get('user-id'),
-                'timestamp' => time(),
-            )
-        );
-        $newID = DB::insertId();
-
-        // Create sharekeys for users
-        storeUsersShareKey(
-            'sharekeys_items',
-            0,
-            intval($newID),
-            $cryptedStuff['objectKey'],
-        );
-
-        // get some info to add to the notification email
-        $resp_user = DB::queryFirstRow(
-            'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
-            $session->get('user-id')
-        );
-        $resp_folder = DB::queryFirstRow(
-            'SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
-            $folder
-        );
-
-        // notify Managers
-        $emailSettings = new EmailSettings($SETTINGS);
-        $emailService = new EmailService();
-        $rows = DB::query(
-            'SELECT email
-            FROM ' . prefixTable('users') . '
-            WHERE `gestionnaire` = %i AND `email` IS NOT NULL',
-            1
-        );
-        foreach ($rows as $record) {
-            $emailService->sendMail(
-                $lang->get('suggestion_notify_subject'),
-                str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $lang->get('suggestion_notify_body')),
-                $record['email'],
-                $emailSettings
-            );
-        }
-
-        echo (string) prepareExchangedData(
-            array(
-                'error' => '',
-            ),
-            'encode'
-        );
-        break;
-
     case 'send_request_access':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -8330,9 +8182,22 @@ switch ($inputData['type']) {
         $post_notification_status = (int) filter_var($dataReceived['notification_status'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
-        // Verify the current user can access this item's folder.
-        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
-        if ($granted !== true) {
+        // Every change notification discloses the label and the folder path: require the same
+        // read access as the item itself, per-item restriction included (GHSA-9375-g3m3-9jvg).
+        $notifiedItem = DB::queryFirstRow(
+            'SELECT id_tree
+            FROM ' . prefixTable('items') . '
+            WHERE id = %i AND inactif = %i AND deleted_at IS NULL',
+            $inputData['itemId'],
+            0
+        );
+        if ($notifiedItem === null
+            || getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                $inputData['itemId'],
+                (int) $notifiedItem['id_tree']
+            )['access'] !== true
+        ) {
             echo (string) prepareExchangedData(
                 array('error' => 'key_not_conform', 'message' => $lang->get('error_not_allowed_to')),
                 'encode'
