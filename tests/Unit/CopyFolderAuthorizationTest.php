@@ -45,6 +45,24 @@ class CopyFolderAuthorizationTest extends TestCase
         );
     }
 
+    public function testRootTargetNeedsTheRootPrivilege(): void
+    {
+        $block = $this->copyFolderBlock();
+        self::assertMatchesRegularExpression(
+            '/\(int\) \$post_target_folder_id === 0\s*&& folderListUserCanUseRoot\(\s*'
+            . '\(int\) \$session->get\(\'user-admin\'\),\s*'
+            . '\(int\) \$session->get\(\'user-manager\'\),\s*'
+            . '\(int\) \$session->get\(\'user-can_create_root_folder\'\)\s*\) === false/',
+            $block,
+            'copy_folder must not let the generic folder gate create root folders (GHSA-c2rh-qwj7-9m7j).'
+        );
+        $rootCheck = strpos($block, 'folderListUserCanUseRoot(');
+        $creationGate = strpos($block, "isset(\$SETTINGS['enable_user_can_create_folders'])");
+        self::assertNotFalse($rootCheck);
+        self::assertNotFalse($creationGate);
+        self::assertLessThan($creationGate, $rootCheck, 'The root check must run before the generic gate.');
+    }
+
     public function testTargetIsCheckedBeforeThePersonalFlagIsTrusted(): void
     {
         $block = $this->copyFolderBlock();

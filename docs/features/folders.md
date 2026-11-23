@@ -78,7 +78,10 @@ existing folder preserves its options. This behavior is independent of the
 The parent picker searches names and paths on demand, 30 results at a time. It only
 offers authorized shared folders that are writable. Root is offered when the account
 has the corresponding management privilege. During a move, the folder itself and
-its descendants are excluded. The server rechecks permissions when saving.
+its descendants are excluded. The server rechecks permissions when saving: moving or
+copying a folder to the root requires an administrator, a manager or the *Can create
+a folder at root level* right, and a folder can never be moved under one of its own
+subfolders.
 
 ### Password complexity levels
 

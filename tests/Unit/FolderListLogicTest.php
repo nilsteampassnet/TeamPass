@@ -61,4 +61,13 @@ class FolderListLogicTest extends TestCase
         self::assertStringNotContainsString('->getPath(', $page);
         self::assertStringNotContainsString('->getPath(', $search);
     }
+
+    /** Only the admin, manager and root-folder rights open the root (GHSA-c2rh-qwj7-9m7j). */
+    public function testRootNeedsAnExplicitRootPrivilege(): void
+    {
+        self::assertTrue(folderListUserCanUseRoot(1, 0, 0));
+        self::assertTrue(folderListUserCanUseRoot(0, 1, 0));
+        self::assertTrue(folderListUserCanUseRoot(0, 0, 1));
+        self::assertFalse(folderListUserCanUseRoot(0, 0, 0));
+    }
 }
