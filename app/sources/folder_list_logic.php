@@ -100,3 +100,14 @@ function folderListParentPage(
 
     return ['results' => array_slice($results, 0, 30), 'pagination' => ['more' => count($results) > 30]];
 }
+
+/**
+ * Tell whether the caller may place a shared folder at the root of the tree.
+ * The same rule decides whether the parent picker offers the root and whether a move
+ * or a copy may target it: enable_user_can_create_folders only covers subfolders, and
+ * can_manage_all_users is a user-management right (GHSA-c2rh-qwj7-9m7j).
+ */
+function folderListUserCanUseRoot(int $isAdmin, int $isManager, int $canCreateRootFolder): bool
+{
+    return $isAdmin === 1 || $isManager === 1 || $canCreateRootFolder === 1;
+}
