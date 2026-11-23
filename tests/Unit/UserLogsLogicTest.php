@@ -1,0 +1,93 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * TeamPass - a collaborative passwords manager.
+ * Copyright (c) 2009-2026 Teampass.net.
+ * Licensed under the GNU General Public License, version 3 or later.
+ * See <https://www.gnu.org/licenses/>.
+ */
+
+use PHPUnit\Framework\TestCase;
+use TeampassClasses\Language\Language;
+
+require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
+require_once __DIR__ . '/../../app/sources/user_logs_logic.php';
+
+final class UserLogsLogicTest extends TestCase
+{
+    public function testCalendarPresetsIncludeTodayAcrossDaylightSaving(): void
+    {
+        $zone = new DateTimeZone('Europe/Paris');
+        $today = new DateTimeImmutable('2026-03-30', $zone);
+        $nextDay = (new DateTimeImmutable('2026-03-31', $zone))->getTimestamp();
+
+        self::assertSame([null, null], userLogsDateRange(['period' => 'all'], $today));
+        self::assertSame([
+            (new DateTimeImmutable('2026-03-24', $zone))->getTimestamp(), $nextDay,
+        ], userLogsDateRange(['period' => '7'], $today));
+        self::assertSame([
+            (new DateTimeImmutable('2026-03-01', $zone))->getTimestamp(), $nextDay,
+        ], userLogsDateRange(['period' => '30'], $today));
+    }
+
+    public function testCustomRangeIncludesTheWholeEndDateAndRejectsInvalidDates(): void
+    {
+        $original = date_default_timezone_get();
+        date_default_timezone_set('Europe/Paris');
+        try {
+            $today = new DateTimeImmutable('2026-03-29');
+            $start = $today->getTimestamp();
+            self::assertSame([$start, $start + 23 * 3600], userLogsDateRange([
+                'period' => 'custom', 'date_from' => '2026-03-29', 'date_to' => '2026-03-29',
+            ], $today));
+            self::assertNull(userLogsDateRange([
+                'period' => 'custom', 'date_from' => '2026-03-30', 'date_to' => '2026-03-29',
+            ], $today));
+            self::assertNull(userLogsDateRange([
+                'period' => 'custom', 'date_from' => '2026-02-30', 'date_to' => '2026-03-29',
+            ], $today));
+        } finally {
+            date_default_timezone_set($original);
+        }
+    }
+
+    public function testSystemConnectionsAndItemActionsHaveDistinctDisplayFields(): void
+    {
+        $lang = new Language('french');
+        $connection = ['is_item' => 0, 'type' => 'user_connection', 'label' => 'user_connection'];
+        self::assertSame('Connexion', userLogsActivityText($connection, $lang));
+        self::assertSame('', userLogsTargetText($connection));
+        $connection['label'] = 'disconnect';
+        self::assertSame('Déconnexion', userLogsActivityText($connection, $lang));
+
+        $item = ['is_item' => 1, 'action' => 'at_shown', 'label' => 'Portail'];
+        self::assertSame('Élément consulté', userLogsActivityText($item, $lang));
+        $item['action'] = 'at_password_shown';
+        self::assertSame('Mot de passe affiché', userLogsActivityText($item, $lang));
+    }
+
+    public function testSearchUsesDisplayedTextAndCountsBeforePaging(): void
+    {
+        $lang = new Language('french');
+        $row = [
+            'is_item' => 1, 'action' => 'at_shown', 'label' => 'R&amp;D O&#039;Brien &quot;test&quot; &lt;QA&gt;',
+        ];
+        $normalizers = [
+            'activity' => static fn (string $value, array $entry): string => userLogsActivityText($entry, $lang),
+            'target' => static fn (string $value, array $entry): string => userLogsTargetText($entry),
+        ];
+        self::assertSame('R&D O\'Brien "test" <QA>', userLogsTargetText($row));
+        $rows = [$row + ['id' => 3], $row + ['id' => 2], $row + ['id' => 1]];
+        foreach (['R&D', "O'Brien", '"test"', '<QA>', 'élément consulté'] as $term) {
+            $page = storedTextSearchPage($rows, [$term], ['activity', 'target'], 1, 1, null, $normalizers);
+            self::assertSame(3, $page['total']);
+            self::assertSame([2], array_column($page['rows'], 'id'));
+        }
+        foreach (['amp', 'quot', 'at_shown'] as $term) {
+            $page = storedTextSearchPage($rows, [$term], ['activity', 'target'], 0, 25, null, $normalizers);
+            self::assertSame(0, $page['total']);
+        }
+    }
+}

@@ -88,18 +88,17 @@ class UserLogsAccessAuthorizationTest extends TestCase
     {
         $src = $this->datatableSource();
 
-        self::assertStringContainsString('WHERE u.id = %i', $src, 'Item logs must bind the target id');
+        self::assertStringContainsString("\$itemWhere->add('l.id_user = %i', \$targetUserId)", $src);
         // qui also stores IP addresses: the target id is bound as text to avoid numeric coercion
-        self::assertStringContainsString('WHERE s.qui = %s', $src, 'System logs must bind the target id');
-        self::assertStringContainsString('(string) $targetUserId', $src, 'System logs must bind the validated target id');
+        self::assertStringContainsString("\$systemWhere->add('l.qui = %s', (string) \$targetUserId)", $src);
 
         self::assertStringNotContainsString(
-            "WHERE u.id = '.\$inputData['userId']",
+            "l.id_user = '.\$query['userId']",
             $src,
             'The raw request value must not be concatenated into the query'
         );
         self::assertStringNotContainsString(
-            "WHERE s.qui = '.\$inputData['userId']",
+            "l.qui = '.\$query['userId']",
             $src,
             'The raw request value must not be concatenated into the query'
         );

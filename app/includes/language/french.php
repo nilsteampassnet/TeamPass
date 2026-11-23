@@ -255,6 +255,7 @@ return array(
     'select_a_role' => 'Sélectionner un rôle',
     'access_rights_for_user' => 'Droits d’accès pour l’utilisateur',
     'logs_for_user' => 'Journaux pour l’utilisateur',
+    'user_logs_item_viewed' => 'Élément consulté',
     'please_confirm' => 'Veuillez confirmer',
     'by_clicking_this_checkbox_confirm_user_deletion' => 'En cochant cette case, vous confirmez la suppression de cet utilisateur.',
     'fields_with_mandatory_information_are_missing' => 'Certains champs obligatoires ne sont pas renseignés',

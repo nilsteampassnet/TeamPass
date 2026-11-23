@@ -1236,6 +1236,7 @@ return array(
     'select_a_role' => 'Select a role',
     'access_rights_for_user' => 'Access rights for user',
     'logs_for_user' => 'Logs for user',
+    'user_logs_item_viewed' => 'Item viewed',
     'please_confirm' => 'Please confirm',
     'by_clicking_this_checkbox_confirm_user_deletion' => 'By clicking this checkbox, it confirms the deletion of this user.',
     'fields_with_mandatory_information_are_missing' => 'Fields with mandatory information are missing',
