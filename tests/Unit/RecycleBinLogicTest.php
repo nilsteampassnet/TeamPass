@@ -57,6 +57,15 @@ final class RecycleBinLogicTest extends TestCase
         self::assertArrayNotHasKey(70, recycleBinVisibleDeletedFolders(self::DELETED, false, [5, 20], [50]));
     }
 
+    public function testSubtreeIsPurgeableOnlyWhenEveryFolderIsVisible(): void
+    {
+        $visible = recycleBinVisibleDeletedFolders(self::DELETED, false, [20], []);
+
+        self::assertTrue(recycleBinSubtreeIsVisible([20], $visible));
+        self::assertFalse(recycleBinSubtreeIsVisible([20, 21], $visible));
+        self::assertFalse(recycleBinSubtreeIsVisible([], $visible));
+    }
+
     public function testAdministratorItemScopeIsOpen(): void
     {
         self::assertSame('(1 = 1)', recycleBinItemScopeSql('i', true, [], 1, [], 'teampass_restriction_to_roles'));

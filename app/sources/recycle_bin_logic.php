@@ -16,7 +16,8 @@ declare(strict_types=1);
  *     stays in the accessible folders of the users who could open it;
  *   - a deleted folder of their own personal tree;
  *   - a deleted item of an accessible folder, unless its user or role restriction excludes them.
- * The items of a deleted folder follow the folder, as they did when the folder was deleted.
+ * The items of a deleted folder are restored with it, restrictions included. A deleted folder is
+ * only permanently deleted when the caller sees every subfolder and every item it holds.
  *
  * Included by app/sources/utilities.queries.php and tests/Unit/RecycleBinLogicTest.php.
  */
@@ -70,6 +71,27 @@ function recycleBinVisibleDeletedFolders(
     }
 
     return $visible;
+}
+
+/**
+ * Tell whether every folder of a recycled subtree is visible to the caller. A subtree is only
+ * purged whole: a hidden subfolder would be destroyed unseen, or left behind without its parent.
+ *
+ * @param array<int|string, mixed>         $subtree               Folder ids of the subtree, root included
+ * @param array<int, array<string, mixed>> $visibleDeletedFolders Output of recycleBinVisibleDeletedFolders()
+ */
+function recycleBinSubtreeIsVisible(array $subtree, array $visibleDeletedFolders): bool
+{
+    if (count($subtree) === 0) {
+        return false;
+    }
+    foreach ($subtree as $folderId) {
+        if (isset($visibleDeletedFolders[(int) $folderId]) === false) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**

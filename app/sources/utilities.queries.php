@@ -585,19 +585,25 @@ logItems(
     $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     // Deleted folders index (from misc) - used to delete a full subtree from the recycled bin.
-    // Only the folders the caller may see, so a subtree never reaches a hidden one (GHSA-4jq3-w38q-6wrq).
-    $deletedFolders = tpRecycleBinVisibleDeletedFolders(tpGetDeletedFoldersFromMisc());
+    // The caller selects among the folders they may see (GHSA-4jq3-w38q-6wrq).
+    $deletedFolders = tpGetDeletedFoldersFromMisc();
+    $visibleDeletedFolders = tpRecycleBinVisibleDeletedFolders($deletedFolders);
     $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
 
     // Permanently delete FOLDERS (and all deleted subfolders + items they contain)
     $folderIdsToDelete = array();
     foreach ($post_folders as $folderIdRaw) {
         $folderId = (int) $folderIdRaw;
-        if ($folderId <= 0 || isset($deletedFolders[$folderId]) === false) {
+        if ($folderId <= 0 || isset($visibleDeletedFolders[$folderId]) === false) {
             continue;
         }
 
+        // A subtree is purged whole or not at all: never a hidden subfolder or item, and never
+        // a hidden subfolder left behind without its parent.
         $subtree = tpCollectDeletedFolderSubtree($folderId, $deletedChildren);
+        if (tpRecycleBinCanPurgeSubtree($subtree, $visibleDeletedFolders) === false) {
+            continue;
+        }
         foreach ($subtree as $fid) {
             $folderIdsToDelete[(int) $fid] = true;
         }
@@ -2337,6 +2343,42 @@ function tpRecycleBinItemScopeSql(string $itemAlias): string
         $isAdmin === true ? array() : securityPostureUserRoleIds($userId),
         prefixTable('restriction_to_roles')
     );
+}
+
+/**
+ * Tell whether the session user may permanently delete a recycled folder subtree: they must see
+ * every folder of it and every soft-deleted item it holds (see recycle_bin_logic.php).
+ *
+ * @param array<int> $subtree Output of tpCollectDeletedFolderSubtree() on the full index
+ * @param array<int, array<string, mixed>> $visibleDeletedFolders Output of tpRecycleBinVisibleDeletedFolders()
+ */
+function tpRecycleBinCanPurgeSubtree(array $subtree, array $visibleDeletedFolders): bool
+{
+    if (recycleBinSubtreeIsVisible($subtree, $visibleDeletedFolders) === false) {
+        return false;
+    }
+
+    $session = SessionManager::getSession();
+    if ((int) $session->get('user-admin') === 1) {
+        return true;
+    }
+    $userId = (int) $session->get('user-id');
+
+    $hiddenItems = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('items') . ' AS i
+        WHERE i.id_tree IN %li AND i.inactif = %i
+        AND NOT ' . itemRestrictionSqlPredicate(
+            $userId,
+            securityPostureUserRoleIds($userId),
+            'i',
+            prefixTable('restriction_to_roles')
+        ),
+        array_map('intval', $subtree),
+        1
+    );
+
+    return (int) $hiddenItems === 0;
 }
 
 /**

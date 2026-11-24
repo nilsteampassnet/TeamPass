@@ -24,7 +24,7 @@ final class Fixture
     /** @var array<int, array{parent_id: int, title: string}> Recycled folders (misc). */
     public static array $deletedFolders = [];
 
-    /** @var array<int, array{id_tree: int, inactif: int, deleted_at: ?string}> */
+    /** @var array<int, array{id_tree: int, inactif: int, deleted_at: ?string, restricted?: bool}> */
     public static array $items = [];
 
     /** @var array<string, mixed> */
@@ -114,9 +114,23 @@ final class DB
         return $rows;
     }
 
-    /** Answer folder existence checks and item label lookups. */
+    /** @var list<string> SQL of every hidden-item count. */
+    public static array $counts = [];
+
+    /** Answer folder existence checks, hidden-item counts and item label lookups. */
     public static function queryFirstField(string $sql, mixed ...$args): mixed
     {
+        if (str_contains($sql, 'COUNT(*)') === true) {
+            self::$counts[] = $sql;
+            [$folderIds, $inactif] = $args;
+
+            return count(array_filter(
+                Fixture::$items,
+                static fn (array $item): bool => in_array($item['id_tree'], $folderIds, true)
+                    && $item['inactif'] === $inactif
+                    && ($item['restricted'] ?? false) === true
+            ));
+        }
         if (str_contains($sql, 'nested_tree') === true) {
             return isset(Fixture::$folders[(int) $args[0]]) ? (int) $args[0] : null;
         }
@@ -221,6 +235,7 @@ final class RecycleBinItemsAuthorizationTest extends TestCase
         'tpRecycleBinVisibleDeletedFolders',
         'tpRecycleBinItemScopeSql',
         'tpRecycledItemIds',
+        'tpRecycleBinCanPurgeSubtree',
         'tpBuildDeletedFoldersChildrenMap',
         'tpCollectDeletedFolderSubtree',
         'tpGetDeletedFolderDepth',
@@ -291,6 +306,7 @@ final class RecycleBinItemsAuthorizationTest extends TestCase
         Trace::$removedEntries = [];
         Trace::$logged = [];
         Trace::$lookups = [];
+        DB::$counts = [];
     }
 
     /**
@@ -362,13 +378,51 @@ final class RecycleBinItemsAuthorizationTest extends TestCase
         self::assertSame([10, 16], Trace::$logged);
     }
 
-    /** A folder purge never reaches a folder hidden from the caller, not even through a subtree. */
-    public function testManagerPurgesOnlyVisibleFolders(): void
+    /**
+     * A folder purge never reaches a folder hidden from the caller. A subtree holding one is not
+     * purged at all, so no hidden subfolder is destroyed unseen or left without its parent.
+     */
+    public function testManagerPurgesOnlyFullyVisibleSubtrees(): void
     {
-        $this->request('delete_selected_objects', ['20', '21', '30', '40', '70'], []);
+        $this->request('delete_selected_objects', ['20', '21', '23', '30', '40', '70'], []);
 
-        self::assertSame(['f20', 'f40', 'f41'], Trace::$removedEntries);
-        self::assertSame([200, 400, 410], Trace::$purged);
+        self::assertSame(['f23', 'f40', 'f41'], Trace::$removedEntries);
+        self::assertSame([400, 410], Trace::$purged);
+    }
+
+    /** A subtree holding an item restricted away from the caller is not purged at all. */
+    public function testRestrictedItemBlocksTheFolderPurge(): void
+    {
+        Fixture::$items[410]['restricted'] = true;
+        $this->request('delete_selected_objects', ['40'], []);
+
+        self::assertSame([], Trace::$removedEntries);
+        self::assertSame([], Trace::$purged);
+        self::assertCount(1, DB::$counts);
+        self::assertStringContainsString('WHERE i.id_tree IN %li AND i.inactif = %i', DB::$counts[0]);
+        self::assertMatchesRegularExpression('/AND NOT \\(\\(COALESCE\\(i\\.restricted_to/', DB::$counts[0]);
+    }
+
+    /** Administrators purge restricted items with their folder, as before. */
+    public function testAdministratorPurgesRestrictedItemsWithTheirFolder(): void
+    {
+        Fixture::$session = self::ADMIN;
+        Fixture::$items[410]['restricted'] = true;
+        $this->request('delete_selected_objects', ['40'], []);
+
+        self::assertSame(['f40', 'f41'], Trace::$removedEntries);
+        self::assertSame([400, 410], Trace::$purged);
+        self::assertSame([], DB::$counts);
+    }
+
+    /** Restoring a folder brings its restricted items back with it: restrictions are kept. */
+    public function testRestrictedItemsAreRestoredWithTheirFolder(): void
+    {
+        Fixture::$items[410]['restricted'] = true;
+        $this->request('restore_selected_objects', ['40'], []);
+
+        self::assertSame([40, 41], Trace::$insertedFolders);
+        self::assertSame([40, 41], Trace::$restoredItemFolders);
     }
 
     /** An administrator purges whole subtrees, as before. */
