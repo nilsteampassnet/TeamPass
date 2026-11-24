@@ -385,6 +385,13 @@ if (($uri[0] ?? '') === 'devicePairing') {
             $userData['data']
         );
 
+    // action related to the OFFLINE VAULT of the browser extension (its policy)
+    } elseif ($controller === 'offlineVault') {
+        offlineVaultAction(
+            array_slice($uri, 1),
+            $userData['data']
+        );
+
     // action related to MISC
     } elseif ($controller === 'misc') {
         require API_ROOT_PATH . "/Controller/Api/MiscController.php";

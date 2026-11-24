@@ -1414,6 +1414,43 @@
                 }
             }
         },
+        "/offlineVault/policy": {
+            "get": {
+                "operationId": "offlineVaultPolicy",
+                "summary": "Offline vault policy for the browser extension",
+                "description": "Whether the caller may keep an encrypted copy of their items on their computer, and within which limits. Always 200. A client erases its copy when allowed is false, and when retention_days.max elapses without a successful contact. The copy itself is read through item/inFolders and item/changes. Not counted as user activity.",
+                "responses": {
+                    "200": {
+                        "description": "Policy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OfflineVaultPolicy"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
         "/secureSend/policy": {
             "get": {
                 "operationId": "secureSendPolicy",
@@ -3373,6 +3410,74 @@
                     "poll_interval": {
                         "type": "integer",
                         "const": 2
+                    }
+                }
+            },
+            "OfflineVaultPolicy": {
+                "type": "object",
+                "required": [
+                    "enabled",
+                    "allowed",
+                    "reason",
+                    "retention_days",
+                    "totp_allowed",
+                    "personal_folders_allowed",
+                    "min_sync_interval_minutes"
+                ],
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "The administrator allows offline vaults on this instance"
+                    },
+                    "allowed": {
+                        "type": "boolean",
+                        "description": "enabled, the caller is not an administrator, and holds an allowed role. false: the client erases its copy"
+                    },
+                    "reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            null,
+                            "disabled",
+                            "admin",
+                            "role_not_allowed"
+                        ],
+                        "description": "Why allowed is false; null when allowed"
+                    },
+                    "retention_days": {
+                        "type": "object",
+                        "required": [
+                            "max",
+                            "default"
+                        ],
+                        "properties": {
+                            "max": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 365,
+                                "description": "Longest time a copy may live without a successful contact"
+                            },
+                            "default": {
+                                "type": "integer",
+                                "minimum": 1
+                            }
+                        }
+                    },
+                    "totp_allowed": {
+                        "type": "boolean",
+                        "description": "TOTP secrets may be kept in the copy. false: the client drops them before storing"
+                    },
+                    "personal_folders_allowed": {
+                        "type": "boolean",
+                        "description": "Items of personal folders may be kept in the copy"
+                    },
+                    "min_sync_interval_minutes": {
+                        "type": "integer",
+                        "minimum": 15,
+                        "maximum": 1440,
+                        "description": "Shortest interval between two automatic synchronizations"
                     }
                 }
             },
