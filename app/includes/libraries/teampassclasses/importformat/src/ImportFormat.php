@@ -407,7 +407,7 @@ class ImportFormat
     // ---------------------------------------------------------------------
 
     /**
-     * Append Bitwarden extra fields (card, identity, TOTP) to the notes so the
+     * Append Bitwarden extra fields (card, identity, TOTP, custom fields) to the notes so the
      * information is not lost when the item is not a plain login.
      *
      * @param array<string,mixed> $entry The Bitwarden item.
@@ -439,6 +439,19 @@ class ImportFormat
             foreach ($entry['identity'] as $key => $value) {
                 if ($value !== '' && $value !== null && !is_array($value)) {
                     $extra[] = ucfirst((string) $key) . ': ' . (string) $value;
+                }
+            }
+        }
+
+        // Custom fields (PINs, security answers, ...). Linked fields (type 3) hold no value.
+        if (isset($entry['fields']) && is_array($entry['fields'])) {
+            foreach ($entry['fields'] as $field) {
+                if (!is_array($field) || ($field['type'] ?? null) === 3) {
+                    continue;
+                }
+                $value = $field['value'] ?? null;
+                if ($value !== '' && $value !== null && !is_array($value)) {
+                    $extra[] = (string) ($field['name'] ?? '') . ': ' . (string) $value;
                 }
             }
         }

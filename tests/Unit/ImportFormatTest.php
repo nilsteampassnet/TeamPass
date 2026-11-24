@@ -128,6 +128,32 @@ class ImportFormatTest extends TestCase
         $this->assertStringContainsString('4111111111111111', $description);
     }
 
+    public function testBitwardenAppendsCustomFieldsToNotes(): void
+    {
+        $json = json_encode([
+            'encrypted' => false,
+            'items'     => [[
+                'type'   => 1,
+                'name'   => 'My Bank',
+                'notes'  => 'main account',
+                'login'  => ['username' => 'u', 'password' => 'p'],
+                'fields' => [
+                    ['name' => 'PIN', 'value' => '4821', 'type' => 1],
+                    ['name' => 'Security answer', 'value' => 'Rex', 'type' => 0],
+                    ['name' => 'Username copy', 'value' => null, 'type' => 3, 'linkedId' => 100],
+                ],
+            ]],
+        ]);
+
+        $result = ImportFormat::parseBitwarden($json);
+        $description = $result['items'][0]['description'];
+
+        $this->assertStringContainsString('main account', $description);
+        $this->assertStringContainsString('PIN: 4821', $description);
+        $this->assertStringContainsString('Security answer: Rex', $description);
+        $this->assertStringNotContainsString('Username copy', $description);
+    }
+
     public function testBitwardenSecureNoteHasNoLoginButKeepsNotes(): void
     {
         $json = json_encode([
