@@ -150,11 +150,14 @@ permanently delete what they could see in the vault:
 - the deleted items of folders they can access, unless the item is restricted to other
   users or roles.
 
-The items of a deleted folder follow the folder. A deleted subfolder they cannot access is
-left in the recycle bin when its parent is restored or permanently deleted. When a folder is
+Restoring a folder also restores its items, restricted ones included: they keep their
+restrictions. A deleted subfolder they cannot access stays in the recycle bin. When a folder is
 restored under deleted parents they cannot access, those parents come back empty, so the
-folder keeps its place in the tree. Only items already in the recycle bin can be
-permanently deleted from it.
+folder keeps its place in the tree.
+
+A deleted folder can only be permanently deleted by a manager who sees every subfolder and
+every item it contains. Otherwise it stays in the recycle bin for an administrator. Only items
+already in the recycle bin can be permanently deleted from it.
 
 TeamPass checks the complete selection before changing anything. The operation is
 blocked when:
