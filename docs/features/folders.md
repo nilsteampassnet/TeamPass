@@ -143,6 +143,19 @@ Deleting a folder moves the complete subtree and its items to **Utilities → Re
 bin**. It can be restored from there until it is permanently removed from the recycle
 bin. Restoring a protected folder also restores its deletion-protection flag.
 
+Administrators see the whole recycle bin. Managers and HR managers only see, restore and
+permanently delete what they could see in the vault:
+
+- the deleted folders they had access to, and the deleted folders of their own personal tree;
+- the deleted items of folders they can access, unless the item is restricted to other
+  users or roles.
+
+The items of a deleted folder follow the folder. A deleted subfolder they cannot access is
+left in the recycle bin when its parent is restored or permanently deleted. When a folder is
+restored under deleted parents they cannot access, those parents come back empty, so the
+folder keeps its place in the tree. Only items already in the recycle bin can be
+permanently deleted from it.
+
 TeamPass checks the complete selection before changing anything. The operation is
 blocked when:
 
