@@ -19,7 +19,7 @@ final class EmailUpgradeFailureResponseTest extends TestCase
     /** Every migration failure produces the wizard's JSON and is also rejected by the CLI parser. */
     public function testQueryFailuresStopBeforeRecordingTheUpgradeAndReturnWizardErrors(): void
     {
-        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'sharing', 'exception', 'success'] as $mode) {
+        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'sharing', 'exception', 'attachment_audit', 'success'] as $mode) {
             $statePath = tempnam(sys_get_temp_dir(), 'teampass-email-upgrade-test-');
             self::assertNotFalse($statePath);
             try {
@@ -33,12 +33,13 @@ final class EmailUpgradeFailureResponseTest extends TestCase
                 $success = $mode === 'success';
                 self::assertSame($success, $response[0]['error'] === '', $mode);
                 self::assertSame($success, tpUpgradeCliParseStepOutput($output, 0)['ok'], $mode);
-                self::assertStringNotContainsString('private-database-detail', $output);
-                self::assertStringNotContainsString('private-database-detail', $process->getErrorOutput());
+                self::assertStringNotContainsString('private-', $output);
+                self::assertStringNotContainsString('private-', $process->getErrorOutput());
                 if ($mode === 'exception') {
                     self::assertMatchesRegularExpression('/Email transport migration failure: RuntimeException at .+:\d+/', $process->getErrorOutput());
                 }
                 $state = json_decode((string) file_get_contents($statePath), true, 512, JSON_THROW_ON_ERROR);
+                self::assertSame($success || $mode === 'attachment_audit', $state['attachment_audit_called'], $mode);
                 self::assertSame($success, $state['timestamp_written'], $mode);
                 self::assertSame(0, $state['queries_after_failure'], $mode);
             } finally {
@@ -50,7 +51,7 @@ final class EmailUpgradeFailureResponseTest extends TestCase
     /** Recovery keeps the real wrapper's class/code/location trace; non-email failures escape the email catch. */
     public function testRecoveryRetainsSafeDiagnosticsForEmailAndLaterFailures(): void
     {
-        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'sharing', 'exception', 'timestamp'] as $mode) {
+        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'sharing', 'exception', 'attachment_audit', 'timestamp'] as $mode) {
             $statePath = tempnam(sys_get_temp_dir(), 'teampass-email-recovery-test-');
             self::assertNotFalse($statePath);
             try {
@@ -64,10 +65,13 @@ final class EmailUpgradeFailureResponseTest extends TestCase
                 self::assertStringNotContainsString('private-', $process->getErrorOutput());
                 if ($mode === 'timestamp') {
                     self::assertStringNotContainsString('Email transport migration failure', $process->getErrorOutput());
+                } elseif ($mode === 'attachment_audit') {
+                    self::assertStringContainsString('Secure Send attachment audit migration failed (RuntimeException)', $process->getErrorOutput());
                 } else {
                     self::assertStringContainsString('Email transport migration failure: RuntimeException', $process->getErrorOutput());
                 }
                 $state = json_decode((string) file_get_contents($statePath), true, 512, JSON_THROW_ON_ERROR);
+                self::assertSame(in_array($mode, ['attachment_audit', 'timestamp'], true), $state['attachment_audit_called'], $mode);
                 self::assertFalse($state['timestamp_written']);
                 self::assertSame(0, $state['queries_after_failure']);
             } finally {
