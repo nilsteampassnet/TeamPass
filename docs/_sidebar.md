@@ -56,6 +56,7 @@
 - **API**
 - [Introduction](api/api-basic.md)
 - [Secure Send](api/secure-send.md)
+- [Offline vault](api/offline-vault.md)
 - **Help**
 - [Tips](misc/tips.md)
 - [Accessibility](misc/accessibility.md)
