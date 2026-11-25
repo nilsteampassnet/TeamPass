@@ -103,4 +103,19 @@ class UserLogsAccessAuthorizationTest extends TestCase
             'The raw request value must not be concatenated into the query'
         );
     }
+
+    /** Viewing an actor's journal does not grant access to the accounts named in its entries. */
+    public function testAdministrationTargetsAreAuthorizedBeforeTheirLoginsAreRead(): void
+    {
+        $src = $this->datatableSource();
+
+        self::assertStringContainsString(
+            "\$adminTargetIds = userLogsManageableAdminTargetIds(\$rows, 'callerMayManageUser');",
+            $src
+        );
+        self::assertMatchesRegularExpression(
+            "/WHERE id IN %li AND deleted_at IS NULL',\\s*\\\$adminTargetIds\\b/",
+            $src
+        );
+    }
 }

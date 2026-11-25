@@ -926,7 +926,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     orderable: false,
                     render: function(label, type, row) {
                         if (type !== 'display') return label
-                        if (row[4] === null) return '—'
+                        if (row[4] === null) return label || '—'
                         const itemId = '<small class="text-muted text-nowrap">#' + Number(row[4]) + '</small>'
                         return label ? label + ' ' + itemId : itemId
                     }

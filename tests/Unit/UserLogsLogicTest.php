@@ -73,6 +73,72 @@ final class UserLogsLogicTest extends TestCase
         self::assertSame('Mot de passe affiché', userLogsActivityText($item, $lang));
     }
 
+    public function testOnlyKnownUserManagementPayloadsIdentifyAnAccount(): void
+    {
+        $row = ['is_item' => 0, 'type' => 'user_mngt', 'label' => 'at_user_pwd_changed', 'log_detail' => '42'];
+        self::assertSame(42, userLogsAdminTargetId($row));
+        self::assertSame(42, userLogsAdminTargetId(['label' => 'at_user_email_changed:old@example.test'] + $row));
+        self::assertSame(42, userLogsAdminTargetId(['label' => 'at_restored'] + $row));
+        self::assertNull(userLogsAdminTargetId(['type' => 'admin_action'] + $row));
+        self::assertNull(userLogsAdminTargetId(['is_item' => 1] + $row));
+
+        foreach (['at_api_session_revoked', 'at_extension_token_revoked', 'at_review_closed', 'at_user_updated'] as $action) {
+            self::assertNull(userLogsAdminTargetId(['label' => $action] + $row), $action);
+        }
+        foreach (['0', '-42', '42.5', '42 seconds', str_repeat('9', 40), true, [], null] as $detail) {
+            self::assertNull(userLogsAdminTargetId(['log_detail' => $detail] + $row));
+        }
+
+        $credential = ['label' => 'at_device_credential_revoked'] + $row;
+        self::assertSame(7, userLogsAdminTargetId(['log_detail' => '{"credential_id":42,"user_id":7}'] + $credential));
+        self::assertNull(userLogsAdminTargetId(['log_detail' => '{"credential_id":42}'] + $credential));
+        self::assertNull(userLogsAdminTargetId(['log_detail' => '{"user_id":true}'] + $credential));
+        self::assertNull(userLogsAdminTargetId($credential));
+    }
+
+    public function testOnlyManageableTargetsCanBeResolvedAndOnlyOncePerPage(): void
+    {
+        $allowed = ['is_item' => 0, 'type' => 'user_mngt', 'label' => 'at_user_pwd_changed', 'log_detail' => '42'];
+        $outsideScope = ['log_detail' => '43'] + $allowed;
+        $missing = ['log_detail' => '44'] + $allowed;
+        $otherNamespace = ['label' => 'at_api_session_revoked'] + $allowed;
+        $checked = [];
+        $ids = userLogsManageableAdminTargetIds(
+            [$allowed, $outsideScope, $allowed, $otherNamespace, $missing],
+            static function (int $id) use (&$checked): bool {
+                $checked[] = $id;
+
+                return $id !== 43;
+            }
+        );
+        self::assertSame([42, 43, 44], $checked);
+        self::assertSame([42, 44], $ids);
+
+        $logins = [42 => 'R&amp;D O&#039;Brien &quot;QA&quot; &lt;test&gt;'];
+        self::assertSame('R&D O\'Brien "QA" <test>', userLogsTargetText($allowed, $logins));
+        self::assertSame('', userLogsTargetText($outsideScope, $logins));
+        self::assertSame('', userLogsTargetText($missing, $logins));
+        self::assertSame('', userLogsTargetText($otherNamespace, $logins));
+        self::assertSame('', userLogsTargetText($allowed));
+    }
+
+    public function testUserManagementActivityLabelsOmitPlaceholdersAndOldEmailAddresses(): void
+    {
+        $english = new Language('english');
+        $french = new Language('french');
+        $row = ['is_item' => 0, 'type' => 'user_mngt', 'label' => 'at_user_pwd_changed', 'log_detail' => '42'];
+        self::assertSame('User password changed', userLogsActivityText($row, $english));
+        self::assertSame('Mot de passe de l’utilisateur modifié', userLogsActivityText($row, $french));
+        $email = ['label' => 'at_user_email_changed:old@example.test'] + $row;
+        self::assertSame('User email changed', userLogsActivityText($email, $english));
+        self::assertSame('Adresse e-mail de l’utilisateur modifiée', userLogsActivityText($email, $french));
+        self::assertSame('User locked', userLogsActivityText(['label' => 'at_user_locked'] + $row, $english));
+        self::assertSame(
+            'User password recovery requested',
+            userLogsActivityText(['label' => 'at_user_forgot_local_password_requested'] + $row, $english)
+        );
+    }
+
     public function testSearchUsesDisplayedTextAndCountsBeforePaging(): void
     {
         $lang = new Language('french');

@@ -68,6 +68,63 @@ function userLogsApplyFilters(WhereClause $items, WhereClause $system, string $a
     logsAddChannelClause($system, 'system', $channel);
 }
 
+/** Return the event key without the legacy email detail appended by user management. */
+function userLogsUserManagementAction(string $label): string
+{
+    return str_starts_with($label, 'at_user_email_changed:') ? 'at_user_email_changed' : $label;
+}
+
+/**
+ * Read the target id only for user-management events with a documented account payload.
+ *
+ * @param array<string, mixed> $row Projected journal row.
+ */
+function userLogsAdminTargetId(array $row): ?int
+{
+    if ((int) $row['is_item'] === 1 || ($row['type'] ?? '') !== 'user_mngt') {
+        return null;
+    }
+
+    $detail = $row['log_detail'] ?? null;
+    // Some numeric details are token, session or review ids. Extension token revocation
+    // even stores different kinds of ids under the same event key.
+    $target = match (userLogsUserManagementAction((string) $row['label'])) {
+        'at_user_added', 'at_user_deleted', 'at_user_email_changed', 'at_user_locked', 'at_user_unlocked',
+        'at_user_pwd_changed', 'at_user_forgot_local_password_requested', 'at_user_new_keys', 'at_restored',
+        'at_user_oauth2_identity_bound', 'at_user_oauth2_identity_reset', 'at_leaver_items_flagged',
+        'at_user_webauthn_added', 'at_user_webauthn_deleted', 'at_user_webauthn_passwordless_enabled',
+        'at_user_webauthn_passwordless_disabled', 'user_purged' => $detail,
+        'at_device_credential_revoked' => is_string($detail) ? (json_decode($detail, true)['user_id'] ?? null) : null,
+        default => null,
+    };
+    if (!is_string($target) && !is_int($target)) {
+        return null;
+    }
+    $id = filter_var($target, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+    return $id === false ? null : $id;
+}
+
+/**
+ * Apply the caller's account scope once per distinct target on the returned page.
+ *
+ * @param array<array<string, mixed>> $rows Journal entries on the returned page.
+ * @param callable(int): bool $mayManage Caller permission check.
+ * @return list<int> The only ids whose logins may be loaded.
+ */
+function userLogsManageableAdminTargetIds(array $rows, callable $mayManage): array
+{
+    $ids = [];
+    foreach ($rows as $row) {
+        $id = userLogsAdminTargetId($row);
+        if ($id !== null) {
+            $ids[$id] = $id;
+        }
+    }
+
+    return array_values(array_filter($ids, $mayManage));
+}
+
 /**
  * Format the activity as plain text for matching and for the escaped DataTables response.
  *
@@ -86,6 +143,22 @@ function userLogsActivityText(array $row, Language $lang): string
     }
 
     $type = (string) $row['type'];
+    if ($type === 'user_mngt') {
+        // The target belongs in its own column. Keep activity text independent of both the
+        // caller's permissions and legacy details such as the previous email address.
+        $activityKey = match (userLogsUserManagementAction($label)) {
+            'at_user_locked' => 'user_logs_user_locked',
+            'at_user_unlocked' => 'user_logs_user_unlocked',
+            'at_user_email_changed' => 'user_logs_user_email_changed',
+            'at_user_pwd_changed' => 'user_logs_user_password_changed',
+            'at_user_initial_pwd_changed' => 'user_logs_user_initial_password_changed',
+            'at_user_forgot_local_password_requested' => 'user_logs_user_password_recovery',
+            default => null,
+        };
+        if ($activityKey !== null) {
+            return userLogsDisplayText($lang->getShipped($activityKey));
+        }
+    }
     if ($type === 'user_connection') {
         if ($label === 'connection' || $label === 'user_connection') {
             return $lang->getShipped('connection');
@@ -111,11 +184,17 @@ function userLogsDisplayText(string $text): string
 }
 
 /**
- * Render the audit target using an item label only. System metadata is used for classification.
+ * Render the item title or an already authorised account login.
  *
  * @param array<string, mixed> $row Projected journal row.
+ * @param array<int, string> $adminLogins Authorised account logins for the current page.
  */
-function userLogsTargetText(array $row): string
+function userLogsTargetText(array $row, array $adminLogins = []): string
 {
-    return (int) $row['is_item'] === 1 ? userLogsDisplayText((string) $row['label']) : '';
+    if ((int) $row['is_item'] === 1) {
+        return userLogsDisplayText((string) $row['label']);
+    }
+    $id = $adminLogins === [] ? null : userLogsAdminTargetId($row);
+
+    return $id === null ? '' : userLogsDisplayText($adminLogins[$id] ?? '');
 }
