@@ -663,6 +663,40 @@ class CryptoManager
      */
     public static function decryptFileLegacyV1(string $ciphertext, string $objectKey): string
     {
+        return (string) self::createLegacyAttachmentCipher($objectKey)->decrypt($ciphertext);
+    }
+
+    /**
+     * Decrypt an item attachment into a private temporary stream using bounded buffers.
+     *
+     * @param resource $input Seekable encrypted file
+     * @param resource $output Seekable temporary stream
+     * @param string $objectKey Raw attachment key
+     */
+    public static function decryptAttachmentToStream($input, $output, string $objectKey): void
+    {
+        $cipher = self::createAESCipher('cbc');
+        $cipher->setIV(str_repeat("\0", 16));
+        $cipher->setPassword($objectKey);
+        $cipher->enableContinuousBuffer();
+        try {
+            self::copyDecryptedAttachment($input, $output, $cipher);
+        } catch (\phpseclib3\Exception\BadDecryptionException $e) {
+            if (!rewind($input) || !rewind($output) || !ftruncate($output, 0)) {
+                throw new \RuntimeException('Cannot reset the attachment streams', 0, $e);
+            }
+            self::copyDecryptedAttachment($input, $output, self::createLegacyAttachmentCipher($objectKey));
+        }
+        if (!rewind($output)) {
+            throw new \RuntimeException('Cannot rewind the attachment stream');
+        }
+    }
+
+    /**
+     * Reproduce the password derivation used by phpseclib v1 attachments.
+     */
+    private static function createLegacyAttachmentCipher(string $objectKey): object
+    {
         if (class_exists('Crypt_AES') === false) {
             throw new Exception('phpseclib v1 is not available to decrypt legacy attachments');
         }
@@ -674,7 +708,48 @@ class CryptoManager
         $enableContinuousBuffer = 'enableContinuousBuffer';
         $cipher->$enableContinuousBuffer();
 
-        return (string) $cipher->decrypt($ciphertext);
+        return $cipher;
+    }
+
+    /**
+     * Copy complete CBC blocks, unpadding only the last buffer.
+     *
+     * @param resource $input
+     * @param resource $output
+     */
+    private static function copyDecryptedAttachment($input, $output, object $cipher): void
+    {
+        $remaining = (int) (fstat($input)['size'] ?? 0);
+        if ($remaining <= 0 || $remaining % 16 !== 0) {
+            throw new \RuntimeException('Invalid attachment ciphertext length');
+        }
+        $cipher->disablePadding();
+        while ($remaining > 0) {
+            $length = min($remaining, 128 * 1024);
+            $block = stream_get_contents($input, $length);
+            if ($block === false || strlen($block) !== $length) {
+                throw new \RuntimeException('Cannot read attachment ciphertext');
+            }
+            $remaining -= $length;
+            $plaintext = $cipher->decrypt($block);
+            if (!is_string($plaintext) || strlen($plaintext) !== $length) {
+                throw new \RuntimeException('Cannot decrypt attachment ciphertext');
+            }
+            if ($remaining === 0) {
+                // Validate every PKCS#7 byte before accepting the legacy format's password derivation.
+                $padding = ord($plaintext[$length - 1]);
+                if ($padding < 1 || $padding > 16 || !hash_equals(
+                    str_repeat(chr($padding), $padding),
+                    substr($plaintext, -$padding)
+                )) {
+                    throw new \phpseclib3\Exception\BadDecryptionException('Invalid attachment padding');
+                }
+                $plaintext = substr($plaintext, 0, -$padding);
+            }
+            if (fwrite($output, $plaintext) !== strlen($plaintext)) {
+                throw new \RuntimeException('Cannot write decrypted attachment');
+            }
+        }
     }
 
     /**

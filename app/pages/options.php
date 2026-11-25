@@ -1929,6 +1929,18 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                         </div>
 
+                        <?php if (array_key_exists('secure_send_allow_attachments', $SETTINGS)) { ?>
+                        <div class='row mb-2 option' data-keywords="secure send attachment file upload">
+                            <div class='col-10'>
+                                <?php echo htmlspecialchars($lang->get('secure_send_allow_attachments'), ENT_QUOTES, 'UTF-8'); ?>
+                                <small class='form-text text-muted'><?php echo htmlspecialchars($lang->get('secure_send_allow_attachments_tip'), ENT_QUOTES, 'UTF-8'); ?></small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='secure_send_allow_attachments' data-toggle-on='<?php echo (int) ($SETTINGS['secure_send_allow_attachments'] ?? 0) === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_allow_attachments_input' value='<?php echo (int) ($SETTINGS['secure_send_allow_attachments'] ?? 0) === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+                        <?php } ?>
+
                         <div class='row mb-2 option' data-keywords="secure send sender profile name privacy identity">
                             <div class='col-10'>
                                 <?php echo $lang->get('secure_send_show_sender_name'); ?>

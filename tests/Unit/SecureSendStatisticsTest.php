@@ -60,7 +60,8 @@ class SecureSendStatisticsTest extends TestCase
             id INTEGER PRIMARY KEY AUTOINCREMENT, send_id INTEGER, event TEXT, reason TEXT,
             occurred_at INTEGER, originator INTEGER, actor_id INTEGER, item_id INTEGER,
             send_type TEXT, created_at INTEGER, has_passphrase INTEGER, is_public INTEGER,
-            max_views INTEGER, expires_at INTEGER, views INTEGER, failed_attempts INTEGER)');
+            max_views INTEGER, expires_at INTEGER, views INTEGER, failed_attempts INTEGER,
+            attachment_count INTEGER, attachment_ids TEXT)');
         DB::$connection->exec('CREATE TABLE stats_fixture_users (
             id INTEGER PRIMARY KEY, login TEXT, name TEXT, lastname TEXT, disabled INTEGER DEFAULT 0,
             deleted_at TEXT, email TEXT, admin INTEGER DEFAULT 0, gestionnaire INTEGER DEFAULT 0,
@@ -94,7 +95,11 @@ class SecureSendStatisticsTest extends TestCase
         $reason = ['revoked' => 'sender_revoked', 'invalidated' => 'attempts_exhausted',
             'expired' => 'deadline_elapsed', 'reveal_failed' => 'wrong_credentials'][$event] ?? '';
         $actor = in_array($event, ['created', 'revoked'], true) ? $sender : null;
-        $record = secureSendAuditRecord($link, $event, $reason, $actor, $timestamp);
+        $download = $event === 'download_authorized';
+        $record = secureSendAuditRecord(
+            $link, $event, $reason, $actor, $timestamp,
+            $download ? 1 : null, $download ? [9010] : []
+        );
         $statement = DB::$connection->prepare('INSERT INTO stats_fixture_secure_send_audit ('
             . implode(',', array_keys($record)) . ') VALUES (' . implode(',', array_fill(0, count($record), '?')) . ')');
         foreach (array_values($record) as $index => $value) {
@@ -125,11 +130,12 @@ class SecureSendStatisticsTest extends TestCase
         self::assertCount(2, DB::$queries);
     }
 
-    public function testEveryEventIsCountedWithoutSummingCumulativeViewsOrFailures(): void
+    public function testLifecycleCountsExcludeDownloadsAndDoNotSumCumulativeViewsOrFailures(): void
     {
         $this->event('created');
         $this->event('revealed', 42, 1, 501, ['views' => 1]);
         $this->event('revealed', 42, 1, 502, ['views' => 2]);
+        $this->event('download_authorized', 42, 1, 503, ['views' => 2]);
         for ($i = 1; $i <= 5; ++$i) {
             $this->event('reveal_failed', 42, 1, 503 + $i, ['failed_attempts' => $i]);
         }

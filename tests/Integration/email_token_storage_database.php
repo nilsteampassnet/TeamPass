@@ -67,6 +67,12 @@ try {
     (new ReflectionMethod(DatabaseInstaller::class, 'emails'))->invoke($installer);
     (new ReflectionMethod(DatabaseInstaller::class, 'background_tasks'))->invoke($installer);
     (new ReflectionMethod(DatabaseInstaller::class, 'secure_send_email'))->invoke($installer);
+    (new ReflectionMethod(DatabaseInstaller::class, 'secure_send_audit'))->invoke($installer);
+    $auditTable = prefixTable('secure_send_audit');
+    $freshAuditColumns = DB::query('SHOW FULL COLUMNS FROM %b', $auditTable);
+    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids', $auditTable);
+    DB::insert($auditTable, secureSendAuditRecord(['id' => 1, 'originator' => 42, 'send_type' => 'note'], 'revealed'));
+    $historicalAudit = DB::queryFirstRow('SELECT * FROM %b', $auditTable);
     $freshSharingColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('secure_send_email'));
     DB::query('DROP TABLE ' . prefixTable('secure_send_email'));
     $freshQueueColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('background_tasks'));
@@ -110,9 +116,15 @@ try {
     emailTokenExpect($freshColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('email_oauth_state')), 'Fresh and upgrade schemas differ');
     emailTokenExpect($freshQueueColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('background_tasks')), 'Fresh and upgrade queue schemas differ');
     emailTokenExpect($freshSharingColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('secure_send_email')), 'Fresh and upgrade sharing delivery schemas differ');
+    emailTokenExpect($freshAuditColumns === DB::query('SHOW FULL COLUMNS FROM %b', $auditTable), 'Fresh and upgraded Secure Send audit schemas differ');
+    $upgradedAudit = DB::queryFirstRow('SELECT * FROM %b', $auditTable);
+    emailTokenExpect($upgradedAudit === $historicalAudit + ['attachment_count' => null, 'attachment_ids' => null],
+        'Upgrade changed historical Secure Send audit evidence');
     DB::insert(prefixTable('secure_send_email'), ['send_id' => 1, 'task_id' => 1, 'originator' => 42,
         'created_at' => time(), 'address_hash' => str_repeat('a', 64)]);
     emailTokenRunMigration($root, $host, $user, $password, $database, $port, $prefix);
+    emailTokenExpect($upgradedAudit === DB::queryFirstRow('SELECT * FROM %b', $auditTable),
+        'Upgrade replay changed historical Secure Send audit evidence');
     emailTokenExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_email')) === 1, 'Replay removed a sharing delivery reservation');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '1', 'Replay changed administrator email opt-in');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_api_enabled') === '1', 'Replay changed the Secure Send API opt-in');
@@ -194,7 +206,7 @@ try {
     echo "Email token storage and profiles: install, migration, replay, encryption, ownership, rollback and concurrency checks passed.\n";
     echo "OAuth2 identity binding: install, migration, replay and linking default checks passed.\n";
 } finally {
-    foreach (['secure_send_email', 'email_oauth_state', 'emails', 'misc', 'background_tasks', 'users'] as $table) {
+    foreach (['secure_send_attachments', 'secure_send_email', 'secure_send_audit', 'email_oauth_state', 'emails', 'misc', 'background_tasks', 'users'] as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));
     }
     DB::disconnect();

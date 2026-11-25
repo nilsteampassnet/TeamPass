@@ -41,7 +41,9 @@ const context = {
     secureSendPublic: 'public address',
     secureSendViews: '#tp_views#/#tp_max# view(s)',
     secureSendFailed: '#tp_count# failed attempt(s)',
-    secureSendExpires: 'expires #tp_date#'
+    secureSendExpires: 'expires #tp_date#',
+    secureSendAttachmentCount: 'attachments (#tp_count#)',
+    secureSendAttachmentIds: 'vault file IDs #tp_ids#'
   }
 }
 vm.createContext(context)
@@ -81,6 +83,12 @@ test('details summarize the link policy and counters', () => {
   assert.equal(r.policy(row()), '0/1 view(s)')
   assert.equal(r.policy(row({ views: 1, max_views: 3, has_passphrase: true, is_public: true, failed_attempts: 2, expires_at: '2026-11-20 10:00' })),
     '1/3 view(s) · passphrase · public address · 2 failed attempt(s) · expires 2026-11-20 10:00')
+})
+
+test('details show only the recorded attachment count and vault file IDs', () => {
+  assert.equal(r.policy(row({ attachment_count: 0, attachment_ids: [] })), '0/1 view(s) · attachments (0)')
+  assert.equal(r.policy(row({ attachment_count: 2, attachment_ids: [9010, 9011] })), '0/1 view(s) · attachments (2) · vault file IDs 9010, 9011')
+  assert.equal(r.policy(row({ attachment_count: 1, attachment_ids: [], name: 'secret.txt' })), '0/1 view(s) · attachments (1)')
 })
 
 // Capture the shipped table configuration without a DOM, then resolve cells through the same
