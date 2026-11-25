@@ -84,7 +84,13 @@ function secureSendStoreLink(
         ) !== 1) {
             throw new RuntimeException('attachment_publish_failed');
         }
-        $event = secureSendAudit($link, 'created', '', (int) $link['originator']);
+        $event = secureSendAudit(
+            $link,
+            'created',
+            actorId: (int) $link['originator'],
+            attachmentCount: $attachmentReference === null ? 0 : max(1, count($sourceIds)),
+            attachmentIds: $sourceIds
+        );
         if ($message !== null) {
             secureSendEmailQueue($message, $link, $settings, time());
         }

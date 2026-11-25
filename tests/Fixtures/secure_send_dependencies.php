@@ -56,7 +56,8 @@ function cryption(string $message, string $asciiKey, string $operation, ?array $
     static $instanceKey = null;
     if ($asciiKey === '') {
         $instanceKey ??= Key::createNewRandomKey()->saveToAsciiSafeString();
-        $asciiKey = $instanceKey;
+        // Independent test workers can share the disposable instance key.
+        $asciiKey = $settings['fixture_instance_key'] ?? $instanceKey;
     }
     $key = Key::loadFromAsciiSafeString($asciiKey);
     try {

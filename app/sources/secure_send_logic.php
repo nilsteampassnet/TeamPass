@@ -31,6 +31,8 @@ declare(strict_types=1);
  * Secure Send recipient and confirmation rules.
  */
 
+const SECURE_SEND_MAX_ATTACHMENTS = 10;
+
 /**
  * Choose the recipient language without relying on authenticated-page initialization.
  *

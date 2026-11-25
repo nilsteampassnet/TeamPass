@@ -29,6 +29,13 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+require_once __DIR__ . '/secure_send_logic.php';
+
+const SECURE_SEND_AUDIT_ATTACHMENT_COLUMNS = [
+    'attachment_count' => 'TINYINT UNSIGNED NULL DEFAULT NULL',
+    'attachment_ids' => 'VARCHAR(211) CHARACTER SET ascii NULL DEFAULT NULL',
+];
+
 /**
  * Return the shared, replayable schema for fresh installs and upgrades.
  *
@@ -41,6 +48,11 @@ function secureSendAuditSchemaSql(string $tableName): string
 {
     if (preg_match('/^[a-zA-Z0-9_]+$/D', $tableName) !== 1) {
         throw new InvalidArgumentException('Invalid audit table name');
+    }
+
+    $attachmentColumns = [];
+    foreach (SECURE_SEND_AUDIT_ATTACHMENT_COLUMNS as $column => $definition) {
+        $attachmentColumns[] = "`$column` $definition";
     }
 
     return 'CREATE TABLE IF NOT EXISTS `' . $tableName . '` (
@@ -60,12 +72,34 @@ function secureSendAuditSchemaSql(string $tableName): string
         `expires_at` BIGINT UNSIGNED NOT NULL,
         `views` INT UNSIGNED NOT NULL,
         `failed_attempts` INT UNSIGNED NOT NULL,
+        ' . implode(",\n        ", $attachmentColumns) . ',
         PRIMARY KEY (`id`),
         KEY `idx_send_history` (`send_id`, `id`),
         KEY `idx_event_period` (`event`, `occurred_at`),
         KEY `idx_originator_period` (`originator`, `occurred_at`),
         KEY `idx_retention_period` (`occurred_at`, `id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+}
+
+/**
+ * Add attachment audit fields without changing the evidence in an existing journal.
+ */
+function secureSendUpgradeAuditAttachmentColumns(mysqli $db, string $tableName): void
+{
+    if (preg_match('/^[a-zA-Z0-9_]+$/D', $tableName) !== 1) {
+        throw new InvalidArgumentException('Invalid audit table name');
+    }
+    foreach (SECURE_SEND_AUDIT_ATTACHMENT_COLUMNS as $column => $definition) {
+        $result = $db->query("SHOW COLUMNS FROM `$tableName` WHERE Field = '$column'");
+        if (!$result instanceof mysqli_result) {
+            throw new RuntimeException('Unable to inspect Secure Send attachment audit columns');
+        }
+        $missing = $result->num_rows === 0;
+        $result->free();
+        if ($missing && $db->query("ALTER TABLE `$tableName` ADD COLUMN `$column` $definition") === false) {
+            throw new RuntimeException('Unable to add Secure Send attachment audit columns');
+        }
+    }
 }
 
 /**
@@ -80,6 +114,7 @@ function secureSendAuditEventReasons(): array
     return [
         'created' => [''],
         'revealed' => [''],
+        'download_authorized' => [''],
         'reveal_failed' => ['wrong_credentials'],
         'revoked' => ['sender_revoked'],
         'invalidated' => ['sender_unavailable', 'item_access_lost', 'attempts_exhausted', 'item_auto_deleted', 'disaster_recovery'],
@@ -98,10 +133,19 @@ function secureSendAuditEventReasons(): array
  * @param string $reason Fixed reason code, never exception text or request input
  * @param int|null $actorId Authenticated sender for creation/revocation; null otherwise
  * @param int|null $now Observation time, injectable for tests
+ * @param int|null $attachmentCount File count at creation, or one authorized download
+ * @param array $attachmentIds Candidate vault file IDs, validated as a list of positive integers
  * @return array<string, int|string|null> Safe database/syslog row
  */
-function secureSendAuditRecord(array $link, string $event, string $reason = '', ?int $actorId = null, ?int $now = null): array
-{
+function secureSendAuditRecord(
+    array $link,
+    string $event,
+    string $reason = '',
+    ?int $actorId = null,
+    ?int $now = null,
+    ?int $attachmentCount = null,
+    array $attachmentIds = []
+): array {
     $reasons = secureSendAuditEventReasons();
     if (!isset($reasons[$event]) || !in_array($reason, $reasons[$event], true)) {
         throw new InvalidArgumentException('Invalid Secure Send audit event');
@@ -114,7 +158,7 @@ function secureSendAuditRecord(array $link, string $event, string $reason = '', 
     }
     $type = $link['send_type'] ?? 'item';
 
-    return [
+    $record = [
         'send_id' => (int) $link['id'],
         'event' => $event,
         'reason' => $reason,
@@ -131,6 +175,34 @@ function secureSendAuditRecord(array $link, string $event, string $reason = '', 
         'views' => max(0, (int) ($link['views'] ?? 0)),
         'failed_attempts' => max(0, (int) ($link['failed_attempts'] ?? 0)),
     ];
+
+    if ($event === 'created') {
+        $attachmentCount ??= 0;
+    }
+    if ($attachmentCount !== null || $attachmentIds !== [] || $event === 'download_authorized') {
+        $hasItem = $record['send_type'] === 'item' && $record['item_id'] !== null;
+        if (!in_array($event, ['created', 'download_authorized'], true)
+            || $attachmentCount === null || $attachmentCount < 0 || $attachmentCount > SECURE_SEND_MAX_ATTACHMENTS
+            || ($event === 'download_authorized' && $attachmentCount !== 1)
+            || ($hasItem ? count($attachmentIds) !== $attachmentCount : $attachmentIds !== [])
+            || (!$hasItem && $attachmentCount > ($record['send_type'] === 'note' ? 1 : 0))
+            || !array_is_list($attachmentIds)
+        ) {
+            throw new InvalidArgumentException('Invalid Secure Send audit attachment metadata');
+        }
+        foreach ($attachmentIds as $attachmentId) {
+            if (!is_int($attachmentId) || $attachmentId <= 0) {
+                throw new InvalidArgumentException('Invalid Secure Send audit attachment ID');
+            }
+        }
+        if (count(array_unique($attachmentIds)) !== count($attachmentIds)) {
+            throw new InvalidArgumentException('Duplicate Secure Send audit attachment IDs');
+        }
+        $record['attachment_count'] = $attachmentCount;
+        $record['attachment_ids'] = $attachmentIds === [] ? null : json_encode($attachmentIds, JSON_THROW_ON_ERROR);
+    }
+
+    return $record;
 }
 
 /**
@@ -141,12 +213,46 @@ function secureSendAuditRecord(array $link, string $event, string $reason = '', 
  * @param string $reason Fixed reason code
  * @param int|null $actorId Authenticated sender, or null for anonymous/system events
  * @param int|null $now Observation time
+ * @param int|null $attachmentCount File count at creation, or one authorized download
+ * @param list<int> $attachmentIds Existing vault file IDs, if applicable
  * @return array Safe event to forward only after commit
  */
-function secureSendAudit(array $link, string $event, string $reason = '', ?int $actorId = null, ?int $now = null): array
-{
-    $record = secureSendAuditRecord($link, $event, $reason, $actorId, $now);
+function secureSendAudit(
+    array $link,
+    string $event,
+    string $reason = '',
+    ?int $actorId = null,
+    ?int $now = null,
+    ?int $attachmentCount = null,
+    array $attachmentIds = []
+): array {
+    $record = secureSendAuditRecord($link, $event, $reason, $actorId, $now, $attachmentCount, $attachmentIds);
     DB::insert(prefixTable('secure_send_audit'), $record);
+    return $record;
+}
+
+/**
+ * Record the first authorized request for one file. The caller holds the link lock.
+ *
+ * A note contains at most one file and has no vault file ID.
+ */
+function secureSendAuditFirstDownload(array $link, int $sourceId, int $now): ?array
+{
+    $record = secureSendAuditRecord(
+        $link,
+        'download_authorized',
+        now: $now,
+        attachmentCount: 1,
+        attachmentIds: $sourceId > 0 ? [$sourceId] : []
+    );
+    $table = prefixTable('secure_send_audit');
+    if (DB::queryFirstField('SELECT id FROM ' . $table
+        . ' WHERE send_id = %i AND event = %s AND attachment_ids <=> %? LIMIT 1',
+        $record['send_id'], $record['event'], $record['attachment_ids']
+    ) !== null) {
+        return null;
+    }
+    DB::insert($table, $record);
     return $record;
 }
 

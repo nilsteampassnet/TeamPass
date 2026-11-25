@@ -31,9 +31,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 
 require_once __DIR__ . '/secure_send_item_attachments.php';
+require_once __DIR__ . '/secure_send_audit.php';
 
 const SECURE_SEND_DOWNLOAD_SECONDS = 300;
-const SECURE_SEND_MAX_ATTACHMENTS = 10;
 
 /** Refusal specific to the authenticated Web attachment form. */
 final class SecureSendAttachmentRefusal extends RuntimeException
@@ -353,9 +353,10 @@ function secureSendHasDownloadWindow(int $sendId, array $settings): bool
 }
 
 /**
- * Authorize a download using only a grant in this session and the current state of its link.
+ * Authorize a request using the session's confirmed grant and audit each file once per link.
  *
- * A recipient can retry in the same session until the grant expires, without spending a view.
+ * Retries recheck access without adding audit rows or spending views.
+ * The link lock serializes authorization with revocation and deduplicates the audit.
  */
 function secureSendAuthorizeDownload(array $input, array $grants, array $settings, string $host, int $now): ?array
 {
@@ -376,21 +377,55 @@ function secureSendAuthorizeDownload(array $input, array $grants, array $setting
         return null;
     }
     $data = json_decode($decoded['string'], true, 16, JSON_THROW_ON_ERROR);
-    $file = $data['files'][(int) $index] ?? null;
+    $index = (int) $index;
+    $file = $data['files'][$index] ?? null;
     if (!is_array($file) || (int) ($data['expires'] ?? 0) <= $now) {
         return null;
     }
-    $link = DB::queryFirstRow('SELECT o.* FROM ' . prefixTable('otv') . ' o
-        INNER JOIN ' . prefixTable('secure_send_attachments') . ' a ON a.send_id = o.id
-        WHERE o.id = %i AND a.reference = %s AND a.download_until > %i',
-        $data['id'], $data['reference'], $now);
-    if (!$link || !secureSendIsAvailable($link, $settings, $now, false)
+    DB::startTransaction();
+    try {
+        // Share the link lock with revocation, reveal and attachment cleanup.
+        $link = DB::queryFirstRow('SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i FOR UPDATE', $data['id']) ?: [];
+        $now = max($now, time());
+        $download = $grant['expires'] > $now && (int) $data['expires'] > $now
+            ? secureSendFindDownloadFile($link, $data, $file, $index, $settings, $host, $now)
+            : null;
+        $event = $download === null ? null : secureSendAuditFirstDownload($link, $file['source_id'], $now);
+        DB::commit();
+    } catch (Throwable $e) {
+        DB::rollback();
+        throw $e;
+    }
+    if ($event !== null) {
+        secureSendEmitAudit($event, $settings);
+    }
+    return $download;
+}
+
+/**
+ * Resolve a file from a checked grant while the caller holds the lock on its link.
+ */
+function secureSendFindDownloadFile(
+    array $link,
+    array $grant,
+    array $file,
+    int $index,
+    array $settings,
+    string $host,
+    int $now
+): ?array {
+    if ($link === [] || !secureSendIsAvailable($link, $settings, $now, false)
         || !secureSendHostIsAllowed($settings, $link, $host)
+        || DB::queryFirstField(
+            'SELECT send_id FROM ' . prefixTable('secure_send_attachments')
+            . ' WHERE send_id = %i AND reference = %s AND download_until > %i',
+            $link['id'], $grant['reference'], $now
+        ) === null
     ) {
         return null;
     }
     if ($file['source_id'] > 0) {
-        if (!secureSendCanDownloadItemFiles($link, (int) ($data['auto_deleted_at'] ?? 0))
+        if (!secureSendCanDownloadItemFiles($link, (int) ($grant['auto_deleted_at'] ?? 0))
             || secureSendExistingItemAttachmentIds((int) $link['item_id'], [$file['source_id']]) === []
         ) {
             return null;
@@ -399,11 +434,11 @@ function secureSendAuthorizeDownload(array $input, array $grants, array $setting
         return null;
     }
 
-    $directory = secureSendAttachmentDirectory($settings, $data['reference']);
+    $directory = secureSendAttachmentDirectory($settings, $grant['reference']);
     if ($directory === null) {
         return null;
     }
-    $path = $directory . DIRECTORY_SEPARATOR . (int) $index . '.enc';
+    $path = $directory . DIRECTORY_SEPARATOR . $index . '.enc';
     if (is_link($path) || !is_file($path)) {
         return null;
     }

@@ -46,9 +46,11 @@ function secureSendAttachmentDatabaseChecks(array $settings): void
     $settings['path_to_upload_folder'] = $directory;
     $settings['secure_send_allow_attachments'] = 1;
     $settings['upload_maxfilesize'] = '1mb';
+    $settings['fixture_instance_key'] = Key::createNewRandomKey()->saveToAsciiSafeString();
     $sender = ['id' => 42];
     $note = ['send_type' => 'note', 'views' => 1, 'passphrase' => 'fixture phrase'];
     $table = prefixTable('secure_send_attachments');
+    $audit = prefixTable('secure_send_audit');
     DB::query(secureSendAttachmentSchemaSql($table));
     DB::query(secureSendAttachmentSchemaSql($table));
     try {
@@ -67,6 +69,9 @@ function secureSendAttachmentDatabaseChecks(array $settings): void
         check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . $table) === 0, 'Refused uploads left staging records');
         $created = secureSendCreateLink($note, $sender, $settings, $upload);
         $id = $created['otv_id'];
+        $createdEvent = DB::queryFirstRow('SELECT * FROM ' . $audit . ' WHERE send_id = %i AND event = %s', $id, 'created');
+        check((int) $createdEvent['attachment_count'] === 1 && $createdEvent['attachment_ids'] === null,
+            'Note creation audit must record only the attachment count');
         $reference = DB::queryFirstField('SELECT reference FROM ' . $table . ' WHERE send_id = %i', $id);
         $stored = secureSendAttachmentDirectory($settings, $reference) . DIRECTORY_SEPARATOR . '0.enc';
         check(!str_contains((string) file_get_contents($stored), 'Synthetic attachment'), 'File was stored without encryption');
@@ -91,8 +96,26 @@ function secureSendAttachmentDatabaseChecks(array $settings): void
         $request = ['download' => $token, 'attachment' => '0'];
         check(secureSendAuthorizeDownload($request, [], $settings, '', time()) === null, 'A different session used the grant');
         check(secureSendAuthorizeDownload($request, $grants, $settings, '', time() + 301) === null, 'An expired grant opened a file');
+        $unavailable = prefixTable('secure_send_audit_unavailable');
+        DB::query('RENAME TABLE %b TO %b', $audit, $unavailable);
+        try {
+            secureSendAuthorizeDownload($request, $grants, $settings, '', time());
+            check(false, 'A failed audit write authorized a download');
+        } catch (MeekroDBException $e) {
+            // The same grant must be usable once durable audit storage is available.
+        } finally {
+            DB::query('RENAME TABLE %b TO %b', $unavailable, $audit);
+        }
+        $attempts = concurrentRedemptions(['request' => $request, 'grants' => $grants], $settings, 3, '', 'download');
+        check(array_column($attempts, 'authorized') === [true, true, true], 'Parallel downloads denied a valid grant');
         $download = secureSendAuthorizeDownload($request, $grants, $settings, '', time());
         check(is_array($download), 'The authorized final download is unavailable');
+        check(secureSendAuthorizeDownload(array_replace($request, ['attachment' => '00']), $grants, $settings, '', time()) !== null,
+            'An authorized attachment could not be retried');
+        $downloadEvents = DB::query('SELECT * FROM ' . $audit . ' WHERE send_id = %i AND event = %s', $id, 'download_authorized');
+        check(count($downloadEvents) === 1 && (int) $downloadEvents[0]['attachment_count'] === 1
+            && $downloadEvents[0]['attachment_ids'] === null && $downloadEvents[0]['actor_id'] === null,
+            'Parallel or retried downloads duplicated the audit, or it contains unexpected metadata');
         $plaintext = $directory . DIRECTORY_SEPARATOR . 'download';
         File::decryptFile($download['path'], $plaintext, Key::loadFromAsciiSafeString($download['key']));
         check(file_get_contents($plaintext) === $content, 'The downloaded bytes differ from the uploaded bytes');
@@ -214,6 +237,10 @@ function secureSendItemAttachmentDatabaseChecks(array $settings): void
             DB::update(prefixTable('users'), ['admin' => 0], 'id = %i', 42);
         }
         $created = secureSendCreateLink($item + ['attachment_ids' => [9010, 9011]], $sender, $settings);
+        $audit = prefixTable('secure_send_audit');
+        $createdEvent = DB::queryFirstRow('SELECT * FROM ' . $audit . ' WHERE send_id = %i AND event = %s', $created['otv_id'], 'created');
+        check((int) $createdEvent['attachment_count'] === 2 && $createdEvent['attachment_ids'] === '[9010,9011]',
+            'Item creation audit did not record the selected source IDs');
         check($created['description_truncated'] === true, 'A large item snapshot did not reserve space for its file manifest');
         parse_str((string) parse_url($created['url'], PHP_URL_QUERY), $query);
         $parameters = secureSendRequestParameters($query);
@@ -241,6 +268,11 @@ function secureSendItemAttachmentDatabaseChecks(array $settings): void
             'A removed source file remained downloadable');
         check(secureSendAuthorizeDownload(['download' => $token, 'attachment' => '0'], $grants, $settings, '', time()) !== null,
             'Removing one file blocked the other attachment');
+        $ids = DB::queryFirstColumn(
+            'SELECT attachment_ids FROM ' . $audit . ' WHERE send_id = %i AND event = %s ORDER BY id',
+            $created['otv_id'], 'download_authorized'
+        );
+        check($ids === ['[9010]', '[9011]'], 'Download audit did not distinguish files, denials and retries');
         check(secureSendRevokeLink($created['otv_id'], 42, $settings), 'Could not revoke item file grant');
         check(is_file($sources[0]) && is_file($sources[1]), 'Revoking a share removed a source file');
         echo "OK: Secure Send item selection, file scope, current and legacy bytes, final consultation and source removal\n";

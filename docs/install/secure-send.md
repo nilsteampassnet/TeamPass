@@ -1374,6 +1374,14 @@ copies from exhausted links once the last download window closes. Scheduled main
 file removal when storage is temporarily unavailable. Disabling attachment sharing suspends
 access to links that contain files and their authorized downloads.
 
+The administrator's **Secure Send** log records the number of files at creation, plus the
+original vault file IDs for item shares. It records the first authorized request for each
+file on the link. Later requests recheck access without spending another view or duplicating
+the retained audit entry. Authorization records server-side permission to begin the
+download. It does not establish that the transfer finished or identify the recipient.
+The audit contains no file names, contents, keys, or download tokens. Older creation
+events have no attachment metadata.
+
 ## API clients
 
 The browser extension, paired mobile devices and API scripts can create item and note

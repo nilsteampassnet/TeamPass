@@ -178,6 +178,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'secureSendViews' => $lang->get('logs_secure_send_views'),
             'secureSendFailed' => $lang->get('logs_secure_send_failed'),
             'secureSendExpires' => $lang->get('logs_secure_send_expires'),
+            'secureSendAttachmentCount' => $lang->get('logs_secure_send_attachment_count'),
+            'secureSendAttachmentIds' => $lang->get('logs_secure_send_attachment_ids'),
         ],
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     ); ?>;
@@ -421,6 +423,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (row.is_public === true) parts.push(logMessages.secureSendPublic)
         if (row.failed_attempts > 0) parts.push(logMessages.secureSendFailed.replace('#tp_count#', row.failed_attempts))
         if (row.expires_at !== '') parts.push(logMessages.secureSendExpires.replace('#tp_date#', row.expires_at))
+        if (Number.isInteger(row.attachment_count)) {
+          parts.push(logMessages.secureSendAttachmentCount.replace('#tp_count#', row.attachment_count))
+        }
+        if (Array.isArray(row.attachment_ids) && row.attachment_ids.length > 0) {
+          parts.push(logMessages.secureSendAttachmentIds.replace('#tp_ids#', row.attachment_ids.join(', ')))
+        }
         return escapeLogValue(parts.join(' · '))
       },
       api: (row) => escapeLogValue(row.api === true ? logMessages.yes : logMessages.no),

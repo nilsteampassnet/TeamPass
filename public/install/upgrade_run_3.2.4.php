@@ -222,6 +222,7 @@ if (mysqli_query($db_link,
 }
 
 require_once TEAMPASS_ROOT . '/app/sources/secure_send_attachments.php';
+require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
 if (mysqli_query($db_link, secureSendAttachmentSchemaSql($pre . 'secure_send_attachments')) === false
     || mysqli_query($db_link,
         "INSERT IGNORE INTO " . $pre . "misc (type, intitule, valeur)
@@ -229,6 +230,15 @@ if (mysqli_query($db_link, secureSendAttachmentSchemaSql($pre . 'secure_send_att
     ) === false
 ) {
     $emailUpgradeFailure('Unable to initialize Secure Send attachment storage.');
+}
+try {
+    secureSendUpgradeAuditAttachmentColumns($db_link, $pre . 'secure_send_audit');
+} catch (Throwable $error) {
+    error_log('Secure Send attachment audit migration failed (' . get_class($error) . ')');
+    if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {
+        throw $error;
+    }
+    $emailUpgradeFailure('Unable to initialize Secure Send attachment audit metadata.');
 }
 ConfigManager::invalidateCache();
 
