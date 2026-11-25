@@ -672,6 +672,7 @@ class DatabaseInstaller
             array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'secure_send_show_sender_name', '1'),
             array('admin', 'secure_send_allow_email', '0'),
+            array('admin', 'secure_send_allow_attachments', '0'),
             array('admin', 'secure_send_api_enabled', '0'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
@@ -836,6 +837,14 @@ class DatabaseInstaller
             // host of cpassman_url.
             array('admin', 'webauthn_provider_enabled', '0'),
             array('admin', 'webauthn_email_on_add', '1'),
+            // Offline vault of the browser extension: off until an administrator opts in.
+            // An empty role list means every role.
+            array('admin', 'offline_vault_enabled', '0'),
+            array('admin', 'offline_vault_roles', ''),
+            array('admin', 'offline_vault_max_retention_days', '14'),
+            array('admin', 'offline_vault_totp_allowed', '0'),
+            array('admin', 'offline_vault_personal_folders', '1'),
+            array('admin', 'offline_vault_min_sync_minutes', '60'),
             array('admin', 'webauthn_login_mode', '0'),
             array('admin', 'webauthn_login_require_prf', '0'),
             array('admin', 'webauthn_passwordless_satisfies_mfa', '1'),
@@ -1600,6 +1609,13 @@ class DatabaseInstaller
     {
         require_once TEAMPASS_ROOT . '/app/sources/secure_send_email.php';
         DB::query(secureSendEmailSchemaSql($this->inputData['tablePrefix'] . 'secure_send_email'));
+    }
+
+    /** Create storage records for transient Secure Send file sets. */
+    private function secure_send_attachments()
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/secure_send_attachments.php';
+        DB::query(secureSendAttachmentSchemaSql($this->inputData['tablePrefix'] . 'secure_send_attachments'));
     }
 
     // Create table suggestion

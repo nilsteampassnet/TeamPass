@@ -199,6 +199,51 @@ function checkSecureSendCRUDRights(array $userData, string $actionToPerform): bo
     return false;
 }
 
+/**
+ * Launch the offline vault action (the extension's local copy policy).
+ *
+ * The feature gate lives in the controller so that the policy can answer allowed:false —
+ * which is what makes the extension erase its copy.
+ *
+ * @param array $actions
+ * @param array $userData
+ * @return void
+ */
+function offlineVaultAction(array $actions, array $userData): void
+{
+    if (checkOfflineVaultRights($userData, (string) ($actions[0] ?? '')) === false) {
+        errorHdl(
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'Access denied: insufficient permissions for this action'])
+        );
+        return;
+    }
+
+    require API_ROOT_PATH . "/Controller/Api/OfflineVaultController.php";
+    $objFeedController = new OfflineVaultController();
+    $strMethodName = $actions[0] . 'Action';
+    $objFeedController->{$strMethodName}($userData);
+}
+
+/**
+ * Map an offline vault action to the API right it needs.
+ *
+ * The copy is read through item/inFolders and item/changes, which need the read right; a
+ * policy for a caller who cannot read anything would describe nothing.
+ *
+ * @param array  $userData
+ * @param string $actionToPerform
+ * @return bool
+ */
+function checkOfflineVaultRights(array $userData, string $actionToPerform): bool
+{
+    if ($actionToPerform === 'policy') {
+        return (int) ($userData['allowed_to_read'] ?? 0) === 1;
+    }
+
+    return false;
+}
+
 function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {

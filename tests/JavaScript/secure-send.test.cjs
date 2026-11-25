@@ -51,7 +51,20 @@ function harness(item = { id: 123 }, emailAvailable = true) {
   const copied = []
   const notices = []
   let listLoads = 0
-  const document = { getElementById(id) { return { reportValidity: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#' + id).val()) } } }
+  const filePicker = {
+    files: [], dataset: { maxSize: '1024' }, opened: false,
+    set value(value) { if (value === '') this.files = [] },
+    click() { this.opened = true }
+  }
+  const selectedFiles = []
+  const document = { getElementById(id) {
+    if (id === 'form-secure-send-file') return filePicker
+    if (id === 'secure-send-item-files') return { dataset: { maxFiles: '10' }, querySelectorAll: () => selectedFiles }
+    return { reportValidity: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#' + id).val()) }
+  } }
+  class FormData extends Map {
+    append(name, value) { this.set(name, value) }
+  }
   const $ = selector => {
     if (selector?.node) return selector
     if (!nodes.has(selector)) nodes.set(selector, {
@@ -66,6 +79,7 @@ function harness(item = { id: 123 }, emailAvailable = true) {
       text(value) { this.content = value; return this }, html(value) { this.content = value; return this },
       addClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.add(name)); return this },
       removeClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.delete(name)); return this },
+      toggleClass(value, show) { return show ? this.addClass(value) : this.removeClass(value) },
       hasClass(value) { return this.classes.has(value) }, modal() { return this }, off() { return this }, trigger() { return this },
       on(events, target, fn) { handlers.set(`${selector === document ? target : selector}|${events}`, fn || target); return this }
     })
@@ -89,7 +103,7 @@ function harness(item = { id: 123 }, emailAvailable = true) {
   }
   $('#form-item-otv-days').attr('max', '7')
   const context = {
-    $, document, TextEncoder, store: { get: () => item },
+    $, document, FormData, TextEncoder, store: { get: () => item },
     htmlEncode: value => String(value)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -106,9 +120,99 @@ function harness(item = { id: 123 }, emailAvailable = true) {
   const edit = () => handlers.get('#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea|input change ifChanged')()
   const generate = () => click('#form-secure-send-generate')
   const email = () => click('#form-secure-send-email')
-  return { $, context, handlers, requests, copied, notices, click, edit, generate, email, loadList,
+  const drag = (type, files = [], types = ['Files']) => {
+    const zone = '#secure-send-note-dropzone'
+    const transfer = { files, types }
+    const event = { type, originalEvent: { dataTransfer: transfer }, preventDefault() { this.prevented = true } }
+    handlers.get(zone + '|dragenter dragover dragleave drop').call($(zone), event)
+    return event
+  }
+  return { $, context, handlers, requests, copied, notices, click, edit, generate, email, loadList, filePicker, selectedFiles, drag,
     get listLoads() { return listLoads } }
 }
+
+test('A note can send a document alone and uses the configured size limit', () => {
+  const h = harness()
+  h.context.openSecureSendModal('note')
+  h.filePicker.files = [{ name: 'too large.txt', size: 1025 }]
+  h.generate()
+  assert.equal(h.requests.length, 0)
+  assert.deepEqual(h.notices, ['secure_send_attachment_too_large'])
+
+  const file = { name: 'R&D — résumé.txt', size: 1024 }
+  h.filePicker.files = [file]
+  h.generate()
+  assert.equal(h.requests.length, 1)
+  assert.equal(h.requests[0].options.contentType, false)
+  assert.equal(h.requests[0].options.processData, false)
+  assert.equal(h.requests[0].options.timeout, 0)
+  assert.equal(h.requests[0].data.get('secure_send_file'), file)
+  assert.equal(JSON.parse(h.requests[0].data.get('data')).payload.note, '')
+})
+
+test('Dropping a document stages it for the existing multipart request and can replace a selection', () => {
+  const h = harness()
+  h.context.openSecureSendModal('note')
+  const $zone = h.$('#secure-send-note-dropzone')
+  const hover = h.drag('dragover')
+  assert.equal(hover.prevented, true)
+  assert.equal(hover.originalEvent.dataTransfer.dropEffect, 'copy')
+  assert.equal($zone.hasClass('is-dragover'), true)
+  h.drag('dragleave')
+  assert.equal($zone.hasClass('is-dragover'), false)
+
+  h.drag('drop', [{ name: 'first.txt', size: 2 }])
+  const file = { name: 'R&D — O’Brien "révision" <2>.txt', size: 1024 }
+  h.$('#form-item-otv-link').val('https://vault.example.test/previous')
+  const drop = h.drag('drop', [file])
+  assert.equal(drop.prevented, true)
+  assert.equal(h.$('#secure-send-note-file-name').content, file.name)
+  assert.equal(h.$('#secure-send-note-file-selection').hasClass('hidden'), false)
+  assert.equal(h.$('#form-item-otv-link').val(), '')
+  h.generate()
+  assert.equal(h.requests[0].data.get('secure_send_file'), file)
+})
+
+test('Invalid drops leave the valid selection in place', () => {
+  const h = harness()
+  h.context.openSecureSendModal('note')
+  const file = { name: 'valid.txt', size: 10 }
+  h.drag('drop', [file])
+  h.drag('drop', [file, file])
+  h.drag('drop', [{ name: 'too large.txt', size: 1025 }])
+  h.drag('drop', [{ name: 'empty.txt', size: 0 }])
+  assert.deepEqual(h.notices, ['secure_send_single_attachment', 'secure_send_attachment_too_large', 'secure_send_invalid_attachment'])
+  assert.equal(h.filePicker.files[0], file)
+  assert.equal(h.$('#secure-send-note-file-name').content, file.name)
+})
+
+test('The file picker stays available and clearing or closing the modal removes the staged file', () => {
+  const h = harness()
+  h.context.openSecureSendModal('note')
+  h.click('#secure-send-note-dropzone')
+  assert.equal(h.filePicker.opened, true)
+  h.filePicker.files = [{ name: 'picked.txt', size: 3 }]
+  h.handlers.get('#form-secure-send-file|change').call(h.filePicker)
+  assert.equal(h.$('#secure-send-note-file-name').content, 'picked.txt')
+  h.click('#secure-send-note-file-remove')
+  assert.deepEqual(h.filePicker.files, [])
+  assert.equal(h.$('#secure-send-note-file-selection').hasClass('hidden'), true)
+
+  h.drag('drop', [{ name: 'new.txt', size: 4 }])
+  h.handlers.get('#modal-item-otv|hidden.bs.modal')()
+  assert.deepEqual(h.filePicker.files, [])
+  assert.equal(h.$('#secure-send-note-file-name').content, '')
+})
+
+test('An item shares only the attachment IDs selected by the sender', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.selectedFiles.push({ value: '101' }, { value: '104' })
+  h.generate()
+  assert.deepEqual(JSON.parse(h.requests[0].data.data).attachment_ids, [101, 104])
+  assert.equal(h.requests[0].options.processData, true)
+  assert.equal(h.requests[0].options.timeout, 0)
+})
 
 test('Each new item or note form starts on the internal address', () => {
   const h = harness()
@@ -127,6 +231,7 @@ test('TOTP sharing is offered only for eligible items and stays opt-in', () => {
   assert.equal(withoutTotp.$('#secure-send-totp-option').hasClass('hidden'), true)
   withoutTotp.generate()
   assert.equal(JSON.parse(withoutTotp.requests[0].data.data).include_totp, 0)
+  assert.equal(withoutTotp.requests[0].options.timeout, 30000)
 
   const withTotp = harness({ id: 123, otp_for_item_enabled: 1 })
   withTotp.context.openSecureSendModal('item')
@@ -143,6 +248,7 @@ test('TOTP sharing is offered only for eligible items and stays opt-in', () => {
   note.generate()
   assert.equal(note.$('#secure-send-totp-option').hasClass('hidden'), true)
   assert.equal(JSON.parse(note.requests[0].data.data).include_totp, 0)
+  assert.equal(note.requests[0].options.timeout, 30000)
 })
 
 test('Rapid generation submits once and restores the button after network failure', () => {

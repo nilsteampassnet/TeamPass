@@ -185,6 +185,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'width': '80px',
                 className: 'details-control',
                 'render': function(data, type, row, meta) {
+                    const fullName = htmlEncode($(data).attr('data-fullname') || '')
                     return '<div class="group-btn btn-user-action">' +
                         '' +
                         '<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><i class="fa-solid fa-cog"></i>&nbsp;' +
@@ -195,20 +196,24 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             ''
                         ) +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fa-solid fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
                         ($(data).data('auth-type') === 'oauth2' ?
                             '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="oauth2-identity-reset"><i class="fa-solid fa-link-slash mr-2"></i><?php echo $lang->get('oauth2_identity_reset'); ?></li>'
                             : '') +
                         ($(data).data('auth-type') !== 'local' ?
-                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="new-enc-code"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('generate_new_keys'); ?></li>'
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '" data-action="new-enc-code"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('generate_new_keys'); ?></li>'
                             : '') +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fa-solid fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') +
+                        '" data-fullname="' + fullName +
+                        '" data-action="logs"><i class="fa-solid fa-newspaper mr-2" aria-hidden="true"></i>' +
+                        htmlEncode(<?php echo json_encode($lang->get('see_logs'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>) +
+                        '</li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
-                        <?php echo (int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + \$(data).data('fullname') + '\" data-action=\"webauthn-login\"><i class=\"fa-solid fa-fingerprint mr-2\"></i>" . $lang->get('webauthn_login_passkeys') . "</li>' +" : ''; ?>
-                        <?php echo (int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + \$(data).data('fullname') + '\" data-action=\"leaver-risk\"><i class=\"fa-solid fa-person-walking-arrow-right text-warning mr-2\"></i>" . $lang->get('leaver_risk') . "</li>' +" : ''; ?>
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
+                        <?php echo (int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + fullName + '\" data-action=\"webauthn-login\"><i class=\"fa-solid fa-fingerprint mr-2\"></i>" . $lang->get('webauthn_login_passkeys') . "</li>' +" : ''; ?>
+                        <?php echo (int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + fullName + '\" data-action=\"leaver-risk\"><i class=\"fa-solid fa-person-walking-arrow-right text-warning mr-2\"></i>" . $lang->get('leaver_risk') . "</li>' +" : ''; ?>
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
                         '</ul>' +
                         '</div>';
                 }
@@ -812,6 +817,131 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 
+    const $userLogsForm = $('#user-logs-filters')
+    const $userLogsTable = $('#table-logs')
+    const $userLogsResults = $('#user-logs-results')
+    const $userLogsError = $('#user-logs-error')
+    const $userLogsPeriod = $('#user-logs-period')
+    const $userLogsFrom = $('#user-logs-from')
+    const $userLogsTo = $('#user-logs-to')
+    let userLogsTable = null
+    let userLogsId = null
+    let userLogsTrigger = null
+    let userLogsSearchTimer = null
+
+    function updateUserLogs() {
+        clearTimeout(userLogsSearchTimer)
+        const custom = $userLogsPeriod.val() === 'custom'
+        const from = $userLogsFrom[0].valueAsNumber
+        const to = $userLogsTo[0].valueAsNumber
+        const valid = !custom || (Number.isFinite(from) && Number.isFinite(to) && from <= to)
+        $('#user-logs-custom-range').prop('hidden', !custom)
+        $('#user-logs-range-hint').prop('hidden', valid)
+        $userLogsResults.prop('hidden', !valid)
+        $userLogsError.prop('hidden', true)
+        if (valid && userLogsId !== null && userLogsTable !== null) {
+            userLogsTable.ajax.reload(null, true)
+        }
+    }
+
+    $userLogsForm.on('submit', function(event) {
+        event.preventDefault()
+        updateUserLogs()
+    }).on('change', 'select, input[type="date"]', updateUserLogs)
+    $('#user-logs-search').on('input', function() {
+        clearTimeout(userLogsSearchTimer)
+        userLogsSearchTimer = setTimeout(updateUserLogs, 350)
+    })
+    $('#user-logs-reset').on('click', function() {
+        $userLogsForm[0].reset()
+        updateUserLogs()
+    })
+
+    $userLogsTable.on('xhr.dt', function(event, settings, json, xhr) {
+        if (json === null && xhr?.statusText !== 'abort' && userLogsId !== null && !$userLogsResults.prop('hidden')) {
+            $userLogsError.prop('hidden', false)
+        }
+        // Use the inline message instead of DataTables' global AJAX error warning.
+        return true
+    })
+
+    function openUserLogs(trigger) {
+        const $trigger = $(trigger)
+        userLogsId = Number($trigger.data('id'))
+        userLogsTrigger = $trigger.closest('.group-btn').find('.dropdown-toggle')
+        const name = decodeStorageEntities($trigger.attr('data-fullname') || '').trim()
+        const login = $('#user-login-' + userLogsId).text().trim()
+        $('#user-logs-account').text(name && login ? name + ' (' + login + ')' : name || login)
+        $('#user-logs-heading').trigger('focus')
+        $userLogsForm[0].reset()
+
+        if (userLogsTable !== null) {
+            userLogsTable.order([[0, 'desc']]).page.len(25)
+            updateUserLogs()
+            return
+        }
+
+        const webLabel = htmlEncode($('#user-logs-channel option[value="web"]').text())
+        const userLogChannelBadge = channel => channel === 'api'
+            ? '<span class="badge badge-info">API</span>'
+            : '<span class="badge badge-secondary">' + webLabel + '</span>'
+        userLogsTable = $userLogsTable.DataTable({
+            dom: '<"d-flex justify-content-end mb-2"l>rt<"d-flex flex-wrap justify-content-between align-items-center"ip>',
+            searching: false,
+            order: [[0, 'desc']],
+            lengthMenu: [10, 25, 50, 100],
+            pageLength: 25,
+            processing: true,
+            serverSide: true,
+            autoWidth: false,
+            ajax: {
+                url: <?php echo json_encode($SETTINGS['cpassman_url'] . '/sources/users.logs.datatable.php', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                data: function(request) {
+                    request.userId = userLogsId
+                    request.period = $userLogsPeriod.val()
+                    request.activity = $('#user-logs-activity').val()
+                    request.channel = $('#user-logs-channel').val()
+                    request.search = {value: $('#user-logs-search').val()}
+                    if (request.period === 'custom') {
+                        request.date_from = $userLogsFrom.val()
+                        request.date_to = $userLogsTo.val()
+                    }
+                }
+            },
+            language: {
+                url: <?php echo json_encode($SETTINGS['cpassman_url'] . '/includes/language/datatables.' . ($session->get('user-language') ?? 'english') . '.txt', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            },
+            columns: [
+                {className: 'user-logs-date'},
+                {
+                    className: 'user-logs-activity',
+                    orderable: false,
+                    render: function(activity, type, row) {
+                        return type === 'display'
+                            ? activity + '<div class="d-sm-none mt-1">' + userLogChannelBadge(row[3]) + '</div>'
+                            : activity
+                    }
+                },
+                {
+                    orderable: false,
+                    render: function(label, type, row) {
+                        if (type !== 'display') return label
+                        if (row[4] === null) return '—'
+                        const itemId = '<small class="text-muted text-nowrap">#' + Number(row[4]) + '</small>'
+                        return label ? label + ' ' + itemId : itemId
+                    }
+                },
+                {
+                    className: 'user-logs-channel',
+                    orderable: false,
+                    render: function(channel, type) {
+                        return type === 'display' ? userLogChannelBadge(channel) : channel
+                    }
+                }
+            ]
+        })
+    }
+
     /**
      * TOP MENU BUTTONS ACTIONS
      */
@@ -1285,6 +1415,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Hide and show relevant divs
             $('.user-content').addClass('hidden');
             $('#users-list, #header-menu').removeClass('hidden');
+            if (userLogsId !== null) {
+                userLogsId = null
+                clearTimeout(userLogsSearchTimer)
+                userLogsTable.settings()[0].jqXHR?.abort()
+                userLogsTable.clear()
+                $userLogsTable.find('tbody').empty()
+                userLogsTrigger.trigger('focus')
+            }
             
             // Prepare checks
             $('.form-check-input').iCheck('uncheck');
@@ -1503,68 +1641,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // ---
 
         } else if ($(this).data('action') === 'logs') {
-            //$('#header-menu, #row-folders').addClass('hidden');
-           // $('#row-logs').removeClass('hidden');
+            openUserLogs(this)
 
-            $('#row-logs-title').text(
-                $(this).data('fullname')
-            )
-            var userID = $(this).data('id');
-
-            //Launch the datatables pluggin
-            $('#table-logs').DataTable({
-                'destroy': true,
-                'paging': true,
-                'searching': true,
-                'order': [
-                    [0, 'desc']
-                ],
-                'info': true,
-                'processing': false,
-                'serverSide': true,
-                'responsive': false,
-                'select': true,
-                'stateSave': false,
-                'retrieve': false,
-                'autoWidth': false,
-                'ajax': {
-                    url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.logs.datatable.php',
-                    data: function(d) {
-                        d.userId = userID;
-                    }
-                },
-                'language': {
-                    'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
-                },
-                'columns': [{
-                        className: 'dt-body-left'
-                    },
-                    {
-                        className: 'dt-body-left'
-                    },
-                    {
-                        className: 'dt-body-left'
-                    }
-                ],
-                'preDrawCallback': function() {
-                    toastr.remove();
-                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-                },
-                'drawCallback': function() {
-                    // Tooltips
-                    $('.infotip').tooltip();
-
-                    // Inform user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-                },
-            });
-            
         } else if ($(this).data('action') === 'visible-folders') {
             $('#row-folders-title').text($(this).data('fullname'))
             var userID = $(this).data('id')

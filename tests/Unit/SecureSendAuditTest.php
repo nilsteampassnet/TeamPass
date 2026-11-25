@@ -117,6 +117,12 @@ class SecureSendAuditTest extends TestCase
         self::assertSame(array_keys(secureSendAuditRecord($link, 'created', '', 42)), array_keys($record));
         $snapshot = array_replace($link, ['send_type' => 'item_v2', 'item_id' => 123]);
         self::assertSame('item', secureSendAuditRecord($snapshot, 'revealed')['send_type']);
+        $download = secureSendAuditRecord($snapshot + [
+            'name' => 'sensitive-filename', 'key' => 'sensitive-filekey', 'attachment_ids' => 'sensitive-input',
+        ], 'download_authorized', attachmentCount: 1, attachmentIds: [643]);
+        self::assertSame(1, $download['attachment_count']);
+        self::assertSame('[643]', $download['attachment_ids']);
+        self::assertStringNotContainsString('sensitive-', (string) json_encode($download));
     }
 
     public function testUnknownEventsReasonsAndForgedActorsAreRejected(): void

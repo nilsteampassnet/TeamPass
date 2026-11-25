@@ -60,6 +60,9 @@ The append-only lifecycle rows (until administrator-configured retention) contai
 - `created_at`: original link timestamp, not proof of an audited creation;
 - `has_passphrase`, `is_public`, `max_views`, `expires_at`: policy metadata;
 - `views`, `failed_attempts`: counters after the observed operation.
+- `attachment_count`, `attachment_ids`: count and original vault file IDs on
+  creation or download authorization. Historical events have no attachment
+  metadata, and standalone notes have no vault file IDs.
 
 No payload, item label, note title, login, email, key, lookup code, URL, passphrase,
 IP address, request body or free-text error is accepted into the journal.
@@ -80,6 +83,7 @@ longer exists (for example, LEFT JOIN and an identifier fallback).
 | --- | --- | --- |
 | `created` | empty | Authorized encrypted link insertion |
 | `revealed` | empty | Successful server-side reveal/view reservation |
+| `download_authorized` | empty | First authorized request for a file on the link while its audit entry is retained |
 | `reveal_failed` | `wrong_credentials` | Incorrect URL key or passphrase on a confirmed attempt |
 | `revoked` | `sender_revoked` | Owner-authorized removal |
 | `invalidated` | `sender_unavailable` | Note sender no longer eligible |
@@ -123,6 +127,12 @@ unavailable links do not create events. This avoids a public, unbounded audit
 amplification path. Missing required passphrases consume neither an attempt nor
 an event. Storage/crypto runtime errors retain the existing generic error log,
 without treating broken storage as a bad recipient credential.
+
+Download authorization uses the same link lock as reveal and revocation. It
+checks the session grant and current file access before recording the event.
+An audit failure prevents streaming. The event does not establish completion
+of a transfer. The 3.2.4 upgrade adds the attachment audit columns without
+rewriting historical rows.
 
 ## Email delivery association
 

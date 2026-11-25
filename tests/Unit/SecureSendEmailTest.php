@@ -396,6 +396,7 @@ final class SecureSendEmailTest extends TestCase
             public function get(string $name): string|int { return $name === 'key' ? 'session-key' : 42; }
         };
         $SETTINGS = $this->settings;
+        $request = new \Symfony\Component\HttpFoundation\Request();
         $inputData = ['key' => $key, 'data' => json_encode($payload)];
         ob_start();
         try {

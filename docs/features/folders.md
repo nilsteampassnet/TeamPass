@@ -78,7 +78,10 @@ existing folder preserves its options. This behavior is independent of the
 The parent picker searches names and paths on demand, 30 results at a time. It only
 offers authorized shared folders that are writable. Root is offered when the account
 has the corresponding management privilege. During a move, the folder itself and
-its descendants are excluded. The server rechecks permissions when saving.
+its descendants are excluded. The server rechecks permissions when saving: moving or
+copying a folder to the root requires an administrator, a manager or the *Can create
+a folder at root level* right, and a folder can never be moved under one of its own
+subfolders.
 
 ### Password complexity levels
 
@@ -139,6 +142,22 @@ recycle bin.
 Deleting a folder moves the complete subtree and its items to **Utilities → Recycled
 bin**. It can be restored from there until it is permanently removed from the recycle
 bin. Restoring a protected folder also restores its deletion-protection flag.
+
+Administrators see the whole recycle bin. Managers and HR managers only see, restore and
+permanently delete what they could see in the vault:
+
+- the deleted folders they had access to, and the deleted folders of their own personal tree;
+- the deleted items of folders they can access, unless the item is restricted to other
+  users or roles.
+
+Restoring a folder also restores its items, restricted ones included: they keep their
+restrictions. A deleted subfolder they cannot access stays in the recycle bin. When a folder is
+restored under deleted parents they cannot access, those parents come back empty, so the
+folder keeps its place in the tree.
+
+A deleted folder can only be permanently deleted by a manager who sees every subfolder and
+every item it contains. Otherwise it stays in the recycle bin for an administrator. Only items
+already in the recycle bin can be permanently deleted from it.
 
 TeamPass checks the complete selection before changing anything. The operation is
 blocked when:

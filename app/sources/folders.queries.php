@@ -266,9 +266,11 @@ if (null !== $post_type) {
                     'matrix' => $arrData,
                     'userIsAdmin' => $session->get('user-admin'),
                     'userCanCreateRootFolder' => (int) $session->get('user-can_create_root_folder'),
-                    'userCanUseRoot' => (int) $session->get('user-admin') === 1
-                        || (int) $session->get('user-manager') === 1
-                        || (int) $session->get('user-can_create_root_folder') === 1,
+                    'userCanUseRoot' => folderListUserCanUseRoot(
+                        (int) $session->get('user-admin'),
+                        (int) $session->get('user-manager'),
+                        (int) $session->get('user-can_create_root_folder')
+                    ),
                     'fullComplexity' => $complexity,
                 ),
                 'encode'
@@ -551,6 +553,49 @@ if (null !== $post_type) {
                 && in_array(
                     (int) $inputData['parentId'],
                     array_map('intval', (array) $session->get('user-read_only_folders')),
+                    true
+                )
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            // The root is skipped by both parent checks above: moving a folder there needs
+            // the root privilege itself, not the generic folder gate (GHSA-c2rh-qwj7-9m7j).
+            if (
+                $parentChanged === true
+                && (int) $inputData['parentId'] === 0
+                && folderListUserCanUseRoot(
+                    (int) $session->get('user-admin'),
+                    (int) $session->get('user-manager'),
+                    (int) $session->get('user-can_create_root_folder')
+                ) === false
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            // A folder cannot be moved under one of its own descendants, admins included:
+            // NestedTree::rebuild() never reaches a parent_id cycle and leaves its stale
+            // nleft/nright ranges overlapping other folders.
+            if (
+                $parentChanged === true
+                && (int) $inputData['parentId'] !== 0
+                && in_array(
+                    (int) $inputData['parentId'],
+                    array_map('intval', $tree->getDescendants((int) $dataFolder['id'], false, false, true)),
                     true
                 )
             ) {
@@ -1312,6 +1357,26 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Copying to the root creates root folders: it needs the root privilege itself,
+            // not the generic folder gate below (GHSA-c2rh-qwj7-9m7j).
+            if (
+                (int) $post_target_folder_id === 0
+                && folderListUserCanUseRoot(
+                    (int) $session->get('user-admin'),
+                    (int) $session->get('user-manager'),
+                    (int) $session->get('user-can_create_root_folder')
+                ) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Check if target parent folder is personal
             $dataParent = DB::queryFirstRow(
                 'SELECT personal_folder
@@ -1712,8 +1777,11 @@ if (null !== $post_type) {
                 $folders,
                 $accessibleIds,
                 $excludedIds,
-                (int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1
-                    || (int) $session->get('user-can_create_root_folder') === 1,
+                folderListUserCanUseRoot(
+                    (int) $session->get('user-admin'),
+                    (int) $session->get('user-manager'),
+                    (int) $session->get('user-can_create_root_folder')
+                ),
                 (string) $lang->get('root'),
                 (string) $request->request->get('term', ''),
                 (int) $request->request->get('page', 1),

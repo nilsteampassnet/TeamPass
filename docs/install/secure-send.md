@@ -1352,6 +1352,36 @@ once the link is gone and its task has ended or been purged. The separate lifecy
 audit journal keeps its configured retention. Downgrading requires compatible
 code/database backups and draining or cancelling pending email tasks first.
 
+## Attachments
+
+Enable **Allow Secure Send attachments** in the Secure sharing options. A note can contain a single
+local file and optional text. The upload uses **Maximum attachment size** from the upload options.
+For multipart uploads, PHP and the web server must allow the file plus the request overhead.
+When sharing an item, the sender can select up to ten of its existing attachments. The selection
+starts empty. The sender must retain access to the item and each selected file must remain
+attached to it. A reveal that triggers the item's automatic deletion still authorizes its files
+for the same short download window.
+
+TeamPass stores the encrypted copy in a private subdirectory of the configured upload directory.
+The directory must be writable by PHP and outside the public document root. On deployments with
+several PHP workers on separate hosts, make that encrypted storage available to all workers.
+
+The recipient confirms the link once and can download or retry the attachment in the same browser
+session for up to five minutes, bounded by the link's expiry. Downloads during that window do not
+consume additional views. The sender can revoke the link from **My secure sends** while a download
+is still authorized. Revocation and expiry remove the encrypted copy. Expiry cleanup also removes
+copies from exhausted links once the last download window closes. Scheduled maintenance retries
+file removal when storage is temporarily unavailable. Disabling attachment sharing suspends
+access to links that contain files and their authorized downloads.
+
+The administrator's **Secure Send** log records the number of files at creation, plus the
+original vault file IDs for item shares. It records the first authorized request for each
+file on the link. Later requests recheck access without spending another view or duplicating
+the retained audit entry. Authorization records server-side permission to begin the
+download. It does not establish that the transfer finished or identify the recipient.
+The audit contains no file names, contents, keys, or download tokens. Older creation
+events have no attachment metadata.
+
 ## API clients
 
 The browser extension, paired mobile devices and API scripts can create item and note

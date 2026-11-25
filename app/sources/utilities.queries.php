@@ -44,6 +44,7 @@ require_once 'main.functions.php';
 require_once __DIR__ . '/backup.functions.php';
 require_once __DIR__ . '/health.logs.functions.php';
 require_once __DIR__ . '/logs_filter_logic.php';
+require_once __DIR__ . '/recycle_bin_logic.php';
 
 // init
 loadClasses('DB');
@@ -129,8 +130,9 @@ if (null !== $post_type) {
         break;
     }
 
-    // Deleted folders (recycled bin) - stored in misc (type folder_deleted)
-    $deletedFolders = tpGetDeletedFoldersFromMisc();
+    // Deleted folders (recycled bin) - stored in misc (type folder_deleted).
+    // Only the ones the caller may see (GHSA-4jq3-w38q-6wrq).
+    $deletedFolders = tpRecycleBinVisibleDeletedFolders(tpGetDeletedFoldersFromMisc());
     $deletedFolderIds = array_keys($deletedFolders);
 
     // Build full paths for deleted folders (mix of deleted ancestors + existing parents)
@@ -253,6 +255,7 @@ if (null !== $post_type) {
         LEFT JOIN ' . prefixTable('automatic_del') . ' as a ON (l.id_item = a.item_id)
         WHERE l.action = %s
         AND TRIM(COALESCE(i.deleted_at, "")) <> ""
+        AND ' . tpRecycleBinItemScopeSql('i') . '
         ORDER BY l.id_item ASC, CAST(l.date AS UNSIGNED) DESC',
         'at_delete'
     );
@@ -340,15 +343,18 @@ if (null !== $post_type) {
     $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-    // Deleted folders index (from misc)
+    // Deleted folders index (from misc). The caller selects among the folders they may see,
+    // and their visible subfolders follow (GHSA-4jq3-w38q-6wrq). The full index still drives
+    // the restoration of missing ancestors below: they come back as empty containers.
     $deletedFolders = tpGetDeletedFoldersFromMisc();
-    $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
+    $visibleDeletedFolders = tpRecycleBinVisibleDeletedFolders($deletedFolders);
+    $deletedChildren = tpBuildDeletedFoldersChildrenMap($visibleDeletedFolders);
 
     // Restore folders
     $foldersSelectedSubtree = array();
     foreach ($post_folders as $folderIdRaw) {
         $folderId = (int) $folderIdRaw;
-        if ($folderId <= 0 || isset($deletedFolders[$folderId]) === false) {
+        if ($folderId <= 0 || isset($visibleDeletedFolders[$folderId]) === false) {
             continue;
         }
 
@@ -506,13 +512,8 @@ foreach ($items as $item) {
 }
 }
 
-    // Restore selected items
-    foreach ($post_items as $itemIdRaw) {
-        $itemId = (int) $itemIdRaw;
-        if ($itemId <= 0) {
-            continue;
-        }
-
+    // Restore selected items: only the ones still in the recycle bin (GHSA-4jq3-w38q-6wrq)
+    foreach (tpRecycledItemIds($post_items) as $itemId) {
         DB::update(
             prefixTable('items'),
             array(
@@ -583,19 +584,26 @@ logItems(
     $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-    // Deleted folders index (from misc) - used to delete a full subtree from the recycled bin
+    // Deleted folders index (from misc) - used to delete a full subtree from the recycled bin.
+    // The caller selects among the folders they may see (GHSA-4jq3-w38q-6wrq).
     $deletedFolders = tpGetDeletedFoldersFromMisc();
+    $visibleDeletedFolders = tpRecycleBinVisibleDeletedFolders($deletedFolders);
     $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
 
     // Permanently delete FOLDERS (and all deleted subfolders + items they contain)
     $folderIdsToDelete = array();
     foreach ($post_folders as $folderIdRaw) {
         $folderId = (int) $folderIdRaw;
-        if ($folderId <= 0 || isset($deletedFolders[$folderId]) === false) {
+        if ($folderId <= 0 || isset($visibleDeletedFolders[$folderId]) === false) {
             continue;
         }
 
+        // A subtree is purged whole or not at all: never a hidden subfolder or item, and never
+        // a hidden subfolder left behind without its parent.
         $subtree = tpCollectDeletedFolderSubtree($folderId, $deletedChildren);
+        if (tpRecycleBinCanPurgeSubtree($subtree, $visibleDeletedFolders) === false) {
+            continue;
+        }
         foreach ($subtree as $fid) {
             $folderIdsToDelete[(int) $fid] = true;
         }
@@ -624,9 +632,10 @@ logItems(
         );
     }
 
-    // Permanently delete ITEMS
-    foreach ($post_items as $itemIdRaw) {
-        tpHardDeleteItem((int) $itemIdRaw);
+    // Permanently delete ITEMS: only the ones in the recycle bin. A live item id must never reach
+    // the hard delete, whatever folder it belongs to (GHSA-4jq3-w38q-6wrq).
+    foreach (tpRecycledItemIds($post_items) as $itemId) {
+        tpHardDeleteItem($itemId);
     }
 
     // Rebuild tree indexes and update cache
@@ -2294,6 +2303,118 @@ function tpEnsureFolderComplexity(int $folderId, int $defaultComplexity): void
             $folderId
         );
     }
+}
+
+/**
+ * Keep the recycled folders the session user may see (see recycle_bin_logic.php).
+ *
+ * @param array<int, array<string, mixed>> $deletedFolders Output of tpGetDeletedFoldersFromMisc()
+ * @return array<int, array<string, mixed>>
+ */
+function tpRecycleBinVisibleDeletedFolders(array $deletedFolders): array
+{
+    $session = SessionManager::getSession();
+
+    return recycleBinVisibleDeletedFolders(
+        $deletedFolders,
+        (int) $session->get('user-admin') === 1,
+        (array) ($session->get('user-accessible_folders') ?? array()),
+        (array) ($session->get('user-personal_folders') ?? array())
+    );
+}
+
+/**
+ * Build the SQL predicate limiting recycled items to the ones the session user may see
+ * (see recycle_bin_logic.php).
+ *
+ * @param string $itemAlias SQL alias of the items table
+ */
+function tpRecycleBinItemScopeSql(string $itemAlias): string
+{
+    $session = SessionManager::getSession();
+    $userId = (int) $session->get('user-id');
+    $isAdmin = (int) $session->get('user-admin') === 1;
+
+    return recycleBinItemScopeSql(
+        $itemAlias,
+        $isAdmin,
+        (array) ($session->get('user-accessible_folders') ?? array()),
+        $userId,
+        $isAdmin === true ? array() : securityPostureUserRoleIds($userId),
+        prefixTable('restriction_to_roles')
+    );
+}
+
+/**
+ * Tell whether the session user may permanently delete a recycled folder subtree: they must see
+ * every folder of it and every soft-deleted item it holds (see recycle_bin_logic.php).
+ *
+ * @param array<int> $subtree Output of tpCollectDeletedFolderSubtree() on the full index
+ * @param array<int, array<string, mixed>> $visibleDeletedFolders Output of tpRecycleBinVisibleDeletedFolders()
+ */
+function tpRecycleBinCanPurgeSubtree(array $subtree, array $visibleDeletedFolders): bool
+{
+    if (recycleBinSubtreeIsVisible($subtree, $visibleDeletedFolders) === false) {
+        return false;
+    }
+
+    $session = SessionManager::getSession();
+    if ((int) $session->get('user-admin') === 1) {
+        return true;
+    }
+    $userId = (int) $session->get('user-id');
+
+    $hiddenItems = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('items') . ' AS i
+        WHERE i.id_tree IN %li AND i.inactif = %i
+        AND NOT ' . itemRestrictionSqlPredicate(
+            $userId,
+            securityPostureUserRoleIds($userId),
+            'i',
+            prefixTable('restriction_to_roles')
+        ),
+        array_map('intval', $subtree),
+        1
+    );
+
+    return (int) $hiddenItems === 0;
+}
+
+/**
+ * Keep only the posted item ids that the recycle bin lists to the caller: soft-deleted items
+ * of an existing folder, within the caller's scope. Purging or restoring any other id is
+ * refused silently (GHSA-4jq3-w38q-6wrq).
+ *
+ * @param array<int|string, mixed> $rawIds Item ids posted by the client
+ * @return list<int>
+ */
+function tpRecycledItemIds(array $rawIds): array
+{
+    $ids = array();
+    foreach ($rawIds as $rawId) {
+        $itemId = is_scalar($rawId) === true ? (int) $rawId : 0;
+        if ($itemId > 0) {
+            $ids[$itemId] = true;
+        }
+    }
+    if (count($ids) === 0) {
+        return array();
+    }
+
+    $recycled = DB::queryFirstColumn(
+        'SELECT i.id
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        WHERE i.id IN %li AND i.inactif = %i AND TRIM(COALESCE(i.deleted_at, %s)) <> %s
+        AND ' . tpRecycleBinItemScopeSql('i'),
+        array_keys($ids),
+        1,
+        '',
+        ''
+    );
+
+    return array_values(array_map('intval', $recycled));
 }
 
 /**

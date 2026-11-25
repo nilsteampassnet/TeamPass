@@ -64,6 +64,9 @@ if (($argv[1] ?? '') === 'worker') {
     $result = match ($input['operation'] ?? 'reveal') {
         'revoke' => ['revoked' => secureSendRevokeLink((int) $input['parameters']['id'], 42, $input['settings'])],
         'purge' => ['purged' => secureSendPurgeExpiredLinks($input['settings'])],
+        'download' => ['authorized' => secureSendAuthorizeDownload(
+            $input['parameters']['request'], $input['parameters']['grants'], $input['settings'], '', time()
+        ) !== null],
         'retention' => ['pruned' => secureSendPruneAuditHistory($input['settings'], (int) $input['parameters']['now'])],
         default => secureSendRedeem($input['parameters'], $input['passphrase'], $input['settings']),
     };
@@ -111,12 +114,30 @@ function concurrentRedemptions(array $parameters, array $settings, int $count, s
 
 $settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_max_views' => 5,
     'otv_expiration_period' => 7, 'cpassman_url' => 'https://vault.example.com', 'otv_subdomain' => 'https://share.example.com'];
-$tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree',
-    'secure_send_audit', 'secure_send_audit_unavailable', 'log_system', 'log_system_unavailable', 'misc'];
+$tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree', 'secure_send_attachments',
+    'files', 'sharekeys_files', 'sharekeys_items',
+    'secure_send_audit', 'secure_send_audit_unavailable', 'secure_send_audit_legacy', 'log_system', 'log_system_unavailable', 'misc'];
 try {
     // Execute the exact DDL shared by fresh installation and the 3.2.3 migration twice.
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
+    $legacyAudit = prefixTable('secure_send_audit_legacy');
+    DB::query('CREATE TABLE %b LIKE %b', $legacyAudit, prefixTable('secure_send_audit'));
+    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids', $legacyAudit);
+    $historical = secureSendAuditRecord(['id' => 29, 'originator' => 42, 'item_id' => 123], 'revealed');
+    DB::insert($legacyAudit, $historical);
+    secureSendUpgradeAuditAttachmentColumns(DB::getMDB()->get(), $legacyAudit);
+    $metadata = secureSendAuditRecord(
+        ['id' => 30, 'originator' => 42, 'item_id' => 123], 'created',
+        actorId: 42, attachmentCount: 1, attachmentIds: [9010]
+    );
+    DB::insert($legacyAudit, $metadata);
+    $beforeReplay = DB::query('SELECT * FROM %b ORDER BY id', $legacyAudit);
+    secureSendUpgradeAuditAttachmentColumns(DB::getMDB()->get(), $legacyAudit);
+    check($beforeReplay[0]['attachment_count'] === null && $beforeReplay[0]['attachment_ids'] === null
+        && $beforeReplay[1]['attachment_ids'] === '[9010]'
+        && DB::query('SELECT * FROM %b ORDER BY id', $legacyAudit) === $beforeReplay,
+        'Replay of the audit upgrade changed historical evidence or new attachment metadata');
     $auditIndexes = DB::query('SHOW INDEX FROM ' . prefixTable('secure_send_audit'));
     check(count(array_unique(array_column($auditIndexes, 'Key_name'))) === 5, 'Audit schema indexes differ from the reporting/history/retention contract');
     // Same relevant types/defaults as the installer, including the historical string timestamps.
@@ -131,7 +152,7 @@ try {
         admin INT DEFAULT 0, disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('send_audit') . ' (item_id INT, action VARCHAR(30)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('items') . ' (
-        id INT PRIMARY KEY, id_tree INT, label TEXT, login TEXT, url TEXT, description TEXT,
+        id INT PRIMARY KEY, id_tree INT, label TEXT, login TEXT, url TEXT, description TEXT, pw TEXT NULL,
         inactif INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('automatic_del') . ' (
         item_id INT PRIMARY KEY, del_enabled INT, del_type INT, del_value BIGINT) ENGINE=InnoDB');
@@ -287,6 +308,8 @@ try {
     secureSendStatisticsDatabaseChecks($settings);
     require_once __DIR__ . '/secure_send_retention_database.php';
     secureSendRetentionDatabaseChecks();
+    require_once __DIR__ . '/secure_send_attachments_database.php';
+    secureSendAttachmentDatabaseChecks($settings);
 } finally {
     foreach ($tables as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));

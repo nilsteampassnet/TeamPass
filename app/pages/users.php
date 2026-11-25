@@ -317,7 +317,7 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?php echo $lang->get('ldap_synchronization'); ?> <span id="row-logs-title"></span></h3>
+                    <h3 class="card-title"><?php echo $lang->get('ldap_synchronization'); ?></h3>
                 </div>
 
                 <!-- /.card-header -->
@@ -410,7 +410,7 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?php echo $lang->get('oauth2_synchronization'); ?> <span id="row-logs-title"></span></h3>
+                    <h3 class="card-title"><?php echo $lang->get('oauth2_synchronization'); ?></h3>
                 </div>
 
                 <!-- /.card-header -->
@@ -592,32 +592,130 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
     </div>
 
     <!-- USER LOGS -->
+    <style>
+        #user-logs-heading, #table-logs td {
+            overflow-wrap: anywhere;
+        }
+        #user-logs-header::after {
+            display: none;
+        }
+        #table-logs {
+            table-layout: fixed;
+        }
+        #table-logs .user-logs-date {
+            width: 10.5rem;
+        }
+        #table-logs .user-logs-activity {
+            width: 24%;
+        }
+        #table-logs .user-logs-channel {
+            width: 7rem;
+        }
+        #user-logs-results .pagination {
+            flex-wrap: wrap;
+        }
+        #table-logs_length select {
+            display: inline-block;
+            width: auto;
+        }
+        @media (max-width: 575.98px) {
+            #table-logs .user-logs-date {
+                width: 26%;
+            }
+            #table-logs .user-logs-activity {
+                width: 32%;
+            }
+            #table-logs .user-logs-channel {
+                display: none;
+            }
+            #table-logs th, #table-logs td {
+                padding: .45rem .3rem;
+            }
+        }
+    </style>
     <div class="row hidden extra-form user-content" id="row-logs" data-content="logs">
         <div class="col-12">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title"><?php echo $lang->get('logs_for_user'); ?> <span id="row-logs-title"></span></h3>
+            <div class="card card-outline card-primary">
+                <div class="card-header d-flex flex-wrap align-items-center justify-content-between py-2" id="user-logs-header">
+                    <h3 class="card-title mr-3 my-2" id="user-logs-heading" tabindex="-1">
+                        <?php echo $lang->get('logs_for_user'); ?>
+                        <strong id="user-logs-account" class="font-weight-bold"></strong>
+                    </h3>
+                    <button type="button" class="btn btn-default btn-sm tp-action my-1" data-action="cancel">
+                        <i class="fas fa-arrow-left mr-1" aria-hidden="true"></i><?php echo $lang->get('user_logs_back'); ?>
+                    </button>
                 </div>
 
-                <!-- /.card-header -->
-                <!-- table start -->
-                <div class="card-body form" id="user-logs">
-                    <table id="table-logs" class="table table-striped nowrap table-responsive p-0" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th scope="col"><?php echo $lang->get('date'); ?></th>
-                                <th scope="col"><?php echo $lang->get('activity'); ?></th>
-                                <th scope="col"><?php echo $lang->get('label'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="card-footer">
-                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>
+                <div class="card-body" id="user-logs">
+                    <form id="user-logs-filters" role="search" aria-labelledby="user-logs-heading">
+                        <div class="form-row align-items-end">
+                            <div class="form-group col-12 col-lg">
+                                <label for="user-logs-search"><?php echo $lang->get('find'); ?></label>
+                                <input type="search" id="user-logs-search" class="form-control form-control-sm" maxlength="100"
+                                    placeholder="<?php echo htmlspecialchars($lang->get('user_logs_search_hint'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>">
+                            </div>
+                            <div class="form-group col-6 col-lg">
+                                <label for="user-logs-period"><?php echo $lang->get('ops_period'); ?></label>
+                                <select id="user-logs-period" class="form-control form-control-sm" aria-controls="user-logs-custom-range">
+                                    <option value="30" selected><?php echo $lang->get('user_logs_last_30_days'); ?></option>
+                                    <option value="7"><?php echo $lang->get('user_logs_last_7_days'); ?></option>
+                                    <option value="custom"><?php echo $lang->get('user_logs_custom_period'); ?></option>
+                                    <option value="all"><?php echo $lang->get('user_logs_all_history'); ?></option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6 col-lg">
+                                <label for="user-logs-activity"><?php echo $lang->get('activity'); ?></label>
+                                <select id="user-logs-activity" class="form-control form-control-sm">
+                                    <option value=""><?php echo $lang->get('user_logs_all_activities'); ?></option>
+                                    <option value="connections"><?php echo $lang->get('user_logs_connections'); ?></option>
+                                    <option value="views"><?php echo $lang->get('user_logs_views'); ?></option>
+                                    <option value="changes"><?php echo $lang->get('user_logs_changes'); ?></option>
+                                    <option value="passwords"><?php echo $lang->get('user_logs_passwords'); ?></option>
+                                    <option value="admin"><?php echo $lang->get('logs_type_admin'); ?></option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6 col-lg-auto">
+                                <label for="user-logs-channel"><?php echo $lang->get('logs_facet_channel'); ?></label>
+                                <select id="user-logs-channel" class="form-control form-control-sm">
+                                    <option value=""><?php echo $lang->get('user_logs_all_channels'); ?></option>
+                                    <option value="web"><?php echo $lang->get('logs_channel_web'); ?></option>
+                                    <option value="api">API</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6 col-lg-auto">
+                                <button type="button" id="user-logs-reset" class="btn btn-default btn-sm">
+                                    <i class="fas fa-undo-alt mr-1" aria-hidden="true"></i><?php echo $lang->get('reset'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-row align-items-end" id="user-logs-custom-range" hidden>
+                            <div class="form-group col-6 col-sm-auto">
+                                <label for="user-logs-from"><?php echo $lang->get('from'); ?></label>
+                                <input type="date" id="user-logs-from" class="form-control form-control-sm">
+                            </div>
+                            <div class="form-group col-6 col-sm-auto">
+                                <label for="user-logs-to"><?php echo $lang->get('user_logs_to'); ?></label>
+                                <input type="date" id="user-logs-to" class="form-control form-control-sm">
+                            </div>
+                            <p id="user-logs-range-hint" class="col-12 col-sm-auto small text-muted mb-3" role="status" hidden>
+                                <?php echo $lang->get('user_logs_range_hint'); ?>
+                            </p>
+                        </div>
+                    </form>
+                    <p id="user-logs-error" class="alert alert-warning" role="alert" hidden><?php echo $lang->get('user_logs_load_error'); ?></p>
+                    <div id="user-logs-results">
+                        <table id="table-logs" class="table table-striped w-100" aria-labelledby="user-logs-heading">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="user-logs-date"><?php echo $lang->get('date'); ?></th>
+                                    <th scope="col" class="user-logs-activity"><?php echo $lang->get('activity'); ?></th>
+                                    <th scope="col"><?php echo $lang->get('logs_col_target'); ?></th>
+                                    <th scope="col" class="user-logs-channel"><?php echo $lang->get('logs_facet_channel'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

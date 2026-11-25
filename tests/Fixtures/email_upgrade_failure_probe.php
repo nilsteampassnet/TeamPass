@@ -24,12 +24,12 @@ if ($recovery) {
     define('TEAMPASS_RECOVERY_MIGRATION', true);
 }
 $statePath = $argv[2];
-$state = ['timestamp_written' => false, 'queries_after_failure' => 0, 'failed' => false];
+$state = ['timestamp_written' => false, 'queries_after_failure' => 0, 'failed' => false, 'attachment_audit_called' => false];
 register_shutdown_function(static function () use ($statePath, &$state): void {
     file_put_contents($statePath, json_encode($state, JSON_THROW_ON_ERROR));
 });
 
-/** Exercise all six query failure branches, without connecting to an installation. */
+/** Exercise query failure branches without connecting to an installation. */
 function mysqli_query(object $connection, string $sql): mixed
 {
     global $mode, $state;
@@ -62,6 +62,17 @@ function mysqli_num_rows(object $result): int { return 0; }
 function mysqli_free_result(object $result): void {}
 /** No real connection is opened. */
 function mysqli_close(object $connection): void {}
+
+/** Stub the native mysqli helper. Its SQL runs in the MariaDB integration suite. */
+function secureSendUpgradeAuditAttachmentColumns(object $connection, string $tableName): void
+{
+    global $mode, $state;
+    $state['attachment_audit_called'] = true;
+    if ($mode === 'attachment_audit') {
+        $state['failed'] = true;
+        throw new \RuntimeException('private-attachment-audit-detail');
+    }
+}
 
 final class ConfigManager
 {

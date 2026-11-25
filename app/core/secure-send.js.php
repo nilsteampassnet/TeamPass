@@ -67,6 +67,7 @@ $(function () {
         empty: <?php echo json_encode($lang->get('secure_send_no_active'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         expires: <?php echo json_encode($lang->get('secure_send_expires_on'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         remaining: <?php echo json_encode($lang->get('secure_send_remaining_views_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        downloadPending: <?php echo json_encode($lang->get('secure_send_download_pending'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         protected: <?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         suspended: <?php echo json_encode($lang->get('secure_send_suspended'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         revoke: <?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -196,7 +197,8 @@ $(function () {
         return send && Number.isSafeInteger(send.id) && send.id > 0
             && typeof send.label === 'string' && typeof send.expires_label === 'string'
             && Number.isSafeInteger(send.expires_at) && send.expires_at > 0
-            && Number.isSafeInteger(send.remaining_views) && send.remaining_views > 0
+            && Number.isSafeInteger(send.remaining_views)
+            && (send.remaining_views > 0 || (send.remaining_views === 0 && send.download_pending === true))
             && ['item', 'note'].includes(send.send_type) && [0, 1].includes(send.has_passphrase)
             && (send.suspended === undefined || typeof send.suspended === 'boolean')
     }
@@ -205,7 +207,7 @@ $(function () {
         sends = rows
         entries.clear()
         $list.empty()
-        updateCount(sends.filter(row => row.suspended !== true).length)
+        updateCount(sends.filter(row => row.suspended !== true && row.remaining_views > 0).length)
         $status.text(sends.length === 0 ? labels.empty : '').removeClass('text-danger').addClass('text-muted')
         sends.forEach(function (send) {
             const $entry = $('<li>', { class: 'list-group-item px-0 d-flex align-items-center tp-my-sends-entry' })
@@ -220,7 +222,10 @@ $(function () {
             if (canOpenItem) {
                 $label.attr('href', 'index.php?page=items&group=' + String(send.folder_id) + '&id=' + String(send.item_id))
             }
-            $('<span>', { class: 'd-block small text-muted mt-1' }).text(labels.remaining.replace('#VIEWS#', String(send.remaining_views))).appendTo($details)
+            const viewStatus = send.download_pending === true
+                ? labels.downloadPending
+                : labels.remaining.replace('#VIEWS#', String(send.remaining_views))
+            $('<span>', { class: 'd-block small text-muted mt-1' }).text(viewStatus).appendTo($details)
             $('<span>', { class: 'd-block small text-muted' }).text(labels.expires.replace('#DATE#', send.expires_label)).appendTo($details)
             if (send.has_passphrase === 1) {
                 $('<span>', { class: 'badge badge-light mt-1 mr-1' }).text(labels.protected).appendTo($details)

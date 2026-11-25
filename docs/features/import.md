@@ -107,7 +107,7 @@ Folder handling follows the same rule as the CSV import: **folders are created o
 
 Source-specific notes:
 
-* **Bitwarden** – folders are rebuilt from the `folders` section of the export. Data carried by non-login entries (TOTP secret, card or identity fields) is appended to the item description so nothing is lost. Encrypted exports are rejected — export without encryption.
+* **Bitwarden** – folders are rebuilt from the `folders` section of the export. Data TeamPass has no dedicated field for — the TOTP secret, card and identity fields, and custom fields (one `name: value` line each; linked fields are skipped, as they hold no value) — is appended to the item description so nothing is lost. The description is not encrypted like the password: after the import, move the secret values it received (TOTP secret, card security code, hidden custom fields such as a PIN or an API key) to the password or to a [custom field](custom-fields.md) with **Encrypted data** enabled. Encrypted exports are rejected — export without encryption.
 * **LastPass** – nested folders use the `\` separator (`Folder\Subfolder`). Secure notes (sentinel URL `http://sn`) are imported without a URL.
 * **1Password** – the CSV export has no folder column; when present, the **first tag** is used as the destination folder, otherwise items are imported flat.
 * **KeePassXC** – the group path uses the `/` separator. A leading `Root/` segment is stripped to avoid a redundant top-level folder.

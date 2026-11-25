@@ -71,7 +71,7 @@ class SecureSendAccessSentinelTest extends TestCase
         $start = strpos($sender, "case 'generate_OTV_url':");
         $handler = substr($sender, $start, strpos($sender, "case 'count_secure_sends':", $start) - $start);
         self::assertStringContainsString('secureSendCreateLink(', $handler);
-        self::assertStringContainsString('catch (SecureSendCreateRefusal $e)', $handler);
+        self::assertStringContainsString('catch (SecureSendCreateRefusal | SecureSendAttachmentRefusal $e)', $handler);
         foreach (['secureSendStoreLink(', 'secureSendReadItem(', 'secureSendItemPassword(', 'cryption('] as $call) {
             self::assertStringNotContainsString($call, $handler, $call);
         }

@@ -367,6 +367,7 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 a.send_id AS send_id, a.originator AS originator, a.item_id AS item_id, a.send_type AS send_type,
                 a.has_passphrase AS has_passphrase, a.is_public AS is_public, a.max_views AS max_views,
                 a.views AS views, a.failed_attempts AS failed_attempts, a.expires_at AS expires_at,
+                a.attachment_count AS attachment_count, a.attachment_ids AS attachment_ids,
                 u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS item_label
             FROM ' . $from . ' WHERE %l ORDER BY %l %l, a.id %l LIMIT %i, %i',
             $sWhere,
@@ -379,6 +380,7 @@ if (isset($params['action']) && $params['action'] === 'logs') {
 
         $dateFormat = $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'];
         foreach ($rows as $record) {
+            $attachmentIds = json_decode($record['attachment_ids'] ?? '[]', true);
             $fullname = trim(
                 normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
                 normalizeLogDisplayValue($record['lastname'] ?? '')
@@ -402,6 +404,10 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 'max_views' => (int) $record['max_views'],
                 'failed_attempts' => (int) $record['failed_attempts'],
                 'expires_at' => (int) $record['expires_at'] > 0 ? date($dateFormat, (int) $record['expires_at']) : '',
+                'attachment_count' => $record['attachment_count'] === null ? null : (int) $record['attachment_count'],
+                'attachment_ids' => is_array($attachmentIds) && array_is_list($attachmentIds)
+                    ? array_values(array_filter($attachmentIds, static fn ($id): bool => is_int($id) && $id > 0))
+                    : [],
             ];
         }
     } else {

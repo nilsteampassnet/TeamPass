@@ -221,6 +221,45 @@ if (mysqli_query($db_link,
     $emailUpgradeFailure('Unable to initialize the Secure Send API setting.');
 }
 
+// Offline vault of the browser extension stays off until an administrator opts in; a missing
+// row reads as off too. INSERT IGNORE: a replay never overrides the administrator's choice.
+foreach ([
+    'offline_vault_enabled' => '0',
+    'offline_vault_roles' => '',
+    'offline_vault_max_retention_days' => '14',
+    'offline_vault_totp_allowed' => '0',
+    'offline_vault_personal_folders' => '1',
+    'offline_vault_min_sync_minutes' => '60',
+] as $offlineVaultSetting => $offlineVaultDefault) {
+    if (mysqli_query($db_link,
+        "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+         VALUES ('admin', '" . $offlineVaultSetting . "', '" . $offlineVaultDefault . "')"
+    ) === false) {
+        $emailUpgradeFailure('Unable to initialize the offline vault settings.');
+    }
+}
+
+require_once TEAMPASS_ROOT . '/app/sources/secure_send_attachments.php';
+require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
+if (mysqli_query($db_link, secureSendAttachmentSchemaSql($pre . 'secure_send_attachments')) === false
+    || mysqli_query($db_link,
+        "INSERT IGNORE INTO " . $pre . "misc (type, intitule, valeur)
+         VALUES ('admin', 'secure_send_allow_attachments', '0')"
+    ) === false
+) {
+    $emailUpgradeFailure('Unable to initialize Secure Send attachment storage.');
+}
+try {
+    secureSendUpgradeAuditAttachmentColumns($db_link, $pre . 'secure_send_audit');
+} catch (Throwable $error) {
+    error_log('Secure Send attachment audit migration failed (' . get_class($error) . ')');
+    if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {
+        throw $error;
+    }
+    $emailUpgradeFailure('Unable to initialize Secure Send attachment audit metadata.');
+}
+ConfigManager::invalidateCache();
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

@@ -1492,6 +1492,15 @@ switch ($post_type) {
         if ($post_field === 'offline_sync_window_days') {
             $post_value = (string) max(0, (int) $post_value);
         }
+        // Offline vault of the browser extension: the same bounds the policy publishes.
+        if ($post_field === 'offline_vault_max_retention_days') {
+            require_once __DIR__ . '/offline_vault_api_logic.php';
+            $post_value = (string) offlineVaultRetentionDays($post_value);
+        }
+        if ($post_field === 'offline_vault_min_sync_minutes') {
+            require_once __DIR__ . '/offline_vault_api_logic.php';
+            $post_value = (string) offlineVaultMinSyncMinutes($post_value);
+        }
         if ($post_field === 'bruteforce_lock_duration') {
             $intValue = (int) $post_value;
             $post_value = (string) max(1, $intValue === 0 ? 10 : $intValue);

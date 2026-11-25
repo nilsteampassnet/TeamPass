@@ -26,6 +26,7 @@ declare(strict_types=1);
  * @param int|null $itemId Optional item scope (never includes standalone notes)
  * @param int|null $now Observation timestamp
  * @param bool $withLabels Personal management mode with labels, folder IDs and suspension state
+ * @param bool $withDownloads Include links still downloadable after their final reveal
  * @return array<int,array<string,mixed>> Active metadata, newest first
  */
 function secureSendActiveLinks(
@@ -33,7 +34,8 @@ function secureSendActiveLinks(
     ?int $originatorId = null,
     ?int $itemId = null,
     ?int $now = null,
-    bool $withLabels = false
+    bool $withLabels = false,
+    bool $withDownloads = false
 ): array {
     if ($withLabels && $originatorId === null) {
         throw new InvalidArgumentException('Item labels require a personal Secure Send scope');
@@ -45,11 +47,21 @@ function secureSendActiveLinks(
         return [];
     }
     $now ??= time();
-    $where = "o.id > 0 AND o.time_limit > %i AND o.views < o.max_views AND o.failed_attempts < 5
+    $parameters = [$now];
+    $viewFilter = 'o.views < o.max_views';
+    $downloadColumn = '';
+    $downloadJoin = '';
+    if ($withLabels && $withDownloads && array_key_exists('secure_send_allow_attachments', $settings)) {
+        $downloadColumn = ', (a.send_id IS NOT NULL) AS download_window';
+        $downloadJoin = ' LEFT JOIN ' . prefixTable('secure_send_attachments') . ' a
+            ON a.send_id = o.id AND a.download_until > %i';
+        $viewFilter = '(o.views < o.max_views OR a.send_id IS NOT NULL)';
+        $parameters[] = $now;
+    }
+    $where = "o.id > 0 AND o.time_limit > %i AND " . $viewFilter . " AND o.failed_attempts < 5
         AND o.send_type IN ('item', 'item_v2', 'note')
         AND (o.has_passphrase <> 1 OR (o.protected_key IS NOT NULL AND o.protected_key <> ''))
         AND u.disabled = 0 AND u.deleted_at IS NULL";
-    $parameters = [$now];
     if (!$withLabels && (int) ($settings['secure_send_allow_notes'] ?? 0) !== 1) {
         $where .= " AND o.send_type <> 'note'";
     }
@@ -66,9 +78,9 @@ function secureSendActiveLinks(
     }
     $rows = DB::query(
         'SELECT o.id, o.originator, o.item_id, o.send_type, o.has_passphrase,
-            o.views, o.max_views, o.time_limit, u.admin AS sender_admin
+            o.views, o.max_views, o.time_limit, u.admin AS sender_admin' . $downloadColumn . '
         FROM ' . prefixTable('otv') . ' o
-        INNER JOIN ' . prefixTable('users') . ' u ON u.id = o.originator
+        INNER JOIN ' . prefixTable('users') . ' u ON u.id = o.originator' . $downloadJoin . '
         WHERE ' . $where . ' ORDER BY o.id DESC',
         ...$parameters
     );
@@ -98,21 +110,27 @@ function secureSendActiveLinks(
     }
     $active = [];
     foreach ($rows as $row) {
+        $downloadWindow = (int) ($row['download_window'] ?? 0) === 1;
+        $downloadPending = $downloadWindow && (int) $row['views'] >= (int) $row['max_views'];
         if ($row['send_type'] !== 'note') {
             $item = $accessible[(int) $row['originator']][(int) $row['item_id']] ?? null;
-            if ($item === null) {
+            if ($item === null && !$downloadWindow) {
                 continue;
             }
+            $downloadPending = $downloadPending || $item === null;
             if ($withLabels) {
-                $row['item_label'] = html_entity_decode((string) $item['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                $row['folder_id'] = (int) $item['id_tree'];
+                $row['item_label'] = html_entity_decode((string) ($item['label'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $row['folder_id'] = $item === null ? null : (int) $item['id_tree'];
             }
         }
         if ($withLabels) {
             $row['suspended'] = ($row['send_type'] === 'note' && (int) ($settings['secure_send_allow_notes'] ?? 0) !== 1)
                 || ((int) ($settings['secure_send_require_passphrase'] ?? 0) === 1 && (int) $row['has_passphrase'] !== 1);
         }
-        unset($row['sender_admin']);
+        if ($withDownloads) {
+            $row['download_pending'] = $downloadPending;
+        }
+        unset($row['sender_admin'], $row['download_window']);
         $active[] = $row;
     }
     return $active;
