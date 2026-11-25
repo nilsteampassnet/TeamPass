@@ -35,17 +35,16 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use voku\helper\AntiXSS;
 
 // Load functions
-require_once 'main.functions.php';
+require_once __DIR__ . '/main.functions.php';
+require_once __DIR__ . '/user_logs_logic.php';
 
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
-$antiXss = new AntiXSS();
 
 // Load config
 $configManager = new ConfigManager();
@@ -86,177 +85,122 @@ if (
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // Set header properties
-header('Content-type: text/html; charset=utf-8');
+header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
-// --------------------------------- //
+$query = $request->query->all();
+$draw = max(0, (int) filter_var($query['draw'] ?? null, FILTER_VALIDATE_INT));
+$targetUserId = (int) filter_var($query['userId'] ?? null, FILTER_VALIDATE_INT);
 
-// Configure AntiXSS to keep double-quotes
-$antiXss->removeEvilAttributes(['style', 'onclick', 'onmouseover', 'onmouseout', 'onmousedown', 'onmouseup', 'onmousemove', 'onkeydown', 'onkeyup', 'onkeypress', 'onchange', 'onblur', 'onfocus', 'onabort', 'onerror', 'onscroll']);
-$antiXss->removeEvilHtmlTags(['script', 'iframe', 'embed', 'object', 'applet', 'link', 'style']);
-
-//Columns name
-$aColumns = ['date', 'label', 'action'];
-$aSortTypes = ['asc', 'desc'];
-//init SQL variables
-$sWhere = $sOrder = $sLimit = '';
-
-// Prepare POST variables
-$data = [
-    'start' => $request->query->filter('start', '', FILTER_SANITIZE_NUMBER_INT),
-    'length' => $request->query->filter('length', '', FILTER_SANITIZE_NUMBER_INT),
-    'letter' => $request->query->filter('letter', '', FILTER_SANITIZE_SPECIAL_CHARS),
-    'search' => json_encode($request->query->filter('search', '', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY)),
-    'order' => json_encode($request->query->filter('order', '', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY)),
-    'userId' => $request->query->filter('userId', '', FILTER_SANITIZE_NUMBER_INT),
-    'draw' => $request->query->filter('draw', '', FILTER_SANITIZE_NUMBER_INT),
-];
-
-$filters = [
-    'start' => 'cast:integer',
-    'length' => 'cast:integer',
-    'letter' => 'trim|escape',
-    'search' => 'cast:array',
-    'order' => 'cast:array',
-    'userId' => 'cast:integer',
-    'draw' => 'cast:integer',
-];
-
-$inputData = dataSanitizer(
-    $data,
-    $filters
-);
-
-// Holding the Users page is not enough: 'userId' is client-supplied and is the only predicate
-// scoping the log queries below. Without this check a manager - or, before the page gate above,
-// any authenticated user - could read the audit trail of any account, administrators included,
-// simply by iterating the id (GHSA-qhff-v9qj-75wc).
-// Reading one's own logs is always permitted; any other target must be within the caller's
-// administration scope, using the same rule as the user-management actions.
-$targetUserId = (int) $inputData['userId'];
+// Users page access is required even for one's own logs; other accounts must also be in scope.
 if ($targetUserId <= 0
     || ($targetUserId !== (int) $session->get('user-id')
         && callerMayManageUser($targetUserId) === false)
 ) {
-    // Answer with a well-formed but empty datatable: it keeps the client working and tells an
-    // out-of-scope caller nothing about whether the target exists.
-    echo json_encode([
-        'sEcho' => (int) $inputData['draw'],
-        'iTotalRecords' => 0,
-        'iTotalDisplayRecords' => 0,
-        'aaData' => [],
-    ]);
+    echo json_encode(['sEcho' => $draw, 'iTotalRecords' => 0, 'iTotalDisplayRecords' => 0, 'aaData' => []]);
     exit;
 }
 
-/* BUILD QUERY */
-// Paging
-$sLimit = '';
-if (isset($inputData['length']) && (int) $inputData['length'] !== -1) {
-    $start = $inputData['start'];
-    $length = $inputData['length'];
-    $sLimit = " LIMIT $start, $length";
+$dateRange = userLogsDateRange($query, new DateTimeImmutable('today'));
+if ($dateRange === null) {
+    echo json_encode(['sEcho' => $draw, 'iTotalRecords' => 0, 'iTotalDisplayRecords' => 0, 'aaData' => []]);
+    exit;
 }
 
-// Ordering
-// Build the ORDER BY clause only from the fixed server-side column map and a
-// direction that is strictly validated against the allow-list. No request
-// value is ever concatenated verbatim, which prevents SQL injection.
-$sOrder = '';
-$order = $inputData['order'][0] ?? null;
-if ($order !== null && isset($order['column'], $order['dir'])) {
-    $columnIndex = (int) $order['column'];
-    if (
-        isset($aColumns[$columnIndex])
-        && in_array(strtolower((string) $order['dir']), $aSortTypes, true)
-    ) {
-        $dir = strtoupper((string) $order['dir']);
-        $sOrder = ' ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir;
-    }
-}
+$activity = is_string($query['activity'] ?? null) ? $query['activity'] : '';
+$channel = is_string($query['channel'] ?? null) ? $query['channel'] : '';
+$search = $query['search']['value'] ?? '';
+$term = is_string($search) ? mb_substr(trim($search), 0, 100, 'UTF-8') : '';
+$start = max(0, (int) filter_var($query['start'] ?? null, FILTER_VALIDATE_INT));
+$length = (int) filter_var($query['length'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+$length = $length > 0 ? min($length, 100) : 25;
+$direction = ($query['order'][0]['dir'] ?? null) === 'asc' ? 'ASC' : 'DESC';
 
-/*
-   * Filtering
-   * NOTE this does not match the built-in DataTables filtering which does it
-   * word by word on any field. It's possible to do here, but concerned about efficiency
-   * on very large tables, and MySQL's regex functionality is very limited
-*/
-$sWhere = '';
-$letter = $inputData['letter'];
-$searchValue = $inputData['search']['value'] ?? '';
-if ($letter !== '' && $letter !== 'None') {
-    $sWhere = ' AND (';
-    $sWhere .= $aColumns[1]." LIKE '".$letter."%'";
-    $sWhere .= ')';
-} elseif ($searchValue !== '') {
-    $sWhere = ' AND (';
-    $sWhere .= $aColumns[1]." LIKE '%".$searchValue."%'";
-    $sWhere .= ')';
-}
+$itemWhere = new WhereClause('AND');
+$itemWhere->add('l.id_user = %i', $targetUserId);
+$systemWhere = new WhereClause('AND');
+// qui stores different kinds of identifiers; compare account IDs as text.
+$systemWhere->add('l.qui = %s', (string) $targetUserId);
+$systemWhere->add('l.type <> %s', 'failed_auth');
 
-$rows = DB::query(
-    'SELECT l.date as date, i.label as label, l.action as action
-    FROM '.prefixTable('log_items').' as l
-    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = %i'.
-    (string) $sWhere.
-    ' UNION '.
-    'SELECT s.date AS date, s.label AS label, s.field_1 AS field1
-    FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = %s',
-    $targetUserId,
-    // qui also stores IP addresses: compared as an integer, '10.0.0.5' would match user 10
-    (string) $targetUserId
-);
-$iTotal = DB::count();
-$rows = DB::query(
-    'SELECT l.date as date, i.label as label, l.action as action, i.id as id
-    FROM '.prefixTable('log_items').' as l
-    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = %i'.
-    (string) $sWhere.
-    ' UNION
-    SELECT s.date AS date, s.label AS label, s.field_1 AS field1, s.id as id
-    FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = %s'.
-    (string) $sOrder.
-    (string) $sLimit,
-    $targetUserId,
-    (string) $targetUserId
-);
-$aaData = [];
-foreach ($rows as $record) {
-    $label = (string) ($record['label'] ?? '');
-    if (empty($record['action']) === true
-        || $record['action'] === $inputData['userId']
-    ) {
-        if (strpos($label, 'at_') === 0) {
-            $col2 = strpos($label, '#') !== false
-                ? (string) preg_replace('/#[\s\S]+?#/', '', $lang->get($label))
-                : $lang->get($label);
-        } else {
-            $col2 = $label;
+foreach ([$itemWhere, $systemWhere] as $where) {
+    foreach (['>=' => $dateRange[0], '<' => $dateRange[1]] as $operator => $boundary) {
+        if ($boundary === null) {
+            continue;
         }
-        $col3 = '';
-    } else {
-        $col2 = $lang->get($record['action']).' '.$lang->get('id').' '.$record['id'];
-        $col3 = $label;
+        // Unix seconds in the log tables are VARCHAR. Preserve indexable comparisons for
+        // ten-digit boundaries, with a numeric comparison for outlying custom dates.
+        if ($boundary >= 1000000000 && $boundary <= 9999999999) {
+            $where->add('l.date ' . $operator . ' %s', (string) $boundary);
+        } else {
+            $where->add('CAST(l.date AS SIGNED) ' . $operator . ' %i', $boundary);
+        }
     }
+}
 
+$itemsFrom = ' FROM ' . prefixTable('log_items') . ' AS l
+    INNER JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
+    INNER JOIN ' . prefixTable('users') . ' AS u ON l.id_user = u.id WHERE %l';
+$systemFrom = ' FROM ' . prefixTable('log_system') . ' AS l WHERE %l';
+$countSql = 'SELECT (SELECT COUNT(*)' . $itemsFrom . ') + (SELECT COUNT(*)' . $systemFrom . ')';
+$total = (int) DB::queryFirstField($countSql, $itemWhere, $systemWhere);
+$filteredTotal = $total;
+
+userLogsApplyFilters($itemWhere, $systemWhere, $activity, $channel);
+$pageSql = 'SELECT l.date AS date, 1 AS is_item, l.increment_id AS event_id,
+        l.id_item AS item_id, i.label AS label, l.action AS action, NULL AS type, l.raison AS channel_hint'
+    . $itemsFrom . ' UNION ALL '
+    . 'SELECT l.date, 0, l.id, NULL, l.label, NULL, l.type, l.field_1' . $systemFrom
+    . ' ORDER BY date ' . $direction . ', is_item ' . $direction . ', event_id ' . $direction;
+
+$rows = [];
+if ($total > 0) {
+    if ($term !== '') {
+        // One bounded-memory pass gives both the page and the exact count of matches. Matching
+        // rendered text also handles translated activities and legacy HTML entities in titles.
+        $page = storedTextSearchPage(
+            DB::queryWalk($pageSql, $itemWhere, $systemWhere),
+            [$term],
+            ['activity', 'target'],
+            $start,
+            $length,
+            null,
+            [
+                'activity' => static fn (string $value, array $row): string => userLogsActivityText($row, $lang),
+                'target' => static fn (string $value, array $row): string => userLogsTargetText($row),
+            ]
+        );
+        $rows = $page['rows'];
+        $filteredTotal = $page['total'];
+    } else {
+        if ($activity !== '' || $channel !== '') {
+            $filteredTotal = (int) DB::queryFirstField($countSql, $itemWhere, $systemWhere);
+        }
+        if ($start < $filteredTotal) {
+            $rows = DB::query($pageSql . ' LIMIT %i, %i', $itemWhere, $systemWhere, $start, $length);
+        }
+    }
+}
+
+$aaData = [];
+foreach ($rows as $row) {
+    $isItem = (int) $row['is_item'] === 1;
+    $hint = (string) ($row['channel_hint'] ?? '');
+    $isApi = $isItem
+        ? str_contains($hint, 'tp_src=api')
+        : logsSystemRowIsApi((string) $row['type'], (string) $row['label'], $hint);
     $aaData[] = [
-        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']),
-        (string) $col2,
-        (string) $col3,
+        htmlspecialchars(date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $row['date']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+        htmlspecialchars(userLogsActivityText($row, $lang), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+        htmlspecialchars(userLogsTargetText($row), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+        $isApi ? 'api' : 'web',
+        $isItem ? (int) $row['item_id'] : null,
     ];
 }
 
-// Encoded rather than concatenated: the hand-built string closed "aaData" twice for an
-// account without any log ("[][]"), and never escaped backslashes or control characters.
 echo json_encode([
-    'sEcho' => (int) $inputData['draw'],
-    'iTotalRecords' => (int) $iTotal,
-    'iTotalDisplayRecords' => (int) $iTotal,
+    'sEcho' => $draw,
+    'iTotalRecords' => $total,
+    'iTotalDisplayRecords' => $filteredTotal,
     'aaData' => $aaData,
 ], JSON_INVALID_UTF8_SUBSTITUTE);
