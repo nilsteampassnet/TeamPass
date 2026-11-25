@@ -203,11 +203,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ($(data).data('auth-type') !== 'local' ?
                             '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '" data-action="new-enc-code"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('generate_new_keys'); ?></li>'
                             : '') +
-                        '<li><button type="button" class="dropdown-item tp-action" data-id="' + $(data).data('id') +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') +
                         '" data-fullname="' + fullName +
                         '" data-action="logs"><i class="fa-solid fa-newspaper mr-2" aria-hidden="true"></i>' +
                         htmlEncode(<?php echo json_encode($lang->get('see_logs'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>) +
-                        '</button></li>' +
+                        '</li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + fullName + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
