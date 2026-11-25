@@ -75,9 +75,26 @@ if (function_exists('normalizeLogDisplayValue') === false) {
 function formatAdminLogLabel(string $label, Language $lang): string
 {
     $direct = [
+        'dataBase backup' => 'log_database_backed_up',
+        'dataBase restore' => 'log_database_restored',
+        'Emails backlog' => 'log_queued_emails_retried',
+        'clean_old_logs' => 'clean_old_logs',
+        'export_statistics' => 'export_statistics',
+        'test_encryption' => 'test_encryption',
+        'folder_deletion_protection_enabled' => 'folder_deletion_protection_enabled',
+        'folder_deletion_protection_disabled' => 'folder_deletion_protection_disabled',
+        'restore_missing_sharekeys_reference_refused' => 'restore_missing_sharekeys_reference_refused',
+        'restore_missing_sharekeys_reference_user' => 'restore_missing_sharekeys_reference_user',
+        'restore_missing_sharekeys_started' => 'restore_missing_sharekeys_started',
+        'restore_missing_sharekeys_tp_keys_rebuilt' => 'restore_missing_sharekeys_tp_keys_rebuilt',
+        'at_api_session_revoked' => 'at_api_session_revoked',
+        'at_extension_autoconfig_built' => 'at_extension_autoconfig_built',
+        'at_extension_token_generated' => 'at_extension_token_generated',
+        'at_extension_token_revoked' => 'at_extension_token_revoked',
         'at_user_added' => 'user_creation',
         'at_user_deleted' => 'user_deletion',
         'user_deleted' => 'user_deletion',
+        'user_purged' => 'user_purged',
         'at_user_updated' => 'user_updated',
         'at_user_new_keys' => 'new_keys_generated',
         'at_user_keys_download' => 'user_keys_downloaded',
@@ -98,6 +115,11 @@ function formatAdminLogLabel(string $label, Language $lang): string
     ];
     if (isset($direct[$label]) === true) {
         return (string) $lang->get($direct[$label]);
+    }
+
+    $sharekeysSummaryPrefix = 'restore_missing_sharekeys: ';
+    if (str_starts_with($label, $sharekeysSummaryPrefix)) {
+        return $lang->get('log_sharekeys_repair_completed') . ': ' . substr($label, strlen($sharekeysSummaryPrefix));
     }
 
     if (strpos($label, 'at_user_email_changed') !== false) {

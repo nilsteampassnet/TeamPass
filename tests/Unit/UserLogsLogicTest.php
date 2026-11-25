@@ -139,6 +139,57 @@ final class UserLogsLogicTest extends TestCase
         );
     }
 
+    public function testAdministrationEventsUseLocalizedLabelsWithoutLosingTheirDetails(): void
+    {
+        $events = [
+            'dataBase backup' => ['Database backed up', 'Base de données sauvegardée'],
+            'dataBase restore' => ['Database restored', 'Base de données restaurée'],
+            'folder_deletion_protection_enabled' => [
+                'Folder deletion protection enabled',
+                'Protection contre la suppression du dossier activée',
+            ],
+            'folder_deletion_protection_disabled' => [
+                'Folder deletion protection disabled',
+                'Protection contre la suppression du dossier désactivée',
+            ],
+            'at_email_template_updated:send_pw:en' => ['Email template updated send_pw (en)', 'Modèle d’e-mail modifié send_pw (en)'],
+            'restore_missing_sharekeys: items: 3 key(s) created/rebuilt' => [
+                'Sharekey repair completed: items: 3 key(s) created/rebuilt',
+                'Réparation des clés de partage terminée: items: 3 key(s) created/rebuilt',
+            ],
+            'historical_event: unknown' => ['historical_event: unknown', 'historical_event: unknown'],
+        ];
+        foreach (['english', 'french'] as $index => $locale) {
+            $lang = new Language($locale);
+            foreach ($events as $label => $expected) {
+                $row = ['is_item' => 0, 'type' => 'admin_action', 'label' => $label];
+                self::assertSame($expected[$index], formatAdminLogLabel($label, $lang));
+                self::assertSame($expected[$index], userLogsActivityText($row, $lang));
+            }
+        }
+
+        $row = ['is_item' => 0, 'type' => 'user_mngt', 'label' => 'at_extension_token_revoked', 'log_detail' => '42'];
+        self::assertSame('Jeton de l’extension de navigateur révoqué', userLogsActivityText($row, new Language('french')));
+        self::assertSame('', userLogsTargetText($row, [42 => 'fixture-account']));
+    }
+
+    public function testSearchMatchesTheLocalizedAdministrationActivity(): void
+    {
+        $lang = new Language('french');
+        $rows = [
+            ['is_item' => 0, 'type' => 'admin_action', 'label' => 'dataBase restore'],
+            ['is_item' => 0, 'type' => 'admin_action', 'label' => 'folder_deletion_protection_enabled'],
+        ];
+        $normalizers = [
+            'activity' => static fn (string $value, array $entry): string => userLogsActivityText($entry, $lang),
+        ];
+        $page = storedTextSearchPage($rows, ['données restaurée'], ['activity'], 0, 25, null, $normalizers);
+        self::assertSame(1, $page['total']);
+        self::assertSame([$rows[0]], $page['rows']);
+        $page = storedTextSearchPage($rows, ['folder_deletion_protection_enabled'], ['activity'], 0, 25, null, $normalizers);
+        self::assertSame(0, $page['total']);
+    }
+
     public function testSearchUsesDisplayedTextAndCountsBeforePaging(): void
     {
         $lang = new Language('french');
