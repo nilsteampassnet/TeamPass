@@ -408,6 +408,99 @@ function getDomainFromSettingsUrl(string $url): string
                                     </div>
                                 </div>
 
+<?php
+require_once __DIR__ . '/../sources/offline_vault_api_logic.php';
+$offlineVaultEnabled = (int) ($SETTINGS['offline_vault_enabled'] ?? 0) === 1;
+$offlineVaultTotp = (int) ($SETTINGS['offline_vault_totp_allowed'] ?? 0) === 1;
+// A missing row keeps personal folders, as offlineVaultApiPolicy() does.
+$offlineVaultPersonal = (int) ($SETTINGS['offline_vault_personal_folders'] ?? 1) === 1;
+$offlineVaultRoles = offlineVaultAllowedRoles($SETTINGS['offline_vault_roles'] ?? '');
+?>
+                                <div class='row mt-4 mb-2'>
+                                    <div class='col-12'>
+                                        <h6 class='mb-0'><?php echo htmlspecialchars($lang->get('offline_vault_title'), ENT_QUOTES, 'UTF-8'); ?></h6>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_title_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo htmlspecialchars($lang->get('offline_vault_enabled'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_enabled_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <div class='toggle toggle-modern' id='offline_vault_enabled' data-toggle-on='<?php echo $offlineVaultEnabled === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='offline_vault_enabled_input' value='<?php echo $offlineVaultEnabled === true ? '1' : '0'; ?>' />
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo htmlspecialchars($lang->get('offline_vault_roles'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_roles_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <select class='form-control form-control-sm select2' id='offline_vault_roles' multiple="multiple" style="width:100%;">
+<?php foreach (getRolesTitles() as $offlineVaultRole) { ?>
+                                            <option value="<?php echo (int) $offlineVaultRole['id']; ?>"<?php echo in_array((int) $offlineVaultRole['id'], $offlineVaultRoles, true) === true ? ' selected' : ''; ?>><?php echo htmlspecialchars((string) $offlineVaultRole['title'], ENT_QUOTES, 'UTF-8'); ?></option>
+<?php } ?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo htmlspecialchars($lang->get('offline_vault_max_retention_days'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_max_retention_days_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <input type='text' class='form-control form-control-sm' id='offline_vault_max_retention_days' value='<?php echo offlineVaultRetentionDays($SETTINGS['offline_vault_max_retention_days'] ?? null); ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo htmlspecialchars($lang->get('offline_vault_min_sync_minutes'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_min_sync_minutes_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <input type='text' class='form-control form-control-sm' id='offline_vault_min_sync_minutes' value='<?php echo offlineVaultMinSyncMinutes($SETTINGS['offline_vault_min_sync_minutes'] ?? null); ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo htmlspecialchars($lang->get('offline_vault_personal_folders'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_personal_folders_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <div class='toggle toggle-modern' id='offline_vault_personal_folders' data-toggle-on='<?php echo $offlineVaultPersonal === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='offline_vault_personal_folders_input' value='<?php echo $offlineVaultPersonal === true ? '1' : '0'; ?>' />
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo htmlspecialchars($lang->get('offline_vault_totp_allowed'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo htmlspecialchars($lang->get('offline_vault_totp_allowed_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <div class='toggle toggle-modern' id='offline_vault_totp_allowed' data-toggle-on='<?php echo $offlineVaultTotp === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='offline_vault_totp_allowed_input' value='<?php echo $offlineVaultTotp === true ? '1' : '0'; ?>' />
+                                    </div>
+                                </div>
+
                             </div>
 
                             <div class="tab-pane fade" id="mobile-application" role="tabpanel" aria-labelledby="mobile-application-tab">

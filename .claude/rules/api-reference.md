@@ -609,6 +609,44 @@ DB with real Defuse encryption and the production recipient path — seams: prot
 
 ---
 
+## Offline Vault Endpoint
+
+> User guide: `docs/api/offline-vault.md`.
+
+`GET /api/v1/offlineVault/policy` — controller `OfflineVaultController`, decisions in the DB-free
+`app/sources/offline_vault_api_logic.php` (`offlineVaultApiPolicy()`). The browser extension keeps
+an encrypted copy of the user's items on their computer; this endpoint says whether it may, and
+within which limits. The copy itself is read through `item/inFolders` (first sync) and
+`item/changes` (deltas) — no new read path, so every item delivered is logged `at_shown` like any
+other API read.
+
+**Routing and rights:** `offlineVaultAction()` (`api/inc/bootstrap.php`) → `checkOfflineVaultRights()`:
+`policy` needs `allowed_to_read`; any other action → `403`. The feature gate is **inside** the
+controller, so `policy` always answers `200` (`Cache-Control: no-store`).
+
+**Response:** `{ enabled, allowed, reason, retention_days: {max, default}, totp_allowed,
+personal_folders_allowed, min_sync_interval_minutes }`. `reason` is `null` or one of `disabled`,
+`admin`, `role_not_allowed`.
+
+**Rule: fails closed.** A missing `offline_vault_enabled` row reads as off; administrators are
+refused (no item access); a non-empty `offline_vault_roles` list refuses a caller holding none of
+them (roles from the token's `roles` claim, so a role change applies at the next token). A
+read-only account may keep a copy — reading is all it does.
+
+**Rule: the extension acts on the answer.** `allowed: false` erases the copy at once; a copy that
+gets no successful answer for `retention_days.max` days erases itself. The server cannot recall a
+copy that never reconnects — the retention is the only bound there.
+
+**Settings** (Settings → API → *Browser extension*, seeded off in `run.step5.php` and
+`upgrade_run_3.2.4.php`, clamped on save by `offlineVaultRetentionDays()` / `offlineVaultMinSyncMinutes()`):
+`offline_vault_enabled` (0), `offline_vault_roles` (empty = every role), `offline_vault_max_retention_days`
+(14, 1–365), `offline_vault_min_sync_minutes` (60, 15–1440), `offline_vault_personal_folders` (1),
+`offline_vault_totp_allowed` (0 — the extension drops TOTP secrets before storing).
+
+Tests: `tests/Unit/OfflineVaultApiTest.php`.
+
+---
+
 ## HTTP Status Codes
 
 | Code | Meaning in API context |
