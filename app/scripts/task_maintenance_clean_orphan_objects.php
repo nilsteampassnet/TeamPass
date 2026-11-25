@@ -80,8 +80,8 @@ try {
     secureSendPurgeExpiredLinks($SETTINGS);
 } catch (Throwable $e) {
     error_log('TEAMPASS Secure Send scheduled expiry failed (' . get_class($e) . ')');
+    secureSendPruneAttachments($SETTINGS);
 }
-secureSendPruneAttachments($SETTINGS);
 
 $prunedSecureSendEvents = 0;
 $secureSendRetentionFailed = false;

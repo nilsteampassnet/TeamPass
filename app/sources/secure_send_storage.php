@@ -196,5 +196,6 @@ function secureSendPurgeExpiredLinks(array $settings, ?int $now = null): int
     if ($links !== []) {
         secureSendPruneAttachments($settings, array_map('intval', array_column($links, 'id')));
     }
+    secureSendPruneAttachments($settings, [], $now);
     return count($links);
 }

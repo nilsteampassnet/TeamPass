@@ -1369,7 +1369,8 @@ several PHP workers on separate hosts, make that encrypted storage available to 
 The recipient confirms the link once and can download or retry the attachment in the same browser
 session for up to five minutes, bounded by the link's expiry. Downloads during that window do not
 consume additional views. The sender can revoke the link from **My secure sends** while a download
-is still authorized. Revocation and expiry remove the encrypted copy. Scheduled maintenance retries
+is still authorized. Revocation and expiry remove the encrypted copy. Expiry cleanup also removes
+copies from exhausted links once the last download window closes. Scheduled maintenance retries
 file removal when storage is temporarily unavailable. Disabling attachment sharing suspends
 access to links that contain files and their authorized downloads.
 

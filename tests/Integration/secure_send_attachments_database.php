@@ -104,6 +104,36 @@ function secureSendAttachmentDatabaseChecks(array $settings): void
             'Revocation retained encrypted attachment data');
         check(secureSendAuthorizeDownload($request, $grants, $settings, '', time()) === null, 'Revocation left a usable grant');
 
+        // Exhaustion is independent of the lifetime of the link. An earlier view's
+        // expired grant must not cause cleanup if there are views left.
+        $exhausted = secureSendCreateLink($note, $sender, $settings, $upload);
+        $unspent = secureSendCreateLink(array_replace($note, ['views' => 2]), $sender, $settings, $upload);
+        foreach ([$exhausted, $unspent] as $send) {
+            parse_str((string) parse_url($send['url'], PHP_URL_QUERY), $query);
+            $result = secureSendRedeem(secureSendRequestParameters($query), $note['passphrase'], $settings);
+            check(isset($result['downloads']['grant']), 'The test reveal did not grant a download');
+        }
+        $exhaustedId = $exhausted['otv_id'];
+        $exhaustedSet = DB::queryFirstRow('SELECT * FROM ' . $table . ' WHERE send_id = %i', $exhaustedId);
+        $exhaustedDir = secureSendAttachmentDirectory($settings, $exhaustedSet['reference']);
+        $cutoff = (int) $exhaustedSet['download_until'];
+        check($exhaustedDir !== null && $cutoff > time(), 'The exhausted link has no active download window');
+        secureSendPurgeExpiredLinks($settings, $cutoff - 1);
+        check(is_dir($exhaustedDir), 'Purge removed a still-downloadable file set');
+        secureSendPurgeExpiredLinks(array_replace($settings, ['path_to_upload_folder' => '']), $cutoff);
+        check(DB::queryFirstField('SELECT reference FROM ' . $table . ' WHERE send_id = %i', $exhaustedId) !== null,
+            'Failed exhausted-set cleanup lost its retry record');
+        // Disabling new attachments must not prevent cleanup of already stored copies.
+        secureSendPurgeExpiredLinks(array_replace($settings, ['secure_send_allow_attachments' => 0]), $cutoff);
+        clearstatcache();
+        check(!is_dir($exhaustedDir) && DB::queryFirstField('SELECT reference FROM ' . $table . ' WHERE send_id = %i', $exhaustedId) === null,
+            'Purge kept an exhausted file set after its download window closed');
+        check((int) DB::queryFirstField('SELECT views FROM ' . prefixTable('otv') . ' WHERE id = %i', $exhaustedId) === 1,
+            'Exhausted attachment cleanup removed or modified the link');
+        check(DB::queryFirstField('SELECT reference FROM ' . $table . ' WHERE send_id = %i', $unspent['otv_id']) !== null,
+            'Purge removed a file set while the link still had views');
+        check(secureSendRevokeLink($unspent['otv_id'], 42, $settings), 'Could not revoke the remaining link');
+
         $created = secureSendCreateLink($note, $sender, $settings, $upload);
         // Simulate an unavailable file store during revocation, then recover through maintenance.
         check(secureSendRevokeLink($created['otv_id'], 42, array_replace($settings, ['path_to_upload_folder' => ''])),

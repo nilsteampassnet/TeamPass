@@ -238,13 +238,14 @@ function secureSendDiscardStagedAttachments(string $reference, array $settings):
 }
 
 /**
- * Delete file sets whose shares were removed, and staged sets abandoned by interrupted requests.
+ * Delete removed or exhausted shares' file sets and abandoned staging.
  *
- * Pass link IDs after a committed deletion for immediate cleanup. Maintenance retries all failures.
+ * Pass link IDs after a committed deletion for immediate cleanup. Without IDs, also
+ * prune exhausted links after their last download window closes, leaving the link intact.
  *
  * @param list<int> $sendIds
  */
-function secureSendPruneAttachments(array $settings, array $sendIds = []): void
+function secureSendPruneAttachments(array $settings, array $sendIds = [], ?int $now = null): void
 {
     if (!array_key_exists('secure_send_allow_attachments', $settings)) {
         return;
@@ -252,20 +253,29 @@ function secureSendPruneAttachments(array $settings, array $sendIds = []): void
     try {
         $table = prefixTable('secure_send_attachments');
         $linkTable = prefixTable('otv');
+        $now ??= time();
         $filter = $sendIds === []
-            ? 'a.send_id IS NOT NULL OR a.created_at < %i'
-            : 'a.send_id IN %li';
-        $candidate = 'SELECT a.reference FROM ' . $table . ' a LEFT JOIN ' . $linkTable . ' o ON o.id = a.send_id
-            WHERE o.id IS NULL AND (' . $filter . ')';
-        $value = $sendIds === [] ? time() - 86400 : $sendIds;
-        $rows = DB::query($candidate . ' ORDER BY a.created_at LIMIT 100', $value);
+            ? '(o.id IS NULL AND (a.send_id IS NOT NULL OR a.created_at < %i))
+                OR (o.views >= o.max_views AND a.download_until <= %i)'
+            : 'o.id IS NULL AND a.send_id IN %li';
+        $candidate = 'SELECT a.reference, a.send_id FROM ' . $table . ' a
+            LEFT JOIN ' . $linkTable . ' o ON o.id = a.send_id WHERE (' . $filter . ')';
+        $parameters = $sendIds === [] ? [$now - 86400, $now] : [$sendIds];
+        $rows = DB::query($candidate . ' ORDER BY a.created_at, a.reference LIMIT 100', ...$parameters);
         foreach ($rows as $row) {
             DB::startTransaction();
             try {
-                // A request may still publish a staging record while maintenance is inspecting it.
-                $reference = DB::queryFirstField($candidate . ' AND a.reference = %s FOR UPDATE', $value, $row['reference']);
-                if (is_string($reference)) {
-                    secureSendRemoveAttachmentSet($reference, $settings);
+                if ($row['send_id'] !== null) {
+                    // Follow the reveal's lock order: link first, attachment set second.
+                    DB::queryFirstField('SELECT id FROM ' . $linkTable . ' WHERE id = %i FOR UPDATE', $row['send_id']);
+                }
+                // Recheck under lock. Staging may have been published, or a reveal may have extended the window.
+                $eligible = DB::queryFirstField(
+                    $candidate . ' AND a.reference = %s AND a.send_id <=> %? FOR UPDATE',
+                    ...[...$parameters, $row['reference'], $row['send_id']]
+                );
+                if (is_string($eligible)) {
+                    secureSendRemoveAttachmentSet($eligible, $settings);
                 }
                 DB::commit();
             } catch (Throwable $e) {
