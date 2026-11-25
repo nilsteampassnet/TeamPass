@@ -145,6 +145,7 @@ test('A note can send a document alone and uses the configured size limit', () =
   assert.equal(h.requests.length, 1)
   assert.equal(h.requests[0].options.contentType, false)
   assert.equal(h.requests[0].options.processData, false)
+  assert.equal(h.requests[0].options.timeout, 0)
   assert.equal(h.requests[0].data.get('secure_send_file'), file)
   assert.equal(JSON.parse(h.requests[0].data.get('data')).payload.note, '')
 })
@@ -210,6 +211,7 @@ test('An item shares only the attachment IDs selected by the sender', () => {
   h.generate()
   assert.deepEqual(JSON.parse(h.requests[0].data.data).attachment_ids, [101, 104])
   assert.equal(h.requests[0].options.processData, true)
+  assert.equal(h.requests[0].options.timeout, 0)
 })
 
 test('Each new item or note form starts on the internal address', () => {
@@ -229,6 +231,7 @@ test('TOTP sharing is offered only for eligible items and stays opt-in', () => {
   assert.equal(withoutTotp.$('#secure-send-totp-option').hasClass('hidden'), true)
   withoutTotp.generate()
   assert.equal(JSON.parse(withoutTotp.requests[0].data.data).include_totp, 0)
+  assert.equal(withoutTotp.requests[0].options.timeout, 30000)
 
   const withTotp = harness({ id: 123, otp_for_item_enabled: 1 })
   withTotp.context.openSecureSendModal('item')
@@ -245,6 +248,7 @@ test('TOTP sharing is offered only for eligible items and stays opt-in', () => {
   note.generate()
   assert.equal(note.$('#secure-send-totp-option').hasClass('hidden'), true)
   assert.equal(JSON.parse(note.requests[0].data.data).include_totp, 0)
+  assert.equal(note.requests[0].options.timeout, 30000)
 })
 
 test('Rapid generation submits once and restores the button after network failure', () => {

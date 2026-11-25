@@ -9532,7 +9532,7 @@ require __DIR__ . '/icon.picker.js.php';
             url: 'sources/items.queries.php',
             method: 'POST',
             dataType: 'json',
-            timeout: file ? 0 : 30000,
+            timeout: (file || data.attachment_ids?.length) ? 0 : 30000,
             processData: !file,
             contentType: file ? false : 'application/x-www-form-urlencoded; charset=UTF-8',
             data: uploadData || requestData
