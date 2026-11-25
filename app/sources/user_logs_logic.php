@@ -46,7 +46,7 @@ function userLogsItemActionGroups(): array
     return [
         'views' => ['at_shown'],
         'changes' => ['at_creation', 'at_modification', 'at_copy', 'at_delete', 'at_restored', 'at_moved', 'at_manual', 'at_import'],
-        'passwords' => ['at_password_copied', 'at_password_shown', 'at_password_shown_edit_form'],
+        'passwords' => ['at_password_copied', 'at_password_shown', 'at_password_shown_edit_form', 'at_export'],
     ];
 }
 

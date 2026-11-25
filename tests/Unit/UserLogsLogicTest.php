@@ -17,6 +17,11 @@ require_once __DIR__ . '/../../app/sources/user_logs_logic.php';
 
 final class UserLogsLogicTest extends TestCase
 {
+    public function testPasswordAccessIncludesItemExports(): void
+    {
+        self::assertContains('at_export', userLogsItemActionGroups()['passwords']);
+    }
+
     public function testCalendarPresetsIncludeTodayAcrossDaylightSaving(): void
     {
         $zone = new DateTimeZone('Europe/Paris');
