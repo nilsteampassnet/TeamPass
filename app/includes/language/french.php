@@ -491,6 +491,7 @@ return array(
     'error_no_edition_possible_locked' => 'Édition impossible. Cet élément est verrouillé par le gestionnaire de tâches',
     'select' => 'Parcourir…',
     'items' => 'Éléments',
+    'item' => 'Élément',
     'admin_email_smtp_server' => 'Serveur SMTP',
     'admin_email_auth' => 'Le serveur SMTP requiert une authentification',
     'admin_email_auth_username' => 'Identifiant',

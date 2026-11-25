@@ -1519,6 +1519,7 @@ return array(
     'user_mngt' => 'Manage Users',
     'select' => 'select',
     'items' => 'Items',
+    'item' => 'Item',
     'enable_personal_saltkey_cookie' => 'Store personal salt key in a browser cookie',
     'personal_saltkey_cookie_duration' => 'User salt keys expire after XX days',
     'admin_email_smtp_server' => 'SMTP server address',
