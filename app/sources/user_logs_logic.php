@@ -93,7 +93,7 @@ function userLogsAdminTargetId(array $row): ?int
         'at_user_pwd_changed', 'at_user_forgot_local_password_requested', 'at_user_new_keys', 'at_restored',
         'at_user_oauth2_identity_bound', 'at_user_oauth2_identity_reset', 'at_leaver_items_flagged',
         'at_user_webauthn_added', 'at_user_webauthn_deleted', 'at_user_webauthn_passwordless_enabled',
-        'at_user_webauthn_passwordless_disabled', 'user_purged' => $detail,
+        'at_user_webauthn_passwordless_disabled' => $detail,
         'at_device_credential_revoked' => is_string($detail) ? (json_decode($detail, true)['user_id'] ?? null) : null,
         default => null,
     };
@@ -183,18 +183,33 @@ function userLogsDisplayText(string $text): string
     return storedTextSearchDecode(normalizeLogDisplayValue($text));
 }
 
+/** Format an authorised account login using the deletion state of its current record. */
+function userLogsAccountTargetText(string $login, int $deletedAt, Language $lang): string
+{
+    if ($deletedAt <= 0) {
+        return userLogsDisplayText($login);
+    }
+
+    $suffix = '_deleted_' . $deletedAt;
+    if (str_ends_with($login, $suffix)) {
+        $login = substr($login, 0, -strlen($suffix));
+    }
+
+    return str_replace('{login}', userLogsDisplayText($login), $lang->getShipped('user_logs_deleted_account_target'));
+}
+
 /**
- * Render the item title or an already authorised account login.
+ * Render the item title or an already authorised account target.
  *
  * @param array<string, mixed> $row Projected journal row.
- * @param array<int, string> $adminLogins Authorised account logins for the current page.
+ * @param array<int, string> $accountTargets Authorised account display text for the current page.
  */
-function userLogsTargetText(array $row, array $adminLogins = []): string
+function userLogsTargetText(array $row, array $accountTargets = []): string
 {
     if ((int) $row['is_item'] === 1) {
         return userLogsDisplayText((string) $row['label']);
     }
-    $id = $adminLogins === [] ? null : userLogsAdminTargetId($row);
+    $id = $accountTargets === [] ? null : userLogsAdminTargetId($row);
 
-    return $id === null ? '' : userLogsDisplayText($adminLogins[$id] ?? '');
+    return $id === null ? '' : ($accountTargets[$id] ?? '');
 }

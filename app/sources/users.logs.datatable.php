@@ -184,10 +184,18 @@ if ($total > 0) {
 
 // Resolve only the authorised account targets on this page, after the search cursor is closed.
 $adminTargetIds = userLogsManageableAdminTargetIds($rows, 'callerMayManageUser');
-$adminLogins = $adminTargetIds === [] ? [] : array_column(DB::query(
-    'SELECT id, login FROM ' . prefixTable('users') . ' WHERE id IN %li AND deleted_at IS NULL',
+$accounts = $adminTargetIds === [] ? [] : DB::query(
+    'SELECT id, login, deleted_at FROM ' . prefixTable('users') . ' WHERE id IN %li',
     $adminTargetIds
-), 'login', 'id');
+);
+$accountTargets = [];
+foreach ($accounts as $account) {
+    $accountTargets[(int) $account['id']] = userLogsAccountTargetText(
+        (string) $account['login'],
+        (int) $account['deleted_at'],
+        $lang
+    );
+}
 
 $aaData = [];
 foreach ($rows as $row) {
@@ -199,7 +207,7 @@ foreach ($rows as $row) {
     $aaData[] = [
         htmlspecialchars(date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $row['date']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
         htmlspecialchars(userLogsActivityText($row, $lang), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        htmlspecialchars(userLogsTargetText($row, $adminLogins), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+        htmlspecialchars(userLogsTargetText($row, $accountTargets), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
         $isApi ? 'api' : 'web',
         $isItem ? (int) $row['item_id'] : null,
     ];

@@ -1261,6 +1261,7 @@ return array(
     'user_logs_user_password_changed' => 'User password changed',
     'user_logs_user_initial_password_changed' => 'Initial user password changed',
     'user_logs_user_password_recovery' => 'User password recovery requested',
+    'user_logs_deleted_account_target' => '{login} (deleted)',
     'log_database_backed_up' => 'Database backed up',
     'log_database_restored' => 'Database restored',
     'log_queued_emails_retried' => 'Queued emails retried',

@@ -82,7 +82,7 @@ final class UserLogsLogicTest extends TestCase
         self::assertNull(userLogsAdminTargetId(['type' => 'admin_action'] + $row));
         self::assertNull(userLogsAdminTargetId(['is_item' => 1] + $row));
 
-        foreach (['at_api_session_revoked', 'at_extension_token_revoked', 'at_review_closed', 'at_user_updated'] as $action) {
+        foreach (['at_api_session_revoked', 'at_extension_token_revoked', 'at_review_closed', 'at_user_updated', 'user_purged'] as $action) {
             self::assertNull(userLogsAdminTargetId(['label' => $action] + $row), $action);
         }
         foreach (['0', '-42', '42.5', '42 seconds', str_repeat('9', 40), true, [], null] as $detail) {
@@ -114,12 +114,24 @@ final class UserLogsLogicTest extends TestCase
         self::assertSame([42, 43, 44], $checked);
         self::assertSame([42, 44], $ids);
 
-        $logins = [42 => 'R&amp;D O&#039;Brien &quot;QA&quot; &lt;test&gt;'];
+        $logins = [42 => userLogsAccountTargetText('R&amp;D O&#039;Brien &quot;QA&quot; &lt;test&gt;', 0, new Language('english'))];
         self::assertSame('R&D O\'Brien "QA" <test>', userLogsTargetText($allowed, $logins));
         self::assertSame('', userLogsTargetText($outsideScope, $logins));
         self::assertSame('', userLogsTargetText($missing, $logins));
         self::assertSame('', userLogsTargetText($otherNamespace, $logins));
         self::assertSame('', userLogsTargetText($allowed));
+    }
+
+    public function testSoftDeletedTargetShowsOriginalLoginAndLocalizedMarker(): void
+    {
+        $english = new Language('english');
+        $french = new Language('french');
+        $storedLogin = 'R&amp;D O&#039;Brien &quot;QA&quot; &lt;test&gt;_deleted_1700000000';
+        self::assertSame('R&D O\'Brien "QA" <test> (deleted)', userLogsAccountTargetText($storedLogin, 1700000000, $english));
+        self::assertSame('R&D O\'Brien "QA" <test> (supprimé)', userLogsAccountTargetText($storedLogin, 1700000000, $french));
+        self::assertSame('R&D O\'Brien "QA" <test>_deleted_1700000000', userLogsAccountTargetText($storedLogin, 0, $english));
+        self::assertSame('test_deleted_1700000000 (deleted)', userLogsAccountTargetText('test_deleted_1700000000_deleted_1700000000', 1700000000, $english));
+        self::assertSame('legacy_deleted_1600000000 (deleted)', userLogsAccountTargetText('legacy_deleted_1600000000', 1700000000, $english));
     }
 
     public function testUserManagementActivityLabelsOmitPlaceholdersAndOldEmailAddresses(): void

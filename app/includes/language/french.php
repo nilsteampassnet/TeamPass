@@ -277,6 +277,7 @@ return array(
     'user_logs_user_password_changed' => 'Mot de passe de l’utilisateur modifié',
     'user_logs_user_initial_password_changed' => 'Mot de passe initial de l’utilisateur modifié',
     'user_logs_user_password_recovery' => 'Récupération de mot de passe demandée',
+    'user_logs_deleted_account_target' => '{login} (supprimé)',
     'log_database_backed_up' => 'Base de données sauvegardée',
     'log_database_restored' => 'Base de données restaurée',
     'log_queued_emails_retried' => 'Nouvelle tentative d’envoi des e-mails en attente',

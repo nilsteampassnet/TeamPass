@@ -114,7 +114,7 @@ class UserLogsAccessAuthorizationTest extends TestCase
             $src
         );
         self::assertMatchesRegularExpression(
-            "/WHERE id IN %li AND deleted_at IS NULL',\\s*\\\$adminTargetIds\\b/",
+            "/WHERE id IN %li',\\s*\\\$adminTargetIds\\b/",
             $src
         );
     }
