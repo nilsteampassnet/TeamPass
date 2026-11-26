@@ -39,13 +39,15 @@ const loadingTables = { '#tp-roles-top-body': 5, '#tp-users-ranking-body': 3, '#
 const activeRenderer = section('renderActiveSecureSendCount(', 'tpOpsShowLoadError(')
 const fields = {
   totals: ['created', 'revealed', 'reveal_failed', 'senders', 'sends_revealed', 'revoked', 'invalidated', 'expired'],
-  creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links']
+  creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links'],
+  attachments: ['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized']
 }
 
 function payload() {
   return { enabled: true, available: true, error: false, top_senders: [],
     totals: Object.fromEntries(fields.totals.map(key => [key, 0])),
-    creations: Object.fromEntries(fields.creations.map(key => [key, 0])) }
+    creations: Object.fromEntries(fields.creations.map(key => [key, 0])),
+    attachments: Object.fromEntries(fields.attachments.map(key => [key, 0])) }
 }
 
 function harness() {

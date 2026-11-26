@@ -150,6 +150,23 @@ class SecureSendStatisticsTest extends TestCase
         self::assertSame(5, $data['top_senders'][0]['reveal_failed']);
     }
 
+    public function testAttachmentCountsUseOnlyCreationsAndDownloadAuthorizationsInPeriod(): void
+    {
+        $this->event('created', 42, 1);
+        $this->event('created', 42, 2);
+        $this->event('created', 42, 3);
+        DB::$connection->exec('UPDATE stats_fixture_secure_send_audit SET attachment_count = 2 WHERE send_id = 1');
+        DB::$connection->exec('UPDATE stats_fixture_secure_send_audit SET attachment_count = NULL WHERE send_id = 3');
+        $this->event('download_authorized', 42, 4, 900);
+        $this->event('download_authorized', 42, 5, 901);
+        $this->event('download_authorized', 43, 6);
+
+        self::assertSame([
+            'links_with_files' => 1, 'files_shared' => 2, 'file_count_unknown' => 1,
+            'downloads_authorized' => 1,
+        ], $this->statistics(excluded: [43])['attachments']);
+    }
+
     public function testCreationsArePartitionedByTypeProtectionAndPublicPolicy(): void
     {
         $this->event('created', 42, 1, 500, ['send_type' => 'item_v2', 'has_passphrase' => 1, 'shared_globaly' => 1]);

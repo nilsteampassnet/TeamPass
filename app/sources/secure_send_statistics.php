@@ -64,6 +64,7 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         ],
         'totals' => null,
         'creations' => null,
+        'attachments' => null,
         'top_senders' => [],
     ];
     $excludedIds = array_values(array_unique(array_filter(array_map('intval', $systemUserIds),
@@ -92,9 +93,13 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
                 SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 1 THEN 1 ELSE 0 END) AS protected,
                 SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 0 THEN 1 ELSE 0 END) AS unprotected,
                 SUM(CASE WHEN a.event = 'created' AND a.is_public = 1 THEN 1 ELSE 0 END) AS public_links,
-                SUM(CASE WHEN a.event = 'created' AND a.is_public = 0 THEN 1 ELSE 0 END) AS internal_links
+                SUM(CASE WHEN a.event = 'created' AND a.is_public = 0 THEN 1 ELSE 0 END) AS internal_links,
+                SUM(CASE WHEN a.event = 'created' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS links_with_files,
+                SUM(CASE WHEN a.event = 'created' THEN a.attachment_count ELSE 0 END) AS files_shared,
+                SUM(CASE WHEN a.event = 'created' AND a.attachment_count IS NULL THEN 1 ELSE 0 END) AS file_count_unknown,
+                SUM(CASE WHEN a.event = 'download_authorized' THEN 1 ELSE 0 END) AS downloads_authorized
             FROM " . prefixTable('secure_send_audit') . " a
-            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired')
+            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired', 'download_authorized')
                 AND {$where}",
             ...$parameters
         );
@@ -133,6 +138,10 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
             $creations[$key] = (int) ($summary[$key] ?? 0);
         }
         $senders = [];
+        $attachments = [];
+        foreach (['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized'] as $key) {
+            $attachments[$key] = (int) ($summary[$key] ?? 0);
+        }
         foreach ($rows as $row) {
             $deleted = !in_array($row['deleted_at'] ?? null, [null, '', 0, '0'], true);
             $senders[] = [
@@ -152,6 +161,7 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         $payload['reason'] = 'ok';
         $payload['totals'] = $totals;
         $payload['creations'] = $creations;
+        $payload['attachments'] = $attachments;
         $payload['top_senders'] = $senders;
     } catch (Throwable $e) {
         // These reads bind only integer bounds/account IDs. MeekroDB keeps SQL in
