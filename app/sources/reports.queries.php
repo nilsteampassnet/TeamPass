@@ -568,6 +568,66 @@ switch ($post_type) {
         );
         break;
 
+    case 'report_secure_send':
+        require_once __DIR__ . '/secure_send_statistics.php';
+        require_once __DIR__ . '/secure_send_retention.php';
+        $timezone = new DateTimeZone(date_default_timezone_get());
+        $generatedAt = time();
+        try {
+            $period = reportsSecureSendPeriod(
+                $request->request->getString('start_date'),
+                $request->request->getString('end_date'),
+                $timezone,
+                $generatedAt
+            );
+        } catch (InvalidArgumentException | UnexpectedValueException) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('compliance_report_secure_send_invalid_dates')],
+                'encode'
+            );
+            break;
+        }
+
+        try {
+            $retentionDays = secureSendAuditRetentionDays($SETTINGS['secure_send_audit_retention_days'] ?? 0);
+        } catch (InvalidArgumentException) {
+            $retentionDays = null;
+        }
+
+        try {
+            $summary = secureSendReadAuditPeriodSummary(
+                $period['start'],
+                $period['end'],
+                [TP_USER_ID, OTV_USER_ID, API_USER_ID, SSH_USER_ID]
+            );
+        } catch (Throwable $error) {
+            error_log('TEAMPASS Secure Send governance report failed (' . get_class($error) . ')');
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('compliance_report_secure_send_unavailable')],
+                'encode'
+            );
+            break;
+        }
+
+        $columns = [
+            'section' => $lang->get('compliance_report_secure_send_section'),
+            'indicator' => $lang->get('compliance_report_secure_send_indicator'),
+            'value' => $lang->get('compliance_report_secure_send_value'),
+        ];
+        $rows = reportsSecureSendRows(
+            $summary,
+            $period,
+            $timezone,
+            $generatedAt,
+            $retentionDays,
+            static fn (string $key): string => (string) $lang->get($key)
+        );
+        echo (string) prepareExchangedData(
+            ['error' => false, 'rows' => $rows, 'csv' => reportsBuildCsv(array_values($columns), $rows, array_keys($columns))],
+            'encode'
+        );
+        break;
+
     default:
         echo (string) prepareExchangedData(
             ['error' => true, 'message' => $lang->get('error_not_allowed_to')],

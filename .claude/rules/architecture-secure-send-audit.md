@@ -19,9 +19,10 @@ and from the existing `log_items` audit under the OTV system account.
 The audit foundation provides storage, lifecycle instrumentation and migration.
 Its dependent statistics change adds aggregates to the existing administrator
 statistics endpoint; the dedicated Secure Send tab displays them.
-Governance/Reports can later consume the journal through their existing
-administrator-only, feature-gated handlers. No export or purge endpoint is added,
-and no access to another user's item contents is granted.
+The Secure Send governance report reads the same aggregate journal query through
+the existing administrator-only, feature-gated Reports handler. Its table and
+CSV contain aggregate counts and observation metadata. The report excludes
+TeamPass service accounts and uses the configured timezone for date filters.
 
 The administrator Logs page (**Monitoring → Logs**) reads the journal as its `secure_send`
 source: `buildSecureSendLogFilter()` (`logs_filter_logic.php`, user facet = originator) and the

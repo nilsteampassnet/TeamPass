@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * Copyright (c) 2009-2026 Teampass.net
+ * Licensed under the GNU General Public License, version 3 or later.
+ * See LICENSE.md for details.
+ */
+
 use PHPUnit\Framework\TestCase;
 
 // Real production logic (DB-free) shared with the reports.queries.php
@@ -20,6 +27,62 @@ require_once __DIR__ . '/../../app/sources/reports.functions.php';
  */
 class ComplianceReportsLogicTest extends TestCase
 {
+    public function testSecureSendCalendarPeriodFollowsDaylightSaving(): void
+    {
+        $timezone = new DateTimeZone('Europe/Paris');
+        $now = (new DateTimeImmutable('2026-11-01T12:00:00+01:00'))->getTimestamp();
+        $bounds = reportsSecureSendPeriod('2026-03-29', '2026-03-29', $timezone, $now);
+        self::assertSame((new DateTimeImmutable('2026-03-29T00:00:00+01:00'))->getTimestamp(), $bounds['start']);
+        self::assertSame((new DateTimeImmutable('2026-03-29T23:59:59+02:00'))->getTimestamp(), $bounds['end']);
+        self::assertSame(['start' => $now - 30 * 86400, 'end' => $now],
+            reportsSecureSendPeriod('', '', $timezone, $now));
+    }
+
+    public function testSecureSendCalendarPeriodRejectsInvalidDates(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        reportsSecureSendPeriod('2026-02-30', '2026-03-01', new DateTimeZone('Europe/Paris'), 1790000000);
+    }
+
+    public function testSecureSendCalendarPeriodRejectsReversedDates(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        reportsSecureSendPeriod('2026-12-01', '2026-11-30', new DateTimeZone('Europe/Paris'), 1790000000);
+    }
+
+    public function testSecureSendEvidenceCarriesScopeAndOnlyAggregateValuesInBothLanguages(): void
+    {
+        $timezone = new DateTimeZone('Europe/Paris');
+        $now = (new DateTimeImmutable('2026-04-01T12:00:00+02:00'))->getTimestamp();
+        $period = reportsSecureSendPeriod('2026-03-29', '2026-03-29', $timezone, $now);
+        foreach (['english', 'french'] as $language) {
+            $messages = require __DIR__ . '/../../app/includes/language/' . $language . '.php';
+            $translate = static fn (string $key): string => $messages[$key];
+            $rows = reportsSecureSendRows([
+                'public_unprotected' => '3',
+                'invalidated_access' => 2,
+                'channel_unknown' => 4,
+                'file_count_unknown' => 1,
+                'email_indeterminate' => null,
+                'originator' => 'private-originator-canary',
+            ], $period, $timezone, $now, 90, $translate);
+            $values = array_column($rows, 'value', 'indicator');
+            self::assertSame('2026-03-29 00:00:00 +01:00', $values[$translate('compliance_report_secure_send_period_start')]);
+            self::assertSame('2026-03-29 23:59:59 +02:00', $values[$translate('compliance_report_secure_send_period_end')]);
+            self::assertSame('2026-04-01 12:00:00 +02:00', $values[$translate('compliance_report_secure_send_generated_at')]);
+            self::assertSame('Europe/Paris', $values[$translate('compliance_report_secure_send_timezone')]);
+            self::assertSame(90, $values[$translate('secure_send_audit_retention_days')]);
+            self::assertSame(3, $values[$translate('ops_secure_send_public_unprotected')]);
+            self::assertSame(2, $values[$translate('ops_secure_send_invalidated_access')]);
+            self::assertSame(4, $values[$translate('ops_secure_send_channel_unknown')]);
+            self::assertSame(1, $values[$translate('ops_secure_send_file_count_unknown')]);
+            self::assertSame(0, $values[$translate('ops_secure_send_email_indeterminate')]);
+            $csv = reportsBuildCsv(['Section', 'Indicator', 'Value'], $rows, ['section', 'indicator', 'value']);
+            self::assertStringContainsString('Europe/Paris', $csv);
+            self::assertStringNotContainsString('private-originator-canary', $csv);
+        }
+    }
+
     // -------------------------------------------------------------------
     // reportsParseRoleIds()
     // -------------------------------------------------------------------
