@@ -64,7 +64,7 @@ function mysqli_free_result(object $result): void {}
 function mysqli_close(object $connection): void {}
 
 /** Stub the native mysqli helper. Its SQL runs in the MariaDB integration suite. */
-function secureSendUpgradeAuditAttachmentColumns(object $connection, string $tableName): void
+function secureSendUpgradeAuditColumns(object $connection, string $tableName): void
 {
     global $mode, $state;
     $state['attachment_audit_called'] = true;

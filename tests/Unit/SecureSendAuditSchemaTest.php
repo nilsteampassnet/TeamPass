@@ -42,6 +42,7 @@ class SecureSendAuditSchemaTest extends TestCase
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS `custom_secure_send_audit`', $sql);
         self::assertStringContainsString('ENGINE=InnoDB', $sql);
         self::assertStringContainsString('`actor_id` INT UNSIGNED NULL', $sql);
+        self::assertStringContainsString('`delivery_channel` VARCHAR(12) CHARACTER SET ascii NULL DEFAULT NULL', $sql);
         self::assertStringContainsString('(`originator`, `occurred_at`)', $sql);
         self::assertStringContainsString('(`event`, `occurred_at`)', $sql);
         self::assertStringContainsString('(`send_id`, `id`)', $sql);

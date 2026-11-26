@@ -54,6 +54,8 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame(1, $id);
         self::assertSame(1, DB::$wakeups);
         self::assertSame(1, DB::$connection->querySingle('SELECT COUNT(*) FROM email_test_secure_send_audit'));
+        $audit = json_decode(DB::$connection->querySingle('SELECT record FROM email_test_secure_send_audit'), true, 32, JSON_THROW_ON_ERROR);
+        self::assertSame('direct_email', $audit['delivery_channel']);
         $task = DB::queryFirstRow('SELECT * FROM email_test_background_tasks');
         self::assertSame('secure_send_email', $task['process_type']);
         foreach (['recipient@', 'link-secret-canary', 'lookup-canary'] as $secret) {

@@ -749,6 +749,16 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             </dl>
                                             <p class='small text-muted mb-0'><?php echo htmlspecialchars($lang->get('ops_secure_send_attachment_scope'), ENT_QUOTES, 'UTF-8'); ?></p>
                                         </div>
+                                        <div class='col-xl-6 mb-3'>
+                                            <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_delivery'), ENT_QUOTES, 'UTF-8'); ?></h4>
+                                            <dl class='row small mb-1 tp-secure-send-breakdown'>
+                                                <?php foreach (['email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared'] as $metric) { ?>
+                                                <dt class='col-9'><?php echo htmlspecialchars($lang->get('ops_secure_send_' . $metric), ENT_QUOTES, 'UTF-8'); ?></dt>
+                                                <dd class='col-3 text-right' data-tp-secure-send-count='delivery.<?php echo $metric; ?>'>—</dd>
+                                                <?php } ?>
+                                            </dl>
+                                            <p class='small text-muted mb-0'><?php echo htmlspecialchars($lang->get('ops_secure_send_delivery_scope'), ENT_QUOTES, 'UTF-8'); ?></p>
+                                        </div>
                                     </div>
                                 </div>
                                 <p class='small text-muted mt-3 mb-1'><?php echo htmlspecialchars($lang->get('ops_secure_send_history'), ENT_QUOTES, 'UTF-8'); ?></p>

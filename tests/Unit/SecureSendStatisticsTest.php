@@ -61,7 +61,7 @@ class SecureSendStatisticsTest extends TestCase
             occurred_at INTEGER, originator INTEGER, actor_id INTEGER, item_id INTEGER,
             send_type TEXT, created_at INTEGER, has_passphrase INTEGER, is_public INTEGER,
             max_views INTEGER, expires_at INTEGER, views INTEGER, failed_attempts INTEGER,
-            attachment_count INTEGER, attachment_ids TEXT)');
+            attachment_count INTEGER, attachment_ids TEXT, delivery_channel TEXT)');
         DB::$connection->exec('CREATE TABLE stats_fixture_users (
             id INTEGER PRIMARY KEY, login TEXT, name TEXT, lastname TEXT, disabled INTEGER DEFAULT 0,
             deleted_at TEXT, email TEXT, admin INTEGER DEFAULT 0, gestionnaire INTEGER DEFAULT 0,
@@ -121,7 +121,7 @@ class SecureSendStatisticsTest extends TestCase
         self::assertTrue($data['enabled']);
         self::assertSame('ok', $data['reason']);
         self::assertSame([], $data['top_senders']);
-        foreach (array_merge($data['totals'], $data['creations']) as $value) {
+        foreach (array_merge($data['totals'], $data['creations'], $data['attachments'], $data['delivery']) as $value) {
             self::assertSame(0, $value);
         }
         self::assertSame(['period'], $data['meta']['filters_applied']);
@@ -179,6 +179,23 @@ class SecureSendStatisticsTest extends TestCase
             'unprotected' => 2, 'public_links' => 1, 'internal_links' => 2], $data['creations']);
         self::assertSame(3, $data['totals']['created']);
         self::assertSame(2, $data['totals']['senders']);
+    }
+
+    public function testEmailChannelAndFileCountsUseOnlyAuditedCreations(): void
+    {
+        $this->event('created', 42, 1);
+        $this->event('created', 42, 2);
+        $this->event('created', 42, 3);
+        $this->event('created', 42, 4, 901);
+        DB::$connection->exec("UPDATE stats_fixture_secure_send_audit
+            SET delivery_channel = 'direct_email', attachment_count = 2 WHERE send_id IN (1, 4)");
+        DB::$connection->exec("UPDATE stats_fixture_secure_send_audit
+            SET delivery_channel = 'no_email', attachment_count = 3 WHERE send_id = 2");
+
+        self::assertSame([
+            'email_queued' => 1, 'no_email' => 1, 'channel_unknown' => 1,
+            'email_links_with_files' => 1, 'email_files_shared' => 2,
+        ], $this->statistics()['delivery']);
     }
 
     public function testPeriodIncludesBothBoundariesAndUsesObservationNotLinkCreationTime(): void
@@ -264,7 +281,8 @@ class SecureSendStatisticsTest extends TestCase
         foreach (['item_id', 'send_id', 'actor_id', 'encrypted', 'protected_key', 'email'] as $forbidden) {
             self::assertStringNotContainsString('"' . $forbidden . '"', json_encode($data), $forbidden);
         }
-        foreach (['item_id', 'actor_id', 'encrypted', 'protected_key', 'email', 'SELECT *', 'stats_fixture_items', 'stats_fixture_otv'] as $forbidden) {
+        foreach (['item_id', 'actor_id', 'encrypted', 'protected_key', 'u.email', 'SELECT *',
+            'stats_fixture_items', 'stats_fixture_otv', 'stats_fixture_secure_send_email', 'background_tasks'] as $forbidden) {
             self::assertStringNotContainsString($forbidden, implode("\n", DB::$queries), $forbidden);
         }
     }

@@ -74,12 +74,13 @@ class SecureSendStatisticsPresentationTest extends TestCase
             $messages = include __DIR__ . '/../../app/includes/language/' . $language . '.php';
             $html = $this->render($this->cardTemplate(), $messages);
             preg_match_all("/data-tp-secure-send-count='([^']+)'/", $html, $fields);
-            self::assertCount(19, $fields[1]);
-            self::assertCount(19, array_unique($fields[1]));
+            self::assertCount(24, $fields[1]);
+            self::assertCount(24, array_unique($fields[1]));
             self::assertStringContainsString('totals.sends_revealed', $html);
             self::assertStringContainsString('creations.protected', $html);
             self::assertStringContainsString('creations.public_links', $html);
             self::assertStringContainsString('attachments.downloads_authorized', $html);
+            self::assertStringContainsString('delivery.email_links_with_files', $html);
             self::assertStringNotContainsString('<?php', $html);
         }
     }

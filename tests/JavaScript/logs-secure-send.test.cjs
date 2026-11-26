@@ -43,7 +43,10 @@ const context = {
     secureSendFailed: '#tp_count# failed attempt(s)',
     secureSendExpires: 'expires #tp_date#',
     secureSendAttachmentCount: 'attachments (#tp_count#)',
-    secureSendAttachmentIds: 'vault file IDs #tp_ids#'
+    secureSendAttachmentIds: 'vault file IDs #tp_ids#',
+    secureSendDirectEmail: 'invitation queued',
+    secureSendNoEmail: 'no direct invitation',
+    secureSendUnknownChannel: 'unknown channel'
   }
 }
 vm.createContext(context)
@@ -51,7 +54,7 @@ vm.runInContext(renderersSource + '\nthis.renderers = logCellRenderers', context
 const r = context.renderers
 
 const row = overrides => Object.assign({
-  event: 'created', reason: '', user: 'Alice Sender [alice]', originator: 42, send_type: 'item',
+  event: 'revealed', reason: '', user: 'Alice Sender [alice]', originator: 42, send_type: 'item',
   item: 'Router', item_id: 123, send: 9, has_passphrase: false, is_public: false, views: 0,
   max_views: 1, failed_attempts: 0, expires_at: ''
 }, overrides)
@@ -89,6 +92,13 @@ test('details show only the recorded attachment count and vault file IDs', () =>
   assert.equal(r.policy(row({ attachment_count: 0, attachment_ids: [] })), '0/1 view(s) · attachments (0)')
   assert.equal(r.policy(row({ attachment_count: 2, attachment_ids: [9010, 9011] })), '0/1 view(s) · attachments (2) · vault file IDs 9010, 9011')
   assert.equal(r.policy(row({ attachment_count: 1, attachment_ids: [], name: 'secret.txt' })), '0/1 view(s) · attachments (1)')
+})
+
+test('creation details distinguish email from missing historical channel metadata', () => {
+  const creation = { event: 'created' }
+  assert.match(r.policy(row({ ...creation, delivery_channel: 'direct_email' })), /invitation queued/)
+  assert.match(r.policy(row({ ...creation, delivery_channel: 'no_email' })), /no direct invitation/)
+  assert.match(r.policy(row(creation)), /unknown channel/)
 })
 
 // Capture the shipped table configuration without a DOM, then resolve cells through the same

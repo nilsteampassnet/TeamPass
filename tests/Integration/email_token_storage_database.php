@@ -70,7 +70,7 @@ try {
     (new ReflectionMethod(DatabaseInstaller::class, 'secure_send_audit'))->invoke($installer);
     $auditTable = prefixTable('secure_send_audit');
     $freshAuditColumns = DB::query('SHOW FULL COLUMNS FROM %b', $auditTable);
-    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids', $auditTable);
+    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids, DROP COLUMN delivery_channel', $auditTable);
     DB::insert($auditTable, secureSendAuditRecord(['id' => 1, 'originator' => 42, 'send_type' => 'note'], 'revealed'));
     $historicalAudit = DB::queryFirstRow('SELECT * FROM %b', $auditTable);
     $freshSharingColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('secure_send_email'));
@@ -118,7 +118,7 @@ try {
     emailTokenExpect($freshSharingColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('secure_send_email')), 'Fresh and upgrade sharing delivery schemas differ');
     emailTokenExpect($freshAuditColumns === DB::query('SHOW FULL COLUMNS FROM %b', $auditTable), 'Fresh and upgraded Secure Send audit schemas differ');
     $upgradedAudit = DB::queryFirstRow('SELECT * FROM %b', $auditTable);
-    emailTokenExpect($upgradedAudit === $historicalAudit + ['attachment_count' => null, 'attachment_ids' => null],
+    emailTokenExpect($upgradedAudit === $historicalAudit + ['attachment_count' => null, 'attachment_ids' => null, 'delivery_channel' => null],
         'Upgrade changed historical Secure Send audit evidence');
     DB::insert(prefixTable('secure_send_email'), ['send_id' => 1, 'task_id' => 1, 'originator' => 42,
         'created_at' => time(), 'address_hash' => str_repeat('a', 64)]);

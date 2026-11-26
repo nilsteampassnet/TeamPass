@@ -40,14 +40,16 @@ const activeRenderer = section('renderActiveSecureSendCount(', 'tpOpsShowLoadErr
 const fields = {
   totals: ['created', 'revealed', 'reveal_failed', 'senders', 'sends_revealed', 'revoked', 'invalidated', 'expired'],
   creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links'],
-  attachments: ['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized']
+  attachments: ['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized'],
+  delivery: ['email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared']
 }
 
 function payload() {
   return { enabled: true, available: true, error: false, top_senders: [],
     totals: Object.fromEntries(fields.totals.map(key => [key, 0])),
     creations: Object.fromEntries(fields.creations.map(key => [key, 0])),
-    attachments: Object.fromEntries(fields.attachments.map(key => [key, 0])) }
+    attachments: Object.fromEntries(fields.attachments.map(key => [key, 0])),
+    delivery: Object.fromEntries(fields.delivery.map(key => [key, 0])) }
 }
 
 function harness() {
