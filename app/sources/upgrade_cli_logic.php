@@ -126,8 +126,8 @@ function tpUpgradeCliScriptVersion(string $scriptName): ?string
 /**
  * Decide what the command line must do.
  *
- * "Up to date" needs the version AND the schema timestamp: every 3.2.x script writes
- * upgrade_timestamp when it ends, so a chain stopped halfway can show a fresh timestamp.
+ * A fresh upgrade_timestamp does not prove that the database has reached the schema level
+ * required by the deployed files. Every 3.2.x script writes it when it ends.
  *
  * @param array{db_version: string, db_version_full: string, db_schema_level: string, upgrade_timestamp: int,
  *              files_version: string, files_version_full: string, min_date: int} $state Current state
@@ -152,11 +152,14 @@ function tpUpgradeCliDecide(array $state, string $floor = TP_UPGRADE_CLI_FLOOR):
     if ($comparison < 0) {
         return ['decision' => 'upgrade', 'reason' => 'VERSION_BEHIND'];
     }
-    if ($state['upgrade_timestamp'] < $state['min_date']) {
+    $schemaLevel = $state['db_schema_level'];
+    if ($state['upgrade_timestamp'] < $state['min_date']
+        || (ctype_digit($schemaLevel) && (int) $schemaLevel < $state['min_date'])
+    ) {
         return ['decision' => 'upgrade', 'reason' => 'SCHEMA_BEHIND'];
     }
     if ($state['db_version_full'] !== $state['files_version_full']
-        || $state['db_schema_level'] !== (string) $state['min_date']
+        || $schemaLevel !== (string) $state['min_date']
     ) {
         // A patch release without schema change: only the release record is stale.
         return ['decision' => 'record_release_only', 'reason' => 'RELEASE_RECORD_STALE'];

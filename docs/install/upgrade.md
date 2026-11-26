@@ -156,6 +156,8 @@ The wizard enables maintenance mode while it runs and restores the previous valu
 
 The same upgrade can run from a shell or a cron job with `app/scripts/upgrade-cli.php`, once the new files are in place. It accepts databases at **3.2.2 or later**; older ones go through the wizard (Step 4a).
 
+A recorded schema level below the release requirement triggers the full upgrade path, including the pre-upgrade backup, even if the last upgrade ran after the release cutoff. When the database has no numeric schema level, the upgrade timestamp is the fallback.
+
 Run it as the PHP service account (the account PHP-FPM or Apache runs as), never as root: the files it creates must stay readable by the web server.
 
 ```bash
