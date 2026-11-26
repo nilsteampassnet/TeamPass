@@ -1076,7 +1076,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.each(['items', 'notes', 'unknown'], function(_, type) {
             var share = available && secureSend.totals.created > 0
                 ? secureSend.creations[type] / secureSend.totals.created * 100 : 0;
-            $('#tp-secure-send-type-' + type).css('width', Math.min(share, 100) + '%');
+            $('#tp-ops-secure-send [data-tp-secure-send-type="' + type + '"]').css('width', Math.min(share, 100) + '%');
         });
         var rows = '';
         if (available && secureSend.top_senders.length === 0) {

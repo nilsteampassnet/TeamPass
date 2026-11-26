@@ -117,19 +117,20 @@ test('valid zero counts are visible; missing/failed/null data is unavailable, ne
 
 test('the link-type distribution uses audited creations and clears with the selected period', () => {
   const h = harness()
+  const bar = type => h.node('#tp-ops-secure-send [data-tp-secure-send-type="' + type + '"]')
   const data = payload()
   data.totals.created = 20
   data.creations.items = 12
   data.creations.notes = 7
   data.creations.unknown = 1
   h.render(data)
-  assert.equal(h.node('#tp-secure-send-type-items').styles.width, '60%')
-  assert.equal(h.node('#tp-secure-send-type-notes').styles.width, '35%')
-  assert.equal(h.node('#tp-secure-send-type-unknown').styles.width, '5%')
+  assert.equal(bar('items').styles.width, '60%')
+  assert.equal(bar('notes').styles.width, '35%')
+  assert.equal(bar('unknown').styles.width, '5%')
 
   h.render(null, 'loading')
   for (const type of ['items', 'notes', 'unknown']) {
-    assert.equal(h.node('#tp-secure-send-type-' + type).styles.width, '0%')
+    assert.equal(bar(type).styles.width, '0%')
   }
 })
 

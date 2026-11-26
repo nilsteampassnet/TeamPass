@@ -760,7 +760,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                     <h4 class='h6 mb-2'><?php echo $secureSendLabel('link_types'); ?></h4>
                                                     <div class='progress tp-secure-send-distribution mb-2' aria-hidden='true'>
                                                         <?php foreach ($secureSendTypes as $type => $color) { ?>
-                                                            <div class='progress-bar bg-<?php echo $color; ?>' id='tp-secure-send-type-<?php echo $type; ?>'></div>
+                                                            <div class='progress-bar bg-<?php echo $color; ?>' data-tp-secure-send-type='<?php echo $type; ?>'></div>
                                                         <?php } ?>
                                                     </div>
                                                     <dl class='mb-0'>

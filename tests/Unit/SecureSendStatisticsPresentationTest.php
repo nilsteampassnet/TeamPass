@@ -78,6 +78,8 @@ class SecureSendStatisticsPresentationTest extends TestCase
             self::assertCount(28, array_unique($fields[1]));
             self::assertStringContainsString('totals.sends_revealed', $html);
             self::assertStringContainsString('creations.protected', $html);
+            preg_match_all("/data-tp-secure-send-type='([^']+)'/", $html, $segments);
+            self::assertSame(['items', 'notes', 'unknown'], $segments[1]);
             self::assertStringContainsString('creations.public_links', $html);
             self::assertStringContainsString('attachments.downloads_authorized', $html);
             self::assertStringContainsString('delivery.email_links_with_files', $html);
