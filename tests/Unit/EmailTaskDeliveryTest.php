@@ -170,11 +170,27 @@ final class EmailTaskDeliveryTest extends TestCase
             $expected = match ($mode) { 'accepted' => 'completed', 'throttled' => 'queued', default => 'failed' };
             self::assertSame($expected, $result['task_updates'][0]['status'], $mode);
             self::assertCount(in_array($mode, ['accepted', 'throttled'], true) ? 1 : 0, $result['messages'], $mode);
+            self::assertSame(match ($mode) {
+                'accepted' => ['accepted'],
+                'throttled' => [],
+                default => ['not_submitted'],
+            }, array_column($result['audit'], 'reason'), $mode);
             if ($expected === 'failed') {
                 self::assertSame('Secure Send is no longer available; email was not submitted.', $result['task_updates'][0]['error_message']);
                 self::assertSame(['failed' => true, 'email' => 'recipient@example.com', 'login' => 'Recipient'],
                     json_decode($result['task_updates'][0]['arguments'], true));
             }
+        }
+    }
+
+    public function testSecureSendWorkerDistinguishesConfirmedFromIndeterminateTransportFailure(): void
+    {
+        foreach (['rejected' => 'failed', 'exhausted' => 'failed', 'indeterminate' => 'indeterminate', 'unexpected' => 'indeterminate'] as $mode => $reason) {
+            $result = $this->probe('secure-' . $mode, true);
+            self::assertSame('failed', $result['task_updates'][0]['status']);
+            self::assertSame(['email_outcome'], array_column($result['audit'], 'event'));
+            self::assertSame([$reason], array_column($result['audit'], 'reason'));
+            self::assertStringNotContainsString('recipient@example.com', json_encode($result['audit'], JSON_THROW_ON_ERROR));
         }
     }
 

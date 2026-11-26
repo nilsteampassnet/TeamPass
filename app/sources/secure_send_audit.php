@@ -116,6 +116,7 @@ function secureSendAuditEventReasons(): array
         'created' => [''],
         'revealed' => [''],
         'download_authorized' => [''],
+        'email_outcome' => ['accepted', 'not_submitted', 'failed', 'indeterminate'],
         'reveal_failed' => ['wrong_credentials'],
         'revoked' => ['sender_revoked'],
         'invalidated' => ['sender_unavailable', 'item_access_lost', 'attempts_exhausted', 'item_auto_deleted', 'disaster_recovery'],

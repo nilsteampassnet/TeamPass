@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/secure_send_access.php';
+require_once __DIR__ . '/secure_send_audit.php';
 require_once __DIR__ . '/secure_send_logic.php';
 require_once __DIR__ . '/secure_send_url.php';
 require_once __DIR__ . '/emails_queue_logic.php';
@@ -113,6 +114,54 @@ function secureSendEmailQueue(array $message, array $link, array $settings, int 
         'originator' => (int) $link['originator'], 'created_at' => $now,
         'address_hash' => hash('sha256', secureSendBaseUrl($settings, (int) $link['shared_globaly'] === 1)),
     ]);
+}
+
+/**
+ * Commit a terminal task update with one audit event, even after the link is gone.
+ * The task row lock serializes worker completion and handler failure.
+ */
+function secureSendEmailFinishTask(
+    int $taskId,
+    string $outcome,
+    array $update,
+    array $settings,
+    ?int $staleBefore = null
+): void {
+    $tasks = prefixTable('background_tasks');
+    $where = "increment_id = %i AND process_type = 'secure_send_email' AND status IN ('queued', 'in_progress')";
+    $parameters = [$taskId];
+    if ($staleBefore !== null) {
+        $where .= ' AND is_in_progress = 1 AND updated_at < %i';
+        $parameters[] = $staleBefore;
+    }
+
+    $event = null;
+    DB::startTransaction();
+    try {
+        if (DB::queryFirstField("SELECT increment_id FROM {$tasks} WHERE {$where} FOR UPDATE", ...$parameters) !== null) {
+            // The association survives while the task is active. Use the creation row if it
+            // is still retained to describe the source item or note without using live content.
+            $link = DB::queryFirstRow('SELECT e.send_id AS id, e.originator, e.created_at AS timestamp,
+                    a.item_id, a.send_type
+                FROM ' . prefixTable('secure_send_email') . ' e
+                LEFT JOIN ' . prefixTable('secure_send_audit') . " a
+                    ON a.send_id = e.send_id AND a.originator = e.originator AND a.event = 'created'
+                WHERE e.task_id = %i ORDER BY a.id DESC LIMIT 1", $taskId);
+            if ($link) {
+                $link['send_type'] ??= 'unknown';
+                $event = secureSendAudit($link, 'email_outcome', $outcome, now: (int) $update['finished_at']);
+            }
+            DB::update($tasks, $update, 'increment_id = %i', $taskId);
+        }
+        DB::commit();
+    } catch (Throwable $error) {
+        DB::rollback();
+        error_log('TEAMPASS Secure Send email finalization failed (' . get_class($error) . ')');
+        throw new RuntimeException('Unable to record the Secure Send email outcome.');
+    }
+    if ($event !== null) {
+        secureSendEmitAudit($event, $settings);
+    }
 }
 
 /** Resolve profile tokens at submission time, using current disclosure policy and identity. */

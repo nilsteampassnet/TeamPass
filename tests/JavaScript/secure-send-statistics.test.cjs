@@ -41,7 +41,8 @@ const fields = {
   totals: ['created', 'revealed', 'reveal_failed', 'senders', 'sends_revealed', 'revoked', 'invalidated', 'expired'],
   creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links'],
   attachments: ['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized'],
-  delivery: ['email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared']
+  delivery: ['email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared',
+    'email_accepted', 'email_not_submitted', 'email_failed', 'email_indeterminate']
 }
 
 function payload() {

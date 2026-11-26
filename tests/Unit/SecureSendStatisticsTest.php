@@ -85,14 +85,14 @@ class SecureSendStatisticsTest extends TestCase
     }
 
     /** Insert real allowlisted journal rows, including no fabricated creation for legacy sends. */
-    private function event(string $event, int $sender = 42, int $sendId = 1, int $timestamp = 500, array $changes = []): void
+    private function event(string $event, int $sender = 42, int $sendId = 1, int $timestamp = 500, array $changes = [], ?string $reason = null): void
     {
         $link = array_replace([
             'id' => $sendId, 'originator' => $sender, 'send_type' => 'item', 'item_id' => 123,
             'timestamp' => 10, 'time_limit' => 10000, 'max_views' => 5, 'views' => 0,
             'has_passphrase' => 0, 'shared_globaly' => 0, 'failed_attempts' => 0,
         ], $changes);
-        $reason = ['revoked' => 'sender_revoked', 'invalidated' => 'attempts_exhausted',
+        $reason ??= ['revoked' => 'sender_revoked', 'invalidated' => 'attempts_exhausted',
             'expired' => 'deadline_elapsed', 'reveal_failed' => 'wrong_credentials'][$event] ?? '';
         $actor = in_array($event, ['created', 'revoked'], true) ? $sender : null;
         $download = $event === 'download_authorized';
@@ -191,11 +191,18 @@ class SecureSendStatisticsTest extends TestCase
             SET delivery_channel = 'direct_email', attachment_count = 2 WHERE send_id IN (1, 4)");
         DB::$connection->exec("UPDATE stats_fixture_secure_send_audit
             SET delivery_channel = 'no_email', attachment_count = 3 WHERE send_id = 2");
+        $this->event('email_outcome', 42, 1, 901, reason: 'accepted');
+        $this->event('email_outcome', 42, 5, 100, reason: 'accepted');
+        $this->event('email_outcome', 42, 6, 900, reason: 'not_submitted');
+        $this->event('email_outcome', 42, 7, 500, reason: 'failed');
+        $this->event('email_outcome', 42, 8, 500, reason: 'indeterminate');
+        $this->event('email_outcome', 43, 9, 500, reason: 'indeterminate');
 
         self::assertSame([
             'email_queued' => 1, 'no_email' => 1, 'channel_unknown' => 1,
             'email_links_with_files' => 1, 'email_files_shared' => 2,
-        ], $this->statistics()['delivery']);
+            'email_accepted' => 1, 'email_not_submitted' => 1, 'email_failed' => 1, 'email_indeterminate' => 1,
+        ], $this->statistics(excluded: [43])['delivery']);
     }
 
     public function testPeriodIncludesBothBoundariesAndUsesObservationNotLinkCreationTime(): void

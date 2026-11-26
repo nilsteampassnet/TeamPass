@@ -103,9 +103,13 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
                 SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'no_email' THEN 1 ELSE 0 END) AS no_email,
                 SUM(CASE WHEN a.event = 'created' AND a.delivery_channel IS NULL THEN 1 ELSE 0 END) AS channel_unknown,
                 SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS email_links_with_files,
-                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN a.attachment_count ELSE 0 END) AS email_files_shared
+                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN a.attachment_count ELSE 0 END) AS email_files_shared,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'accepted' THEN 1 ELSE 0 END) AS email_accepted,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'not_submitted' THEN 1 ELSE 0 END) AS email_not_submitted,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'failed' THEN 1 ELSE 0 END) AS email_failed,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'indeterminate' THEN 1 ELSE 0 END) AS email_indeterminate
             FROM " . prefixTable('secure_send_audit') . " a
-            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired', 'download_authorized')
+            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired', 'download_authorized', 'email_outcome')
                 AND {$where}",
             ...$parameters
         );
@@ -148,7 +152,10 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
             $attachments[$key] = (int) ($summary[$key] ?? 0);
         }
         $delivery = [];
-        foreach (['email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared'] as $key) {
+        foreach ([
+            'email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared',
+            'email_accepted', 'email_not_submitted', 'email_failed', 'email_indeterminate',
+        ] as $key) {
             $delivery[$key] = (int) ($summary[$key] ?? 0);
         }
         $senders = [];

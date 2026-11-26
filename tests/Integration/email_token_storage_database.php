@@ -126,6 +126,23 @@ try {
     emailTokenExpect($upgradedAudit === DB::queryFirstRow('SELECT * FROM %b', $auditTable),
         'Upgrade replay changed historical Secure Send audit evidence');
     emailTokenExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_email')) === 1, 'Replay removed a sharing delivery reservation');
+
+    $tasks = prefixTable('background_tasks');
+    $finishedAt = time();
+    DB::insert($tasks, ['increment_id' => 1, 'process_type' => 'secure_send_email', 'status' => 'in_progress',
+        'is_in_progress' => 1, 'created_at' => $finishedAt - 1, 'arguments' => '{"sealed":"private-canary"}']);
+    secureSendEmailFinishTask(1, 'accepted', ['status' => 'completed', 'finished_at' => $finishedAt,
+        'is_in_progress' => -1, 'arguments' => '{"accepted":true}'], []);
+    secureSendEmailFinishTask(1, 'indeterminate', ['status' => 'failed', 'finished_at' => $finishedAt + 1], []);
+    emailTokenExpect(DB::queryFirstField('SELECT status FROM %b WHERE increment_id = %i', $tasks, 1) === 'completed',
+        'A duplicate finalization overwrote the first outcome');
+    DB::delete($tasks, 'increment_id = %i', 1);
+    $outcomes = DB::query('SELECT * FROM %b WHERE event = %s', $auditTable, 'email_outcome');
+    emailTokenExpect(count($outcomes) === 1 && $outcomes[0]['reason'] === 'accepted'
+        && (int) $outcomes[0]['occurred_at'] === $finishedAt && (int) $outcomes[0]['send_id'] === 1
+        && $outcomes[0]['actor_id'] === null && $outcomes[0]['send_type'] === 'unknown'
+        && !str_contains(json_encode($outcomes, JSON_THROW_ON_ERROR), 'private-canary'),
+        'Terminal outcome must survive task deletion with its time and association and no email data');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '1', 'Replay changed administrator email opt-in');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_api_enabled') === '1', 'Replay changed the Secure Send API opt-in');
     emailTokenExpect($revision === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision'), 'Replay changed the revision');

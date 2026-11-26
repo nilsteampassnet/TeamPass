@@ -34,6 +34,7 @@ require_once __DIR__ . '/../../sources/emails_queue_logic.php';
 trait EmailTrait {
     /** @var array{email?: string, login?: string} Recipient display metadata, never message content. */
     private array $emailTaskRecipients = [];
+    private bool $secureSendSubmissionStarted = false;
 
     /**
      * Envoie un email
@@ -70,6 +71,7 @@ trait EmailTrait {
         }
         
         // send email
+        $this->secureSendSubmissionStarted = ($this->processType ?? '') === 'secure_send_email';
         $result = $emailService->sendMail(
             $arguments['subject'],
             $arguments['body'],

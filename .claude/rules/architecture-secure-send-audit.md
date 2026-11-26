@@ -37,8 +37,9 @@ events are `logsAllowedSecureSendEvents()` = the keys of `secureSendAuditEventRe
 Link creation has a single implementation, the session-free `secureSendCreateLink()`
 (`secure_send_create.php`), shared by the web `generate_OTV_url` handler and the REST
 `POST /api/v1/secureSend/create` (`api-reference.md`), item and note sends alike. Both therefore
-write the same `created` event with the sender as actor; the journal does not record the
-channel. Its refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
+write the same `created` event with the sender as actor. The delivery channel means
+direct email or no direct email, independently of the web or API entry point.
+Its refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
 Revocation likewise has one implementation, `secureSendRevokeLink()`, shared by the web
 `revoke_secure_send` handler and `DELETE /api/v1/secureSend/revoke`; the owner is always the
 authenticated user (session or token), never a request member. The personal inventory
@@ -63,6 +64,8 @@ The append-only lifecycle rows (until administrator-configured retention) contai
 - `attachment_count`, `attachment_ids`: count and original vault file IDs on
   creation or download authorization. Historical events have no attachment
   metadata, and standalone notes have no vault file IDs.
+- `delivery_channel`: `direct_email` or `no_email` on new creations. Historical
+  creations keep NULL, and manual sharing outside TeamPass is unobservable.
 
 No payload, item label, note title, login, email, key, lookup code, URL, passphrase,
 IP address, request body or free-text error is accepted into the journal.
@@ -84,6 +87,7 @@ longer exists (for example, LEFT JOIN and an identifier fallback).
 | `created` | empty | Authorized encrypted link insertion |
 | `revealed` | empty | Successful server-side reveal/view reservation |
 | `download_authorized` | empty | First authorized request for a file on the link while its audit entry is retained |
+| `email_outcome` | `accepted`, `not_submitted`, `failed`, `indeterminate` | Final outcome of a direct invitation, at task finalization |
 | `reveal_failed` | `wrong_credentials` | Incorrect URL key or passphrase on a confirmed attempt |
 | `revoked` | `sender_revoked` | Owner-authorized removal |
 | `invalidated` | `sender_unavailable` | Note sender no longer eligible |
@@ -146,6 +150,11 @@ Fresh install and the 3.2.4 upgrade share the association DDL.
 Interrupted invitations are not resumed; both handler failure paths wipe their
 payload. Provider outcomes remain conservative: `not_sent` denotes a preflight
 refusal, while acceptance is not inbox delivery. Statuses are owner-scoped.
+The final task state and its metadata-only journal event commit under the task
+row lock. A deferred retry leaves no final outcome. If the link disappeared,
+the delivery association still identifies the send. A missing creation row
+leaves its source item/type unknown. Network submission stays outside the
+transaction, so a worker interruption can leave provider acceptance indeterminate.
 Resolve `#sender#` / optional `#sender_prefix#` at each submission under current
 `secure_send_show_sender_name`; hidden/empty profiles use shipped **Someone**,
 never login/email. Strip header controls, escape HTML and preserve custom subjects
@@ -180,6 +189,10 @@ The contract contains:
   `expired`, distinct `sends_revealed`, and distinct creation `senders`;
 - `creations`: `items`, `notes`, `unknown`, `protected`, `unprotected`,
   `public_links`, `internal_links`, counted only on `created` events;
+- `attachments`: creations with files, files made available, creations with
+  unknown file count and first download authorizations;
+- `delivery`: audited creation channels, files made available via direct email
+  invitations and final invitation outcomes;
 - `top_senders`: up to five original senders with creations in the period, their
   period creation/reveal/failure counts, last creation timestamp and current
   account identity/status (`active`, `disabled`, `deleted`, `missing`).

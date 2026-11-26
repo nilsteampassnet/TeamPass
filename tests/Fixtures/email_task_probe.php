@@ -108,6 +108,8 @@ namespace {
     final class DB
     {
         public static array $updates = [];
+        public static array $audit = [];
+        private static bool $inTransaction = false;
 
         /** Observe the attempt count after the worker increments it. */
         public static function queryFirstField(string $sql, mixed ...$arguments): int
@@ -122,6 +124,9 @@ namespace {
         public static function queryFirstRow(string $sql, mixed ...$arguments): ?array
         {
             if (!($GLOBALS['secure_send_probe'] ?? false)) { return null; }
+            if (str_contains($sql, 'LEFT JOIN test_secure_send_audit')) {
+                return ['id' => 7, 'originator' => 42, 'send_type' => 'note', 'timestamp' => time() - 60];
+            }
             if (str_contains($sql, 'secure_send_email')) {
                 if ($GLOBALS['argv'][1] === 'revoked') { return null; }
                 return ['id' => 7, 'originator' => 42, 'send_type' => 'note', 'views' => 0, 'max_views' => 1,
@@ -135,6 +140,20 @@ namespace {
 
         /** This fixture has no matching application user. */
         public static function count(): int { return 0; }
+
+        /** Require an audit transaction for terminal Secure Send updates. */
+        public static function startTransaction(): void { self::$inTransaction = true; }
+        public static function commit(): void { self::$inTransaction = false; }
+        public static function rollback(): void { self::$inTransaction = false; }
+
+        /** Capture only the production metadata row. */
+        public static function insert(string $table, array $values): void
+        {
+            if ($table !== 'test_secure_send_audit' || !self::$inTransaction) {
+                throw new LogicException('Unexpected audit write outside the finalization transaction.');
+            }
+            self::$audit[] = $values;
+        }
 
         /** Record writes, including the task's actual final status and error. */
         public static function update($table, $values, $where, $id): void
@@ -238,6 +257,7 @@ namespace {
         if (($argv[2] ?? '') === 'worker') {
             if ($GLOBALS['secure_send_probe']) {
                 require_once dirname(__DIR__, 2) . '/app/config/include.php';
+                require_once dirname(__DIR__, 2) . '/app/sources/secure_send_email.php';
             }
             if (!defined('LOG_TASKS')) { define('LOG_TASKS', true); }
             if (!defined('LOG_TASKS_FILE')) { define('LOG_TASKS_FILE', 'unused-test-log'); }
@@ -266,6 +286,7 @@ namespace {
         'decrypt_calls' => $GLOBALS['decrypt_calls'],
         'messages' => \TeampassClasses\EmailService\EmailService::$messages,
         'task_updates' => DB::$updates,
+        'audit' => DB::$audit,
         'logs' => TaskLogger::$entries,
         'display_user' => $displayUser,
     ], JSON_THROW_ON_ERROR);

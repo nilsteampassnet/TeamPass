@@ -758,6 +758,14 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <?php } ?>
                                             </dl>
                                             <p class='small text-muted mb-0'><?php echo htmlspecialchars($lang->get('ops_secure_send_delivery_scope'), ENT_QUOTES, 'UTF-8'); ?></p>
+                                            <h5 class='h6 mt-3'><?php echo htmlspecialchars($lang->get('ops_secure_send_email_outcomes'), ENT_QUOTES, 'UTF-8'); ?></h5>
+                                            <dl class='row small mb-1 tp-secure-send-breakdown'>
+                                                <?php foreach (['email_accepted', 'email_not_submitted', 'email_failed', 'email_indeterminate'] as $metric) { ?>
+                                                <dt class='col-9'><?php echo htmlspecialchars($lang->get('ops_secure_send_' . $metric), ENT_QUOTES, 'UTF-8'); ?></dt>
+                                                <dd class='col-3 text-right' data-tp-secure-send-count='delivery.<?php echo $metric; ?>'>—</dd>
+                                                <?php } ?>
+                                            </dl>
+                                            <p class='small text-muted mb-0'><?php echo htmlspecialchars($lang->get('ops_secure_send_email_outcomes_scope'), ENT_QUOTES, 'UTF-8'); ?></p>
                                         </div>
                                     </div>
                                 </div>

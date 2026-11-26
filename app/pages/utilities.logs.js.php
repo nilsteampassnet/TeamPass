@@ -421,6 +421,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
       },
       send: (row) => escapeLogValue('#' + row.send),
       policy: (row) => {
+        if (row.event === 'email_outcome') return ''
         const parts = [logMessages.secureSendViews.replace('#tp_views#', row.views).replace('#tp_max#', row.max_views)]
         if (row.has_passphrase === true) parts.push(logMessages.secureSendPassphrase)
         if (row.is_public === true) parts.push(logMessages.secureSendPublic)

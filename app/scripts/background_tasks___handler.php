@@ -34,6 +34,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/backup.functions.php';
 require_once __DIR__ . '/../sources/lapr.functions.php';
+require_once __DIR__ . '/../sources/secure_send_email.php';
 require_once __DIR__ . '/taskLogger.php';
 require_once __DIR__ . '/backgroundTaskLock.php';
 
@@ -1023,19 +1024,28 @@ class BackgroundTasksHandler {
         );
 
         // Mark tasks as failed if they've been running too long
+        $now = time();
+        $staleBefore = $now - $this->maxExecutionTime;
+        $staleInvitations = DB::queryFirstColumn(
+            'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
+             WHERE process_type = %s AND is_in_progress = 1 AND updated_at < %i',
+            'secure_send_email',
+            $staleBefore
+        );
+        foreach ($staleInvitations as $taskId) {
+            $this->markTaskFailed((int) $taskId, '', $staleBefore);
+        }
         DB::query(
             'UPDATE ' . prefixTable('background_tasks') . ' 
             SET is_in_progress = -1, 
                 finished_at = %i, 
                 status = "failed",
-                arguments = CASE WHEN process_type = %s THEN %s ELSE arguments END,
                 error_message = "Task exceeded maximum execution time of '.$this->maxExecutionTime.' seconds"
             WHERE is_in_progress = 1 
-            AND updated_at < %i',
-            time(),
-            'secure_send_email',
-            json_encode(['failed' => true, 'interrupted' => true]),
-            time() - $this->maxExecutionTime
+            AND updated_at < %i AND process_type <> %s',
+            $now,
+            $staleBefore,
+            'secure_send_email'
         );
 
         // Remove very old failed tasks, including email tasks that have no subtasks.
@@ -1390,8 +1400,9 @@ class BackgroundTasksHandler {
      *
      * @param int $taskId Task ID.
      * @param string $message Error message.
+     * @param int|null $staleBefore Recheck the cutoff under the task lock during stale cleanup.
      */
-    private function markTaskFailed(int $taskId, string $message): void {
+    private function markTaskFailed(int $taskId, string $message, ?int $staleBefore = null): void {
         $failedProcessType = DB::queryFirstField('SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
         if (in_array($failedProcessType, ['send_email', 'secure_send_email'], true)) {
             $message = 'Email delivery interrupted; acceptance is unknown. Check the provider before resending.';
@@ -1404,6 +1415,14 @@ class BackgroundTasksHandler {
         ];
         if ($failedProcessType === 'secure_send_email') {
             $failedValues['arguments'] = json_encode(['failed' => true, 'interrupted' => true]);
+            try {
+                secureSendEmailFinishTask($taskId, 'indeterminate', $failedValues, $this->settings, $staleBefore);
+            } catch (RuntimeException) {
+                // Finalization was rolled back. Stale cleanup can retry without resending.
+                return;
+            }
+            if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' failed: ' . $message, 'ERROR');
+            return;
         }
         DB::update(
             prefixTable('background_tasks'),

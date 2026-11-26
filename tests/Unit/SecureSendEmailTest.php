@@ -20,7 +20,6 @@ final class SecureSendEmailTest extends TestCase
     private array $settings;
     private array $link;
     private array $delivery;
-    private int $maxExecutionTime = 60;
 
     protected function setUp(): void
     {
@@ -37,8 +36,15 @@ final class SecureSendEmailTest extends TestCase
         DB::$connection->exec('INSERT INTO email_test_items (id) VALUES (123)');
         DB::$connection->exec('CREATE TABLE email_test_automatic_del (item_id INTEGER, del_enabled INTEGER, del_type INTEGER, del_value INTEGER)');
         DB::$connection->exec('CREATE TABLE email_test_otv (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER, send_type TEXT, timestamp INTEGER, originator INTEGER, code TEXT, encrypted TEXT, protected_key TEXT, has_passphrase INTEGER, failed_attempts INTEGER, views INTEGER DEFAULT 0, time_limit INTEGER, max_views INTEGER, shared_globaly INTEGER)');
-        DB::$connection->exec('CREATE TABLE email_test_secure_send_audit (record TEXT)');
-        DB::$connection->exec('CREATE TABLE email_test_background_tasks (increment_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, process_type TEXT, arguments TEXT, status TEXT DEFAULT "queued", error_message TEXT)');
+        DB::$connection->exec("CREATE TABLE email_test_secure_send_audit (
+            id INTEGER PRIMARY KEY, record TEXT,
+            send_id INTEGER AS (json_extract(record, '$.send_id')),
+            originator INTEGER AS (json_extract(record, '$.originator')),
+            event TEXT AS (json_extract(record, '$.event')),
+            item_id INTEGER AS (json_extract(record, '$.item_id')),
+            send_type TEXT AS (json_extract(record, '$.send_type'))
+        )");
+        DB::$connection->exec('CREATE TABLE email_test_background_tasks (increment_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, process_type TEXT, arguments TEXT, status TEXT DEFAULT "queued", error_message TEXT, is_in_progress INTEGER DEFAULT 0, finished_at INTEGER, updated_at INTEGER)');
         DB::$connection->exec('CREATE TABLE email_test_secure_send_email (send_id INTEGER PRIMARY KEY, task_id INTEGER UNIQUE, originator INTEGER, created_at INTEGER, address_hash TEXT)');
         $this->settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_allow_email' => 1, 'cpassman_url' => 'https://vault.example.test',
             'email_smtp_server' => 'smtp.example.test', 'email_from' => 'team@example.test', 'timezone' => 'Europe/Paris'];
@@ -250,8 +256,6 @@ final class SecureSendEmailTest extends TestCase
     /** Execute the administration query against both email types and unrelated tasks. */
     public function testAdministratorQueueCountersIncludeBothEmailTypesOnly(): void
     {
-        DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN is_in_progress INTEGER DEFAULT 0');
-        DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN finished_at TEXT');
         foreach (['send_email', 'secure_send_email', 'other_task'] as $type) {
             foreach ([[0, null, 'queued'], [0, '', 'queued'], [0, '0', 'queued'], [1, null, 'in_progress'],
                 [-1, '123', 'failed'], [-1, '123', 'completed'], [0, '123', 'completed']] as [$progress, $finished, $status]) {
@@ -274,12 +278,15 @@ final class SecureSendEmailTest extends TestCase
         $start = strpos($source, 'class BackgroundTasksHandler');
         eval(substr($source, $start, strpos($source, '// Main execution', $start) - $start));
         $handler = (new ReflectionClass(BackgroundTasksHandler::class))->newInstanceWithoutConstructor();
-        foreach (['is_in_progress INTEGER', 'finished_at INTEGER', 'updated_at INTEGER'] as $column) {
-            DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN ' . $column);
-        }
+        (new ReflectionProperty(BackgroundTasksHandler::class, 'settings'))->setValue($handler, []);
+        (new ReflectionProperty(BackgroundTasksHandler::class, 'maxExecutionTime'))->setValue($handler, 60);
         foreach (['direct', 'stale'] as $path) {
             DB::$connection->exec('DELETE FROM email_test_background_tasks');
-            foreach (['secure_send_email', 'send_email', 'other_task'] as $type) {
+            $sendId = secureSendStoreLink($this->link, $this->settings, $this->delivery);
+            DB::update(prefixTable('background_tasks'), [
+                'status' => 'in_progress', 'is_in_progress' => 1, 'updated_at' => time() - 120,
+            ], 'process_type = %s', 'secure_send_email');
+            foreach (['send_email', 'other_task'] as $type) {
                 DB::insert(prefixTable('background_tasks'), ['process_type' => $type, 'status' => 'in_progress',
                     'arguments' => 'sealed-url-secret-canary', 'is_in_progress' => 1, 'updated_at' => time() - 120]);
             }
@@ -289,16 +296,60 @@ final class SecureSendEmailTest extends TestCase
             } else {
                 $from = strpos($source, '// Mark tasks as failed if');
                 $to = strpos($source, '// Remove very old failed tasks', $from);
-                eval(substr($source, $from, $to - $from));
+                $runStaleTasks = (function (string $fragment): void {
+                    eval($fragment);
+                })->bindTo($handler, BackgroundTasksHandler::class);
+                $runStaleTasks(substr($source, $from, $to - $from));
             }
             $task = DB::queryFirstRow('SELECT * FROM email_test_background_tasks WHERE process_type=%s', 'secure_send_email');
             self::assertSame('failed', $task['status']);
             self::assertSame(['failed' => true, 'interrupted' => true], json_decode($task['arguments'], true));
             self::assertStringNotContainsString('private-stderr-canary', $task['error_message']);
+            $audit = DB::queryFirstField('SELECT record FROM email_test_secure_send_audit WHERE send_id = %i AND event = %s', $sendId, 'email_outcome');
+            self::assertSame('indeterminate', json_decode($audit, true, 32, JSON_THROW_ON_ERROR)['reason']);
             foreach (['send_email', 'other_task'] as $type) {
                 self::assertSame('sealed-url-secret-canary', DB::queryFirstField('SELECT arguments FROM email_test_background_tasks WHERE process_type=%s', $type));
             }
         }
+    }
+
+    public function testTerminalOutcomeCommitsWithTaskAndSurvivesLinkAndTaskDeletion(): void
+    {
+        $sendId = secureSendStoreLink($this->link, $this->settings, $this->delivery);
+        $taskId = (int) DB::queryFirstField('SELECT task_id FROM email_test_secure_send_email WHERE send_id = %i', $sendId);
+        DB::delete(prefixTable('otv'), 'id = %i', $sendId);
+        $finished = ['status' => 'completed', 'finished_at' => 500, 'arguments' => '{}'];
+
+        $previousLog = ini_get('error_log');
+        $diagnostics = tempnam(sys_get_temp_dir(), 'tp-send-outcome-');
+        self::assertIsString($diagnostics);
+        ini_set('error_log', $diagnostics);
+        DB::$failTable = prefixTable('secure_send_audit');
+        try {
+            secureSendEmailFinishTask($taskId, 'accepted', $finished, []);
+            self::fail('An invitation was marked complete without recording its outcome');
+        } catch (RuntimeException $exception) {
+            self::assertSame('Unable to record the Secure Send email outcome.', $exception->getMessage());
+            self::assertStringNotContainsString('private-failure-canary', (string) file_get_contents($diagnostics));
+        } finally {
+            DB::$failTable = '';
+            ini_set('error_log', (string) $previousLog);
+            unlink($diagnostics);
+        }
+        self::assertSame('queued', DB::queryFirstField('SELECT status FROM email_test_background_tasks'));
+        secureSendEmailFinishTask($taskId, 'accepted', $finished, []);
+        secureSendEmailFinishTask($taskId, 'indeterminate', ['status' => 'failed', 'finished_at' => 501], []);
+        self::assertSame('completed', DB::queryFirstField('SELECT status FROM email_test_background_tasks'));
+        DB::delete(prefixTable('background_tasks'), 'increment_id = %i', $taskId);
+        secureSendEmailPruneMetadata(time() + 3601);
+        self::assertSame(0, DB::$connection->querySingle('SELECT COUNT(*) FROM email_test_secure_send_email'));
+        $rows = DB::query('SELECT record FROM email_test_secure_send_audit WHERE event = %s', 'email_outcome');
+        self::assertCount(1, $rows);
+        $event = json_decode($rows[0]['record'], true, 32, JSON_THROW_ON_ERROR);
+        self::assertSame([$sendId, 'accepted', 500, 'note', null],
+            [$event['send_id'], $event['reason'], $event['occurred_at'], $event['send_type'], $event['actor_id']]);
+        self::assertStringNotContainsString('recipient@example.test', $rows[0]['record']);
+        self::assertStringNotContainsString('link-secret-canary', $rows[0]['record']);
     }
 
     public function testInvitationSubjectIncludesOnlyThePermittedDecodedProfileName(): void

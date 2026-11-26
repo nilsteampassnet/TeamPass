@@ -775,11 +775,20 @@ logItems(
 
             // Get info about task
             $taskInfo = DB::queryFirstRow(
-                'SELECT p.process_type as process_type
+                'SELECT p.process_type, p.status
                 FROM ' . prefixTable('background_tasks') . ' as p
                 WHERE p.increment_id = %i',
                 $post_id
             );
+            if (($taskInfo['process_type'] ?? '') === 'secure_send_email'
+                && !in_array($taskInfo['status'], ['completed', 'failed'], true)
+            ) {
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ], 'encode');
+                break;
+            }
             if ($taskInfo !== null) {
                 // delete task
                 DB::query(
