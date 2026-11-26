@@ -158,6 +158,7 @@ function reportsSecureSendPeriod(string $startDate, string $endDate, DateTimeZon
  *
  * @param array<string,int|string|null> $summary Aggregate journal counters
  * @param array{start:int,end:int} $period Inclusive observation bounds
+ * @param string $dateTimeFormat Configured TeamPass date and time format
  * @param callable(string):string $translate Report language lookup
  * @return list<array{section:string,indicator:string,value:int|string}>
  */
@@ -165,12 +166,13 @@ function reportsSecureSendRows(
     array $summary,
     array $period,
     DateTimeZone $timezone,
+    string $dateTimeFormat,
     int $generatedAt,
     ?int $retentionDays,
     callable $translate
 ): array {
     $formatTime = static fn (int $timestamp): string =>
-        (new DateTimeImmutable('@' . $timestamp))->setTimezone($timezone)->format('Y-m-d H:i:s P');
+        (new DateTimeImmutable('@' . $timestamp))->setTimezone($timezone)->format($dateTimeFormat . ' P');
     $retention = match ($retentionDays) {
         null => $translate('unknown'),
         0 => $translate('compliance_report_secure_send_retention_all'),

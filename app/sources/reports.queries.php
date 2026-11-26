@@ -572,6 +572,7 @@ switch ($post_type) {
         require_once __DIR__ . '/secure_send_statistics.php';
         require_once __DIR__ . '/secure_send_retention.php';
         $timezone = new DateTimeZone(date_default_timezone_get());
+        $dateTimeFormat = ($SETTINGS['date_format'] ?? 'd/m/Y') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s');
         $generatedAt = time();
         try {
             $period = reportsSecureSendPeriod(
@@ -618,6 +619,7 @@ switch ($post_type) {
             $summary,
             $period,
             $timezone,
+            $dateTimeFormat,
             $generatedAt,
             $retentionDays,
             static fn (string $key): string => (string) $lang->get($key)

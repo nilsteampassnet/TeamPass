@@ -55,7 +55,8 @@ invitations. It includes audited item shares and standalone notes. Links with
 an unknown delivery channel or file count are counted separately.
 
 The report and CSV include the observation bounds, generation time, configured
-time zone and audit retention. Calendar dates use the TeamPass time zone.
+time zone and audit retention. Timestamps use the TeamPass regional date and
+time formats and include the UTC offset. Calendar dates use the TeamPass time zone.
 Each count uses the timestamp of its own event. An accepted invitation was
 handed off to the mail service. A first download authorization is a server-side
 decision before a transfer. The CSV includes aggregate evidence and report

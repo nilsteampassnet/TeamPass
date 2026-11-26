@@ -53,9 +53,23 @@ class ComplianceReportsLogicTest extends TestCase
     public function testSecureSendEvidenceCarriesScopeAndOnlyAggregateValuesInBothLanguages(): void
     {
         $timezone = new DateTimeZone('Europe/Paris');
-        $now = (new DateTimeImmutable('2026-04-01T12:00:00+02:00'))->getTimestamp();
+        $now = (new DateTimeImmutable('2026-04-01T15:05:00+02:00'))->getTimestamp();
         $period = reportsSecureSendPeriod('2026-03-29', '2026-03-29', $timezone, $now);
-        foreach (['english', 'french'] as $language) {
+        $formats = [
+            'english' => [
+                'm/d/Y g:i:s a',
+                '03/29/2026 12:00:00 am +01:00',
+                '03/29/2026 11:59:59 pm +02:00',
+                '04/01/2026 3:05:00 pm +02:00',
+            ],
+            'french' => [
+                'd/m/Y H:i:s',
+                '29/03/2026 00:00:00 +01:00',
+                '29/03/2026 23:59:59 +02:00',
+                '01/04/2026 15:05:00 +02:00',
+            ],
+        ];
+        foreach ($formats as $language => [$format, $start, $end, $generated]) {
             $messages = require __DIR__ . '/../../app/includes/language/' . $language . '.php';
             $translate = static fn (string $key): string => $messages[$key];
             $rows = reportsSecureSendRows([
@@ -65,11 +79,11 @@ class ComplianceReportsLogicTest extends TestCase
                 'file_count_unknown' => 1,
                 'email_indeterminate' => null,
                 'originator' => 'private-originator-canary',
-            ], $period, $timezone, $now, 90, $translate);
+            ], $period, $timezone, $format, $now, 90, $translate);
             $values = array_column($rows, 'value', 'indicator');
-            self::assertSame('2026-03-29 00:00:00 +01:00', $values[$translate('compliance_report_secure_send_period_start')]);
-            self::assertSame('2026-03-29 23:59:59 +02:00', $values[$translate('compliance_report_secure_send_period_end')]);
-            self::assertSame('2026-04-01 12:00:00 +02:00', $values[$translate('compliance_report_secure_send_generated_at')]);
+            self::assertSame($start, $values[$translate('compliance_report_secure_send_period_start')]);
+            self::assertSame($end, $values[$translate('compliance_report_secure_send_period_end')]);
+            self::assertSame($generated, $values[$translate('compliance_report_secure_send_generated_at')]);
             self::assertSame('Europe/Paris', $values[$translate('compliance_report_secure_send_timezone')]);
             self::assertSame(90, $values[$translate('secure_send_audit_retention_days')]);
             self::assertSame(3, $values[$translate('ops_secure_send_public_unprotected')]);
@@ -78,6 +92,9 @@ class ComplianceReportsLogicTest extends TestCase
             self::assertSame(1, $values[$translate('ops_secure_send_file_count_unknown')]);
             self::assertSame(0, $values[$translate('ops_secure_send_email_indeterminate')]);
             $csv = reportsBuildCsv(['Section', 'Indicator', 'Value'], $rows, ['section', 'indicator', 'value']);
+            self::assertStringContainsString($start, $csv);
+            self::assertStringContainsString($end, $csv);
+            self::assertStringContainsString($generated, $csv);
             self::assertStringContainsString('Europe/Paris', $csv);
             self::assertStringNotContainsString('private-originator-canary', $csv);
         }
