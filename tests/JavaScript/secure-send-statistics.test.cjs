@@ -58,12 +58,13 @@ function harness() {
   const requests = []
   function element(selector) {
     if (!elements.has(selector)) {
-      const state = { selector, value: '', properties: {}, attributes: {}, classes: new Set() }
+      const state = { selector, value: '', properties: {}, attributes: {}, styles: {}, classes: new Set() }
       const adapter = {
         state,
         text(value) { if (value === undefined) return state.value; state.value = value; return adapter },
         html(value) { state.html = value; return adapter },
         prop(key, value) { state.properties[key] = value; return adapter },
+        css(key, value) { state.styles[key] = value; return adapter },
         attr(key, value) { if (value === undefined) return state.attributes[key]; state.attributes[key] = value; return adapter },
         addClass(name) { state.classes.add(name); return adapter }, removeClass(name) { state.classes.delete(name); return adapter },
         val() { return '30d' }, is() { return true }
@@ -79,7 +80,7 @@ function harness() {
   }))
   function $(selector) {
     if (typeof selector === 'object') return selector
-    if (selector === '#tp-secure-send-card [data-tp-secure-send-count]') {
+    if (selector === '#tp-ops-secure-send [data-tp-secure-send-count]') {
       return { each(callback) { counters.forEach(node => callback.call(node)); return this } }
     }
     return element(selector)
@@ -114,16 +115,34 @@ test('valid zero counts are visible; missing/failed/null data is unavailable, ne
   }
 })
 
+test('the link-type distribution uses audited creations and clears with the selected period', () => {
+  const h = harness()
+  const data = payload()
+  data.totals.created = 20
+  data.creations.items = 12
+  data.creations.notes = 7
+  data.creations.unknown = 1
+  h.render(data)
+  assert.equal(h.node('#tp-secure-send-type-items').styles.width, '60%')
+  assert.equal(h.node('#tp-secure-send-type-notes').styles.width, '35%')
+  assert.equal(h.node('#tp-secure-send-type-unknown').styles.width, '5%')
+
+  h.render(null, 'loading')
+  for (const type of ['items', 'notes', 'unknown']) {
+    assert.equal(h.node('#tp-secure-send-type-' + type).styles.width, '0%')
+  }
+})
+
 test('loading clears previous activity and exposes an accessible busy state', () => {
   const h = harness()
   const data = payload(); data.totals.created = 9
   h.render(data)
   h.render(null, 'loading')
   assert.equal(h.node('totals.created').value, '—')
-  assert.equal(h.node('#tp-secure-send-card').attributes['aria-busy'], 'true')
+  assert.equal(h.node('#tp-ops-secure-send').attributes['aria-busy'], 'true')
   assert.match(h.node('#tp-secure-send-status').value, /ops_secure_send_loading/)
   h.render(data)
-  assert.equal(h.node('#tp-secure-send-card').attributes['aria-busy'], 'false')
+  assert.equal(h.node('#tp-ops-secure-send').attributes['aria-busy'], 'false')
 })
 
 test('disabling Secure Send preserves recorded history and adds its notice', () => {

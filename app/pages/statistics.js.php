@@ -88,7 +88,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var target = $(event.target).attr('href');
         // The licence tab has its own data: the period, the filters and the refresh do not apply to it
         $('.tp-ops-toolbar').toggle(target !== '#tp-ops-licence');
-        $('.tp-ops-standard-filter').toggle(target !== '#tp-ops-lapr');
+        $('.tp-ops-standard-filter').toggle(target !== '#tp-ops-lapr' && target !== '#tp-ops-secure-send');
         if (target === '#tp-ops-licence') {
             tpLicenceShow();
             return;
@@ -247,7 +247,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // A failed/new period must not be repainted from the previous payload on tab changes.
         tpOpsLastData = null;
         renderSecureSendStatistics(null, 'loading');
-        $('#tp-secure-send-period').text($('#tp-ops-period option:selected').text());
         var payload = {
             period: $('#tp-ops-period').val() || '30d',
             include_personal: $('#tp-ops-include-personal').is(':checked') ? 1 : 0,
@@ -1056,7 +1055,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     function renderSecureSendStatistics(secureSend, state) {
-        var counts = $('#tp-secure-send-card [data-tp-secure-send-count]');
+        var counts = $('#tp-ops-secure-send [data-tp-secure-send-count]');
         var available = !!(state !== 'loading' && secureSend && secureSend.available === true && secureSend.error === false);
         // Missing/null counters are unavailable data, not a valid zero-activity period.
         counts.each(function() {
@@ -1066,13 +1065,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         });
         if (!secureSend || !Array.isArray(secureSend.top_senders) || secureSend.top_senders.some(function(sender) { return !sender || typeof sender !== 'object'; })) { available = false; }
-        $('#tp-secure-send-card').attr('aria-busy', state === 'loading' ? 'true' : 'false');
+        $('#tp-ops-secure-send').attr('aria-busy', state === 'loading' ? 'true' : 'false');
         $('#tp-secure-send-content').prop('hidden', !available);
         $('#tp-secure-send-disabled').prop('hidden', !available || secureSend.enabled !== false);
         $('#tp-secure-send-status').text(state === 'loading' ? tpOpsSecureSendText('loading') : (available ? '' : tpOpsSecureSendText('unavailable'))).prop('hidden', !!available);
         counts.each(function() {
             var path = $(this).attr('data-tp-secure-send-count').split('.');
             $(this).text(available ? secureSend[path[0]][path[1]] : '—');
+        });
+        $.each(['items', 'notes', 'unknown'], function(_, type) {
+            var share = available && secureSend.totals.created > 0
+                ? secureSend.creations[type] / secureSend.totals.created * 100 : 0;
+            $('#tp-secure-send-type-' + type).css('width', Math.min(share, 100) + '%');
         });
         var rows = '';
         if (available && secureSend.top_senders.length === 0) {
@@ -1712,7 +1716,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Honour a #hash naming one of the tabs (the admin dashboard links to #tp-ops-licence).
     // Last, so that every variable the tab handlers read is initialised.
-    if (/^#tp-ops-[a-z]+$/.test(window.location.hash)) {
+    if (/^#tp-ops-[a-z]+(?:-[a-z]+)*$/.test(window.location.hash)) {
         $('#tp-ops-tabs a[href="' + window.location.hash + '"]').tab('show');
     }
 </script>

@@ -18,7 +18,7 @@ and from the existing `log_items` audit under the OTV system account.
 
 The audit foundation provides storage, lifecycle instrumentation and migration.
 Its dependent statistics change adds aggregates to the existing administrator
-statistics endpoint; the Users statistics card displays them below item activity.
+statistics endpoint; the dedicated Secure Send tab displays them.
 Governance/Reports can later consume the journal through their existing
 administrator-only, feature-gated handlers. No export or purge endpoint is added,
 and no access to another user's item contents is granted.
@@ -275,7 +275,7 @@ keeps all evidence; whole numbers from `1` to `36500` set the retention window.
 It appears in **Options / Collaboration / Secure sharing**, after the Secure Send
 view limit, with scheduling and irreversible-deletion warnings. It reuses the
 existing settings autosave JavaScript and Bootstrap responsive/dark-theme styles;
-only English/French catalogs are changed. The Users statistics card also warns
+only English/French catalogs are changed. The Secure Send statistics tab also explains
 that retention can make a selected period incomplete.
 The existing authenticated, administrator-only `save_option_change` handler
 validates the raw value before sanitization and invalidates ConfigManager's cache

@@ -1355,7 +1355,7 @@ Monitoring → Logs records one final outcome for each invitation observed after
 the upgrade: accepted by the mail service, not submitted, confirmed failure or
 indeterminate. The journal stores the link identifier, sender and outcome time
 without the recipient address, link or message. Task cleanup does not remove
-this event. The Statistics card counts invitations and associated files at
+this event. Under **Statistics → Secure Send**, counts reflect invitations and associated files at
 creation, and final outcomes at completion. Older outcomes are not reconstructed.
 
 Delivery associations remain while their link exists. Maintenance and subsequent

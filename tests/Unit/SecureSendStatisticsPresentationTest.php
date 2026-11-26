@@ -26,10 +26,10 @@ class SecureSendStatisticsPresentationTest extends TestCase
         return str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../' . $path));
     }
 
-    private function cardTemplate(): string
+    private function secureSendTabTemplate(): string
     {
         $page = $this->source('app/pages/statistics.php');
-        $start = strpos($page, "<div class='card card-outline card-info' id='tp-secure-send-card'");
+        $start = strpos($page, "<div class='tab-pane fade' id='tp-ops-secure-send'");
         $end = strpos($page, "<div class='tab-pane fade' id='tp-ops-lapr'", $start);
         self::assertIsInt($start);
         self::assertIsInt($end);
@@ -68,11 +68,11 @@ class SecureSendStatisticsPresentationTest extends TestCase
         }
     }
 
-    public function testCardRendersAllDynamicMetricsInBothCatalogs(): void
+    public function testTabRendersAllDynamicMetricsInBothCatalogs(): void
     {
         foreach (['english', 'french'] as $language) {
             $messages = include __DIR__ . '/../../app/includes/language/' . $language . '.php';
-            $html = $this->render($this->cardTemplate(), $messages);
+            $html = $this->render($this->secureSendTabTemplate(), $messages);
             preg_match_all("/data-tp-secure-send-count='([^']+)'/", $html, $fields);
             self::assertCount(28, $fields[1]);
             self::assertCount(28, array_unique($fields[1]));
@@ -86,10 +86,22 @@ class SecureSendStatisticsPresentationTest extends TestCase
         }
     }
 
-    public function testTranslationsCannotInjectHtmlIntoTheCard(): void
+    public function testSecureSendHasItsOwnTabOutsideTheUsersPane(): void
+    {
+        $page = $this->source('app/pages/statistics.php');
+        self::assertStringContainsString("id='tp-ops-secure-send-tab' data-toggle='tab' href='#tp-ops-secure-send'", $page);
+        $usersPane = strpos($page, "<div class='tab-pane fade' id='tp-ops-users'");
+        $secureSendPane = strpos($page, "<div class='tab-pane fade' id='tp-ops-secure-send'");
+        self::assertIsInt($usersPane);
+        self::assertIsInt($secureSendPane);
+        self::assertGreaterThan($usersPane, $secureSendPane);
+        self::assertStringNotContainsString('data-tp-secure-send-count', substr($page, $usersPane, $secureSendPane - $usersPane));
+    }
+
+    public function testTranslationsCannotInjectHtmlIntoTheTab(): void
     {
         $messages = include __DIR__ . '/../../app/includes/language/english.php';
-        $html = $this->render($this->cardTemplate(), $messages, '<img src=x onerror="alert(1)"> & \'"');
+        $html = $this->render($this->secureSendTabTemplate(), $messages, '<img src=x onerror="alert(1)"> & \'"');
         self::assertStringNotContainsString('<img', $html);
         self::assertStringContainsString('&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &amp;', $html);
     }
