@@ -64,7 +64,7 @@ class UserLogsAccessAuthorizationTest extends TestCase
         );
 
         self::assertStringContainsString(
-            "\$targetUserId !== (int) \$session->get('user-id')",
+            "\$targetUserId !== \$callerId",
             $src,
             'Reading one\'s own logs must stay allowed without an administration right'
         );
@@ -110,7 +110,12 @@ class UserLogsAccessAuthorizationTest extends TestCase
         $src = $this->datatableSource();
 
         self::assertStringContainsString(
-            "\$adminTargetIds = userLogsManageableAdminTargetIds(\$rows, 'callerMayManageUser');",
+            "\$callerId = (int) \$session->get('user-id');",
+            $src
+        );
+        self::assertMatchesRegularExpression(
+            '/\$adminTargetIds = userLogsManageableAdminTargetIds\(\s*\$rows,\s*'
+            . 'static fn \(int \$id\): bool => \$id === \$callerId \|\| callerMayManageUser\(\$id\)\s*\);/',
             $src
         );
         self::assertMatchesRegularExpression(

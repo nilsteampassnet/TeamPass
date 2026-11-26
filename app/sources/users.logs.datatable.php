@@ -91,10 +91,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $query = $request->query->all();
 $draw = max(0, (int) filter_var($query['draw'] ?? null, FILTER_VALIDATE_INT));
 $targetUserId = (int) filter_var($query['userId'] ?? null, FILTER_VALIDATE_INT);
+$callerId = (int) $session->get('user-id');
 
 // Users page access is required even for one's own logs; other accounts must also be in scope.
 if ($targetUserId <= 0
-    || ($targetUserId !== (int) $session->get('user-id')
+    || ($targetUserId !== $callerId
         && callerMayManageUser($targetUserId) === false)
 ) {
     echo json_encode(['sEcho' => $draw, 'iTotalRecords' => 0, 'iTotalDisplayRecords' => 0, 'aaData' => []]);
@@ -182,8 +183,11 @@ if ($total > 0) {
     }
 }
 
-// Resolve only the authorised account targets on this page, after the search cursor is closed.
-$adminTargetIds = userLogsManageableAdminTargetIds($rows, 'callerMayManageUser');
+// Resolve only the caller and accounts they may manage, after the search cursor is closed.
+$adminTargetIds = userLogsManageableAdminTargetIds(
+    $rows,
+    static fn (int $id): bool => $id === $callerId || callerMayManageUser($id)
+);
 $accounts = $adminTargetIds === [] ? [] : DB::query(
     'SELECT id, login, deleted_at FROM ' . prefixTable('users') . ' WHERE id IN %li',
     $adminTargetIds
