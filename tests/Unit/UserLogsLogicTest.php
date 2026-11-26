@@ -134,6 +134,18 @@ final class UserLogsLogicTest extends TestCase
         self::assertSame('legacy_deleted_1600000000 (deleted)', userLogsAccountTargetText('legacy_deleted_1600000000', 1700000000, $english));
     }
 
+    /** A translated marker stored with entities reads as text, like the other activity labels. */
+    public function testDeletedMarkerStoredWithEntitiesIsDecoded(): void
+    {
+        $lang = $this->createMock(Language::class);
+        $lang->method('getShipped')->willReturn('{login} (supprim&eacute;)');
+
+        self::assertSame(
+            'R&D (supprimé)',
+            userLogsAccountTargetText('R&amp;D_deleted_1700000000', 1700000000, $lang)
+        );
+    }
+
     public function testUserManagementActivityLabelsOmitPlaceholdersAndOldEmailAddresses(): void
     {
         $english = new Language('english');

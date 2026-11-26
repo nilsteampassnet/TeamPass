@@ -195,7 +195,11 @@ function userLogsAccountTargetText(string $login, int $deletedAt, Language $lang
         $login = substr($login, 0, -strlen($suffix));
     }
 
-    return str_replace('{login}', userLogsDisplayText($login), $lang->getShipped('user_logs_deleted_account_target'));
+    // Decode the marker like the other translated labels: a translation stored with entities
+    // must read as text once the response escapes it.
+    $marker = userLogsDisplayText((string) $lang->getShipped('user_logs_deleted_account_target'));
+
+    return str_replace('{login}', userLogsDisplayText($login), $marker);
 }
 
 /**
