@@ -10,7 +10,10 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
-define('LOG_TASKS', false);
+require_once __DIR__ . '/../../app/sources/secure_send_email.php';
+if (!defined('LOG_TASKS')) {
+    define('LOG_TASKS', false);
+}
 
 $database = (string) getenv('TEAMPASS_TEST_DB');
 if (preg_match('/^teampass_test_[a-z0-9_]+$/', $database) !== 1) {
@@ -64,6 +67,8 @@ try {
         status VARCHAR(20), is_in_progress INT, updated_at BIGINT, finished_at BIGINT, error_message TEXT, arguments MEDIUMTEXT)',
         prefixTable('background_tasks'));
     DB::query('CREATE TABLE %b (increment_id INT PRIMARY KEY, task_id INT)', prefixTable('background_subtasks'));
+    DB::query(secureSendEmailSchemaSql(prefixTable('secure_send_email')));
+    DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     $now = time();
     foreach ([
         [1, 'failed', $now - 7200], // Old email without subtasks: the original INNER JOIN missed it.
@@ -85,8 +90,15 @@ try {
             'status' => 'in_progress', 'is_in_progress' => 1, 'updated_at' => $updatedAt,
             'finished_at' => 0, 'arguments' => 'sealed-invitation-secret-canary']);
     }
+    foreach ([7 => 70, 9 => 90] as $taskId => $sendId) {
+        DB::insert(prefixTable('secure_send_email'), [
+            'task_id' => $taskId, 'send_id' => $sendId, 'originator' => 42,
+            'created_at' => $now - 1200, 'address_hash' => str_repeat('a', 64),
+        ]);
+    }
     $reflection = new ReflectionClass(BackgroundTasksHandler::class);
     $handler = $reflection->newInstanceWithoutConstructor();
+    $reflection->getProperty('settings')->setValue($handler, []);
     $reflection->getProperty('maxExecutionTime')->setValue($handler, 600);
     $reflection->getProperty('maxTimeBeforeRemoval')->setValue($handler, 3600);
     $cleanup = $reflection->getMethod('cleanupStaleTasks');
@@ -111,9 +123,16 @@ try {
     $cleanup->invoke($handler);
     emailCleanupExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM %b', prefixTable('background_tasks')) === 8,
         'Repeated cleanup changed retained tasks');
+    $outcomes = DB::query('SELECT send_id, reason, actor_id FROM %b WHERE event = %s ORDER BY send_id',
+        prefixTable('secure_send_audit'), 'email_outcome');
+    emailCleanupExpect(array_map('intval', array_column($outcomes, 'send_id')) === [70, 90]
+        && array_column($outcomes, 'reason') === ['indeterminate', 'indeterminate']
+        && array_column($outcomes, 'actor_id') === [null, null], 'Interruptions must record one anonymous outcome per invitation');
     echo "OK: failed tasks with and without subtasks obey retention; recent and other statuses remain.\n";
     echo "OK: both handler interruption paths wipe invitations; ordinary, recent and resumable task payloads are preserved.\n";
 } finally {
+    DB::query('DROP TABLE IF EXISTS %b', prefixTable('secure_send_audit'));
+    DB::query('DROP TABLE IF EXISTS %b', prefixTable('secure_send_email'));
     DB::query('DROP TABLE IF EXISTS %b', prefixTable('background_subtasks'));
     DB::query('DROP TABLE IF EXISTS %b', prefixTable('background_tasks'));
 }
