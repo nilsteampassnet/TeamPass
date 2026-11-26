@@ -91,10 +91,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $query = $request->query->all();
 $draw = max(0, (int) filter_var($query['draw'] ?? null, FILTER_VALIDATE_INT));
 $targetUserId = (int) filter_var($query['userId'] ?? null, FILTER_VALIDATE_INT);
+$callerId = (int) $session->get('user-id');
 
 // Users page access is required even for one's own logs; other accounts must also be in scope.
 if ($targetUserId <= 0
-    || ($targetUserId !== (int) $session->get('user-id')
+    || ($targetUserId !== $callerId
         && callerMayManageUser($targetUserId) === false)
 ) {
     echo json_encode(['sEcho' => $draw, 'iTotalRecords' => 0, 'iTotalDisplayRecords' => 0, 'aaData' => []]);
@@ -148,7 +149,7 @@ $filteredTotal = $total;
 
 userLogsApplyFilters($itemWhere, $systemWhere, $activity, $channel);
 $pageSql = 'SELECT l.date AS date, 1 AS is_item, l.increment_id AS event_id,
-        l.id_item AS item_id, i.label AS label, l.action AS action, NULL AS type, l.raison AS channel_hint'
+        l.id_item AS item_id, i.label AS label, l.action AS action, NULL AS type, l.raison AS log_detail'
     . $itemsFrom . ' UNION ALL '
     . 'SELECT l.date, 0, l.id, NULL, l.label, NULL, l.type, l.field_1' . $systemFrom
     . ' ORDER BY date ' . $direction . ', is_item ' . $direction . ', event_id ' . $direction;
@@ -156,8 +157,8 @@ $pageSql = 'SELECT l.date AS date, 1 AS is_item, l.increment_id AS event_id,
 $rows = [];
 if ($total > 0) {
     if ($term !== '') {
-        // One bounded-memory pass gives both the page and the exact count of matches. Matching
-        // rendered text also handles translated activities and legacy HTML entities in titles.
+        // Search activity text and item titles in one bounded-memory pass. Account logins
+        // are resolved only after pagination, so target visibility cannot affect the count.
         $page = storedTextSearchPage(
             DB::queryWalk($pageSql, $itemWhere, $systemWhere),
             [$term],
@@ -182,17 +183,35 @@ if ($total > 0) {
     }
 }
 
+// Resolve only the caller and accounts they may manage, after the search cursor is closed.
+$adminTargetIds = userLogsManageableAdminTargetIds(
+    $rows,
+    static fn (int $id): bool => $id === $callerId || callerMayManageUser($id)
+);
+$accounts = $adminTargetIds === [] ? [] : DB::query(
+    'SELECT id, login, deleted_at FROM ' . prefixTable('users') . ' WHERE id IN %li',
+    $adminTargetIds
+);
+$accountTargets = [];
+foreach ($accounts as $account) {
+    $accountTargets[(int) $account['id']] = userLogsAccountTargetText(
+        (string) $account['login'],
+        (int) $account['deleted_at'],
+        $lang
+    );
+}
+
 $aaData = [];
 foreach ($rows as $row) {
     $isItem = (int) $row['is_item'] === 1;
-    $hint = (string) ($row['channel_hint'] ?? '');
+    $hint = (string) ($row['log_detail'] ?? '');
     $isApi = $isItem
         ? str_contains($hint, 'tp_src=api')
         : logsSystemRowIsApi((string) $row['type'], (string) $row['label'], $hint);
     $aaData[] = [
         htmlspecialchars(date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $row['date']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
         htmlspecialchars(userLogsActivityText($row, $lang), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        htmlspecialchars(userLogsTargetText($row), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+        htmlspecialchars(userLogsTargetText($row, $accountTargets), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
         $isApi ? 'api' : 'web',
         $isItem ? (int) $row['item_id'] : null,
     ];

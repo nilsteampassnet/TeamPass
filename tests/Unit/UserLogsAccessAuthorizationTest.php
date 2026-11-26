@@ -64,7 +64,7 @@ class UserLogsAccessAuthorizationTest extends TestCase
         );
 
         self::assertStringContainsString(
-            "\$targetUserId !== (int) \$session->get('user-id')",
+            "\$targetUserId !== \$callerId",
             $src,
             'Reading one\'s own logs must stay allowed without an administration right'
         );
@@ -101,6 +101,26 @@ class UserLogsAccessAuthorizationTest extends TestCase
             "l.qui = '.\$query['userId']",
             $src,
             'The raw request value must not be concatenated into the query'
+        );
+    }
+
+    /** Viewing an actor's journal does not grant access to the accounts named in its entries. */
+    public function testAdministrationTargetsAreAuthorizedBeforeTheirLoginsAreRead(): void
+    {
+        $src = $this->datatableSource();
+
+        self::assertStringContainsString(
+            "\$callerId = (int) \$session->get('user-id');",
+            $src
+        );
+        self::assertMatchesRegularExpression(
+            '/\$adminTargetIds = userLogsManageableAdminTargetIds\(\s*\$rows,\s*'
+            . 'static fn \(int \$id\): bool => \$id === \$callerId \|\| callerMayManageUser\(\$id\)\s*\);/',
+            $src
+        );
+        self::assertMatchesRegularExpression(
+            "/WHERE id IN %li',\\s*\\\$adminTargetIds\\b/",
+            $src
         );
     }
 }
