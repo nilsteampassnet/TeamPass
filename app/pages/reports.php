@@ -110,6 +110,17 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
         </div>
 <?php else : ?>
         <div class='row'>
+            <div class='col-md-6 col-xl-4'>
+                <button type='button' class='info-box btn btn-default d-flex w-100 text-left mb-3' id='report-secure-send' aria-controls='report-type'>
+                    <span class='info-box-icon bg-info'><i class='fas fa-paper-plane' aria-hidden='true'></i></span>
+                    <span class='info-box-content text-wrap'>
+                        <strong><?php echo htmlspecialchars($lang->get('compliance_report_secure_send'), ENT_QUOTES, 'UTF-8'); ?></strong>
+                    </span>
+                    <i class='fas fa-chevron-right align-self-center mr-2' aria-hidden='true'></i>
+                </button>
+            </div>
+        </div>
+        <div class='row'>
             <div class='col-md-12'>
                 <div class='card card-primary'>
                     <div class='card-header'>

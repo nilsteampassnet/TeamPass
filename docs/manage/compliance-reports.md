@@ -47,7 +47,8 @@ Available when [Data classification](../features/classification.md) is enabled: 
 
 ### Secure Send sharing governance
 
-Review the retained Secure Send audit events for a period. The report counts
+Select the Secure Send tile to open the report and its date filters. The
+default period covers the last 30 days of retained audit events. The report counts
 public-address links created without a passphrase, revocations, invalidations
 related to access or sender availability, attachments and direct email
 invitations. It includes audited item shares and standalone notes. Links with

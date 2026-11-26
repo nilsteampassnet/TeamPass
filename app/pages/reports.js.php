@@ -184,6 +184,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         tpReportClearResult()
     })
     $(document).on('change', '#report-start, #report-end', tpReportClearResult)
+    $(document).on('click', '#report-secure-send', function() {
+        $('#report-type').val('secure_send').trigger('change')
+        $('#report-start').trigger('focus')
+    })
     $(function() {
         tpReportTypeChanged()
     })

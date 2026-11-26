@@ -35,7 +35,11 @@ function page() {
         toggle(value) { state.visible = value; return this },
         hide() { return this.toggle(false) },
         show() { return this.toggle(true) },
-        trigger(event) { handlers.get(event + ' ' + selector)?.(); return this },
+        trigger(event) {
+          if (event === 'focus') state.focused = true
+          handlers.get(event + ' ' + selector)?.()
+          return this
+        },
       })
     }
     return nodes.get(selector)
@@ -88,6 +92,16 @@ test('Secure Send uses calendar dates, groups the escaped evidence and enables i
   assert.match(html, /scope="rowgroup" colspan="2">R&amp;D/)
   assert.match(html, /&lt;shared&gt;/)
   assert.match(html, /<td>0<\/td>/)
+})
+
+test('the governance tile selects the Secure Send report and focuses the visible start date', () => {
+  const ui = page()
+  ui.node('#report-type').val('access_matrix').trigger('change')
+  assert.equal(ui.node('.report-period').state.visible, false)
+  ui.node('#report-secure-send').trigger('click')
+  assert.equal(ui.node('#report-type').val(), 'secure_send')
+  assert.equal(ui.node('.report-period').state.visible, true)
+  assert.equal(ui.node('#report-start').state.focused, true)
 })
 
 test('switching dates or report type clears the CSV and ignores old results', () => {
