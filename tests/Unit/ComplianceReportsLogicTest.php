@@ -34,6 +34,13 @@ class ComplianceReportsLogicTest extends TestCase
         $bounds = reportsSecureSendPeriod('2026-03-29', '2026-03-29', $timezone, $now);
         self::assertSame((new DateTimeImmutable('2026-03-29T00:00:00+01:00'))->getTimestamp(), $bounds['start']);
         self::assertSame((new DateTimeImmutable('2026-03-29T23:59:59+02:00'))->getTimestamp(), $bounds['end']);
+        self::assertSame(
+            [
+                'start' => (new DateTimeImmutable('2026-02-28T00:00:00+01:00'))->getTimestamp(),
+                'end' => (new DateTimeImmutable('2026-03-29T23:59:59+02:00'))->getTimestamp(),
+            ],
+            reportsSecureSendPeriod('', '2026-03-29', $timezone, $now)
+        );
         self::assertSame(['start' => $now - 30 * 86400, 'end' => $now],
             reportsSecureSendPeriod('', '', $timezone, $now));
     }

@@ -143,9 +143,17 @@ function reportsSecureSendPeriod(string $startDate, string $endDate, DateTimeZon
         return $date;
     };
 
+    $startDay = $calendarDate($startDate);
     $endDay = $calendarDate($endDate);
     $end = $endDay === null ? $now : $endDay->modify('+1 day')->getTimestamp() - 1;
-    $start = $calendarDate($startDate)?->getTimestamp() ?? max(0, $end - 30 * 86400);
+    if ($startDay !== null) {
+        $start = $startDay->getTimestamp();
+    } elseif ($endDay !== null) {
+        // Include the selected end date in the 30 calendar days.
+        $start = max(0, $endDay->modify('-29 days')->getTimestamp());
+    } else {
+        $start = max(0, $now - 30 * 86400);
+    }
     if ($start > $end) {
         throw new InvalidArgumentException('Invalid Secure Send report period');
     }
