@@ -192,99 +192,126 @@
     padding: 0.35rem 0.5rem;
 }
 
-/* Secure Send: keep presentation local to its card, including dark-mode colors. */
-#tp-secure-send-card .tp-secure-send-kpis {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-}
-
-#tp-secure-send-card .tp-secure-send-kpis > div {
-    border: 1px solid #e4e7ec;
-    border-radius: 0.25rem;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    padding: 0.85rem;
-}
-
-#tp-secure-send-card .tp-secure-send-kpis dt {
-    font-size: 0.85rem;
-    font-weight: 600;
-    line-height: 1.4;
-    margin-bottom: 0.5rem;
-}
-
-#tp-secure-send-card .tp-secure-send-kpis dd {
-    color: #117a8b;
-    margin-top: auto;
-    overflow-wrap: anywhere;
-}
-
-#tp-secure-send-card [data-tp-secure-send-count],
-#tp-secure-send-card .tp-secure-send-senders-table td {
-    font-variant-numeric: tabular-nums;
-}
-
-#tp-secure-send-card .tp-secure-send-breakdown dt {
-    font-weight: 500;
-}
-
-#tp-secure-send-card .tp-secure-send-senders-table {
-    min-width: 500px;
-}
-
-#tp-secure-send-card .tp-secure-send-senders-table th,
-#tp-secure-send-card .tp-secure-send-senders-table td {
-    vertical-align: middle;
-}
-
-#tp-secure-send-card .tp-secure-send-senders-table th:first-child {
-    overflow-wrap: anywhere;
-    width: 40%;
-}
-
-#tp-secure-send-card .tp-secure-send-senders-table tbody th {
-    font-weight: 400;
-}
-
-#tp-secure-send-card .tp-secure-send-senders-table .badge {
+/* Match the dashboard cards while keeping long labels and counts easy to scan. */
+#tp-ops-secure-send .info-box-text {
+    line-height: 1.25;
     white-space: normal;
 }
 
-#tp-secure-send-status:not([hidden]) {
-    border: 1px dashed #adb5bd;
-    border-radius: 0.25rem;
-    padding: 1rem;
+#tp-ops-secure-send .info-box-number,
+#tp-ops-secure-send .tp-secure-send-metric dd,
+#tp-ops-secure-send .tp-secure-send-senders-table td {
+    font-variant-numeric: tabular-nums;
 }
 
-.dark-mode #tp-secure-send-card .tp-secure-send-kpis > div {
-    border-color: #6c757d;
+#tp-ops-secure-send .info-box-number {
+    font-size: 1.6rem;
+    line-height: 1.15;
 }
 
-.dark-mode #tp-secure-send-card .tp-secure-send-kpis dd {
+#tp-ops-secure-send .tp-secure-send-metric {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 0.75rem;
+    padding: 0.35rem 0;
+}
+
+#tp-ops-secure-send .tp-secure-send-metric + .tp-secure-send-metric {
+    border-top: 1px solid #e9ecef;
+}
+
+#tp-ops-secure-send .tp-secure-send-metric dt {
+    font-weight: 400;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+#tp-ops-secure-send .tp-secure-send-metric dd {
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+#tp-ops-secure-send .tp-secure-send-distribution {
+    height: 0.5rem;
+}
+
+#tp-ops-secure-send .tp-secure-send-distribution .progress-bar {
+    width: 0;
+}
+
+#tp-ops-secure-send .tp-secure-send-senders-table {
+    min-width: 28rem;
+}
+
+#tp-ops-secure-send .tp-secure-send-senders-table th,
+#tp-ops-secure-send .tp-secure-send-senders-table td {
+    padding: 0.5rem 0.85rem;
+    vertical-align: middle;
+}
+
+#tp-ops-secure-send .tp-secure-send-senders-table th:first-child {
+    overflow-wrap: anywhere;
+    width: 43%;
+}
+
+#tp-ops-secure-send .tp-secure-send-senders-table tbody th {
+    font-weight: 400;
+}
+
+#tp-ops-secure-send .tp-secure-send-senders-table .badge {
+    white-space: normal;
+}
+
+#tp-ops-secure-send summary {
+    cursor: pointer;
+}
+
+.dark-mode #tp-operational-stats-card .nav-tabs .nav-link {
+    color: #dee2e6;
+}
+
+.dark-mode #tp-operational-stats-card .nav-tabs .nav-link.active {
     color: #3fc0d1;
 }
 
-@media (max-width: 991.98px) {
-    #tp-secure-send-card .tp-secure-send-kpis {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+.dark-mode #tp-ops-secure-send .tp-ops-info-box,
+.dark-mode #tp-ops-secure-send .tp-secure-send-metric + .tp-secure-send-metric {
+    border-color: #565e67;
 }
 
 @media (max-width: 575.98px) {
-    #tp-secure-send-card .card-tools {
-        float: none;
-        clear: both;
-        padding-top: 0.5rem;
+    #tp-operational-stats-card .nav-tabs .nav-link {
+        font-size: 0.9rem;
+        padding: 0.45rem 0.55rem;
     }
 
-    #tp-secure-send-card .card-body {
-        padding: 0.75rem;
+    #tp-ops-secure-send .info-box {
+        padding: 0.4rem;
     }
 
-    #tp-secure-send-card .tp-secure-send-kpis > div {
-        padding: 0.65rem;
+    #tp-ops-secure-send .info-box-icon {
+        font-size: 1rem;
+        width: 32px;
+    }
+
+    #tp-ops-secure-send .info-box-content {
+        padding: 0 0.4rem;
+    }
+
+    #tp-ops-secure-send .info-box-text {
+        font-size: 0.875rem;
+    }
+
+    #tp-ops-secure-send .tp-secure-send-senders-table {
+        min-width: 0;
+        table-layout: fixed;
+    }
+
+    #tp-ops-secure-send .tp-secure-send-senders-table th,
+    #tp-ops-secure-send .tp-secure-send-senders-table td {
+        font-size: 0.875rem;
+        padding: 0.45rem 0.35rem;
     }
 }
 

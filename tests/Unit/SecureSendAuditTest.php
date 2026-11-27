@@ -114,7 +114,8 @@ class SecureSendAuditTest extends TestCase
             $created['parameters']['key'], $link['encrypted'], $link['protected_key']] as $secret) {
             self::assertStringNotContainsString($secret, $serialized);
         }
-        self::assertSame(array_keys(secureSendAuditRecord($link, 'created', '', 42)), array_keys($record));
+        self::assertSame('no_email', $record['delivery_channel']);
+        self::assertSame(array_keys(secureSendAuditRecord($link, 'created', '', 42, deliveryChannel: 'no_email')), array_keys($record));
         $snapshot = array_replace($link, ['send_type' => 'item_v2', 'item_id' => 123]);
         self::assertSame('item', secureSendAuditRecord($snapshot, 'revealed')['send_type']);
         $download = secureSendAuditRecord($snapshot + [

@@ -35,6 +35,7 @@ if (tpBackupRestoreIsInProgress() || (int) ($SETTINGS['recovery_pending_checks']
     exit(0);
 }
 require_once __DIR__ . '/../sources/backup.functions.php';
+require_once __DIR__ . '/../sources/secure_send_email.php';
 require_once __DIR__ . '/../sources/users_purge.functions.php';
 require_once __DIR__.'/background_tasks___functions.php';
 require_once __DIR__.'/traits/ItemHandlerTrait.php';
@@ -176,21 +177,25 @@ class TaskWorker {
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
 
-            // Mark the task as completed — unless a subtask was re-queued for retry
-            // (FUNC-4): in that case processSubTasks() has already reset the parent
-            // task to is_in_progress=0 so the handler re-launches it on the next tick.
-            if ($this->deferCompletion === true) {
-                if (LOG_TASKS === true) $this->logger->log('Task ' . $this->taskId . ' completion deferred: subtask(s) re-queued for retry', 'INFO');
-            } else {
-                try {
-                    $this->completeTask();
-                    $this->emitItemEncryptionEvent('completed');
-                } catch (Exception $e) {
-                    $this->handleTaskFailure($e);
-                }
-            }
-
         } catch (Exception $e) {
+            $this->handleTaskFailure($e);
+            return;
+        }
+
+        // Re-queued subtasks have already reset the parent for the next tick.
+        if ($this->deferCompletion === true) {
+            if (LOG_TASKS === true) $this->logger->log('Task ' . $this->taskId . ' completion deferred: subtask(s) re-queued for retry', 'INFO');
+            return;
+        }
+        try {
+            $this->completeTask();
+            $this->emitItemEncryptionEvent('completed');
+        } catch (Exception $e) {
+            // After sending, a failed DB commit is an interruption. Let the handler
+            // record uncertainty without retrying or claiming a transport failure.
+            if ($this->processType === 'secure_send_email') {
+                throw $e;
+            }
             $this->handleTaskFailure($e);
         }
     }
@@ -1710,13 +1715,11 @@ class TaskWorker {
             $updateData['arguments'] = $arguments;
         }
 
-        // Store completed status in the database
-        DB::update(
-            prefixTable('background_tasks'),
-            $updateData,
-            'increment_id = %i',
-            $this->taskId
-        );
+        if ($this->processType === 'secure_send_email') {
+            secureSendEmailFinishTask($this->taskId, 'accepted', $updateData, $this->settings);
+        } else {
+            DB::update(prefixTable('background_tasks'), $updateData, 'increment_id = %i', $this->taskId);
+        }
 
         // Notify target user for task types not covered by emitItemEncryptionEvent()
         if ($this->processType === 'create_user_keys') {
@@ -1760,11 +1763,14 @@ class TaskWorker {
             $attempts = (int) DB::queryFirstField('SELECT email_attempts FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $this->taskId);
             $retryAt = emailQueueRetryAt($e->result, $attempts, time());
             if ($retryAt !== null) {
+                $where = $this->processType === 'secure_send_email'
+                    ? "increment_id = %i AND status = 'in_progress'"
+                    : 'increment_id = %i';
                 DB::update(prefixTable('background_tasks'), [
                     'is_in_progress' => 0, 'status' => 'queued', 'finished_at' => null, 'process_id' => null,
                     'updated_at' => time(), 'next_attempt_at' => $retryAt,
                     'error_message' => 'Email delivery deferred: ' . $e->result->errorCode . '.',
-                ], 'increment_id = %i', $this->taskId);
+                ], $where, $this->taskId);
                 $this->logger->log('Email task ' . $this->taskId . ' deferred: ' . $e->result->errorCode, 'WARNING');
                 return;
             }
@@ -1791,12 +1797,16 @@ class TaskWorker {
             // Drop terminal payloads without claiming provider acceptance for an ambiguous send.
             $updateData['arguments'] = (string) json_encode(['failed' => true] + $this->emailTaskRecipients);
         }
-        DB::update(
-            prefixTable('background_tasks'),
-            $updateData,
-            'increment_id = %i',
-            $this->taskId
-        );
+        if ($this->processType === 'secure_send_email') {
+            $outcome = match (true) {
+                $e instanceof \TeampassClasses\EmailService\EmailTransportException => $e->result->indeterminate ? 'indeterminate' : 'failed',
+                $this->secureSendSubmissionStarted => 'indeterminate',
+                default => 'not_submitted',
+            };
+            secureSendEmailFinishTask($this->taskId, $outcome, $updateData, $this->settings);
+        } else {
+            DB::update(prefixTable('background_tasks'), $updateData, 'increment_id = %i', $this->taskId);
+        }
         $this->logger->log('Task failure: ' . $errorMessage, 'ERROR');
 
         $this->emitItemEncryptionEvent('failed');
@@ -2018,4 +2028,9 @@ if (empty($rawArguments) === false) {
 
 // Initialize the worker
 $worker = new TaskWorker($taskId, $processType, $taskData);
-$worker->execute();
+try {
+    $worker->execute();
+} catch (Throwable $error) {
+    error_log('TEAMPASS background task worker failed for task ' . $taskId . ' (' . get_class($error) . ')');
+    exit(1);
+}

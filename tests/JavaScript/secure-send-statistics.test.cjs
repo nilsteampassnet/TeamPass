@@ -39,13 +39,18 @@ const loadingTables = { '#tp-roles-top-body': 5, '#tp-users-ranking-body': 3, '#
 const activeRenderer = section('renderActiveSecureSendCount(', 'tpOpsShowLoadError(')
 const fields = {
   totals: ['created', 'revealed', 'reveal_failed', 'senders', 'sends_revealed', 'revoked', 'invalidated', 'expired'],
-  creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links']
+  creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links'],
+  attachments: ['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized'],
+  delivery: ['email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared',
+    'email_accepted', 'email_not_submitted', 'email_failed', 'email_indeterminate']
 }
 
 function payload() {
   return { enabled: true, available: true, error: false, top_senders: [],
     totals: Object.fromEntries(fields.totals.map(key => [key, 0])),
-    creations: Object.fromEntries(fields.creations.map(key => [key, 0])) }
+    creations: Object.fromEntries(fields.creations.map(key => [key, 0])),
+    attachments: Object.fromEntries(fields.attachments.map(key => [key, 0])),
+    delivery: Object.fromEntries(fields.delivery.map(key => [key, 0])) }
 }
 
 function harness() {
@@ -53,12 +58,13 @@ function harness() {
   const requests = []
   function element(selector) {
     if (!elements.has(selector)) {
-      const state = { selector, value: '', properties: {}, attributes: {}, classes: new Set() }
+      const state = { selector, value: '', properties: {}, attributes: {}, styles: {}, classes: new Set() }
       const adapter = {
         state,
         text(value) { if (value === undefined) return state.value; state.value = value; return adapter },
         html(value) { state.html = value; return adapter },
         prop(key, value) { state.properties[key] = value; return adapter },
+        css(key, value) { state.styles[key] = value; return adapter },
         attr(key, value) { if (value === undefined) return state.attributes[key]; state.attributes[key] = value; return adapter },
         addClass(name) { state.classes.add(name); return adapter }, removeClass(name) { state.classes.delete(name); return adapter },
         val() { return '30d' }, is() { return true }
@@ -74,7 +80,7 @@ function harness() {
   }))
   function $(selector) {
     if (typeof selector === 'object') return selector
-    if (selector === '#tp-secure-send-card [data-tp-secure-send-count]') {
+    if (selector === '#tp-ops-secure-send [data-tp-secure-send-count]') {
       return { each(callback) { counters.forEach(node => callback.call(node)); return this } }
     }
     return element(selector)
@@ -109,16 +115,35 @@ test('valid zero counts are visible; missing/failed/null data is unavailable, ne
   }
 })
 
+test('the link-type distribution uses audited creations and clears with the selected period', () => {
+  const h = harness()
+  const bar = type => h.node('#tp-ops-secure-send [data-tp-secure-send-type="' + type + '"]')
+  const data = payload()
+  data.totals.created = 20
+  data.creations.items = 12
+  data.creations.notes = 7
+  data.creations.unknown = 1
+  h.render(data)
+  assert.equal(bar('items').styles.width, '60%')
+  assert.equal(bar('notes').styles.width, '35%')
+  assert.equal(bar('unknown').styles.width, '5%')
+
+  h.render(null, 'loading')
+  for (const type of ['items', 'notes', 'unknown']) {
+    assert.equal(bar(type).styles.width, '0%')
+  }
+})
+
 test('loading clears previous activity and exposes an accessible busy state', () => {
   const h = harness()
   const data = payload(); data.totals.created = 9
   h.render(data)
   h.render(null, 'loading')
   assert.equal(h.node('totals.created').value, '—')
-  assert.equal(h.node('#tp-secure-send-card').attributes['aria-busy'], 'true')
+  assert.equal(h.node('#tp-ops-secure-send').attributes['aria-busy'], 'true')
   assert.match(h.node('#tp-secure-send-status').value, /ops_secure_send_loading/)
   h.render(data)
-  assert.equal(h.node('#tp-secure-send-card').attributes['aria-busy'], 'false')
+  assert.equal(h.node('#tp-ops-secure-send').attributes['aria-busy'], 'false')
 })
 
 test('disabling Secure Send preserves recorded history and adds its notice', () => {

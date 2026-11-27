@@ -89,7 +89,8 @@ function secureSendStoreLink(
             'created',
             actorId: (int) $link['originator'],
             attachmentCount: $attachmentReference === null ? 0 : max(1, count($sourceIds)),
-            attachmentIds: $sourceIds
+            attachmentIds: $sourceIds,
+            deliveryChannel: $message === null ? 'no_email' : 'direct_email'
         );
         if ($message !== null) {
             secureSendEmailQueue($message, $link, $settings, time());

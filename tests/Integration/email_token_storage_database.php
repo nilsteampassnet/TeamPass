@@ -66,11 +66,12 @@ try {
     $installer = new DatabaseInstaller(['tablePrefix' => $prefix], []);
     (new ReflectionMethod(DatabaseInstaller::class, 'emails'))->invoke($installer);
     (new ReflectionMethod(DatabaseInstaller::class, 'background_tasks'))->invoke($installer);
+    (new ReflectionMethod(DatabaseInstaller::class, 'background_subtasks'))->invoke($installer);
     (new ReflectionMethod(DatabaseInstaller::class, 'secure_send_email'))->invoke($installer);
     (new ReflectionMethod(DatabaseInstaller::class, 'secure_send_audit'))->invoke($installer);
     $auditTable = prefixTable('secure_send_audit');
     $freshAuditColumns = DB::query('SHOW FULL COLUMNS FROM %b', $auditTable);
-    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids', $auditTable);
+    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids, DROP COLUMN delivery_channel', $auditTable);
     DB::insert($auditTable, secureSendAuditRecord(['id' => 1, 'originator' => 42, 'send_type' => 'note'], 'revealed'));
     $historicalAudit = DB::queryFirstRow('SELECT * FROM %b', $auditTable);
     $freshSharingColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('secure_send_email'));
@@ -118,7 +119,7 @@ try {
     emailTokenExpect($freshSharingColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('secure_send_email')), 'Fresh and upgrade sharing delivery schemas differ');
     emailTokenExpect($freshAuditColumns === DB::query('SHOW FULL COLUMNS FROM %b', $auditTable), 'Fresh and upgraded Secure Send audit schemas differ');
     $upgradedAudit = DB::queryFirstRow('SELECT * FROM %b', $auditTable);
-    emailTokenExpect($upgradedAudit === $historicalAudit + ['attachment_count' => null, 'attachment_ids' => null],
+    emailTokenExpect($upgradedAudit === $historicalAudit + ['attachment_count' => null, 'attachment_ids' => null, 'delivery_channel' => null],
         'Upgrade changed historical Secure Send audit evidence');
     DB::insert(prefixTable('secure_send_email'), ['send_id' => 1, 'task_id' => 1, 'originator' => 42,
         'created_at' => time(), 'address_hash' => str_repeat('a', 64)]);
@@ -126,6 +127,76 @@ try {
     emailTokenExpect($upgradedAudit === DB::queryFirstRow('SELECT * FROM %b', $auditTable),
         'Upgrade replay changed historical Secure Send audit evidence');
     emailTokenExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_email')) === 1, 'Replay removed a sharing delivery reservation');
+
+    $tasks = prefixTable('background_tasks');
+    $finishedAt = time();
+    DB::insert($tasks, ['increment_id' => 1, 'process_type' => 'secure_send_email', 'status' => 'in_progress',
+        'is_in_progress' => 1, 'created_at' => $finishedAt - 1, 'arguments' => '{"sealed":"private-canary"}']);
+    secureSendEmailFinishTask(1, 'accepted', ['status' => 'completed', 'finished_at' => $finishedAt,
+        'is_in_progress' => -1, 'arguments' => '{"accepted":true}'], []);
+    secureSendEmailFinishTask(1, 'indeterminate', ['status' => 'failed', 'finished_at' => $finishedAt + 1], []);
+    emailTokenExpect(DB::queryFirstField('SELECT status FROM %b WHERE increment_id = %i', $tasks, 1) === 'completed',
+        'A duplicate finalization overwrote the first outcome');
+    emailTokenExpect(secureSendEmailDeleteTask(1, false, []), 'An authorized Tasks user lost terminal cleanup');
+    $outcomes = DB::query('SELECT * FROM %b WHERE event = %s', $auditTable, 'email_outcome');
+    emailTokenExpect(count($outcomes) === 1 && $outcomes[0]['reason'] === 'accepted'
+        && (int) $outcomes[0]['occurred_at'] === $finishedAt && (int) $outcomes[0]['send_id'] === 1
+        && $outcomes[0]['actor_id'] === null && $outcomes[0]['send_type'] === 'unknown'
+        && !str_contains(json_encode($outcomes, JSON_THROW_ON_ERROR), 'private-canary'),
+        'Terminal outcome must survive task deletion with its time and association and no email data');
+
+    // Candidate selection alone must not prevent cancellation or allow a late worker launch.
+    $subtasks = prefixTable('background_subtasks');
+    $queueInvitation = static function (int $sendId, int $retryAt = 0) use ($tasks, $subtasks, $finishedAt): int {
+        DB::insert($tasks, ['process_type' => 'secure_send_email', 'status' => 'queued',
+            'created_at' => $finishedAt, 'arguments' => '{}', 'next_attempt_at' => $retryAt]);
+        $id = (int) DB::insertId();
+        DB::insert($subtasks, ['task_id' => $id, 'created_at' => $finishedAt, 'task' => '{}']);
+        DB::insert(prefixTable('secure_send_email'), ['send_id' => $sendId, 'task_id' => $id, 'originator' => 42,
+            'created_at' => $finishedAt, 'address_hash' => str_repeat('a', 64)]);
+        return $id;
+    };
+    $queued = $queueInvitation(2);
+    $deferred = $queueInvitation(3, $finishedAt + 600);
+    $running = $queueInvitation(4);
+    emailTokenExpect(!secureSendEmailDeleteTask($queued, false, []), 'A non-admin cancelled a queued invitation');
+    emailTokenExpect(!secureSendEmailClaimTask($deferred, $finishedAt), 'A deferred invitation was claimed early');
+    emailTokenExpect(secureSendEmailClaimTask($running, $finishedAt), 'Claiming a due invitation failed');
+    emailTokenExpect(!secureSendEmailClaimTask($running, $finishedAt) && !secureSendEmailDeleteTask($running, true, []),
+        'A claimed invitation was claimed again or cancelled');
+
+    // A deletion failure after writing the audit must leave all three rows consistent.
+    $trigger = $prefix . 'deny_task_delete';
+    DB::query("CREATE TRIGGER %b BEFORE DELETE ON %b FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'test failure'",
+        $trigger, $tasks);
+    try {
+        secureSendEmailDeleteTask($queued, true, []);
+        throw new LogicException('Cancellation ignored a failed task deletion');
+    } catch (RuntimeException $error) {
+        emailTokenExpect($error->getMessage() === 'Unable to delete the Secure Send email task.', 'Unexpected deletion error');
+    } finally {
+        DB::query('DROP TRIGGER %b', $trigger);
+    }
+    emailTokenExpect(DB::queryFirstField('SELECT status FROM %b WHERE increment_id = %i', $tasks, $queued) === 'queued'
+        && (int) DB::queryFirstField('SELECT COUNT(*) FROM %b WHERE task_id = %i', $subtasks, $queued) === 1
+        && (int) DB::queryFirstField('SELECT COUNT(*) FROM %b WHERE send_id = %i', $auditTable, 2) === 0,
+        'Task, subtask or audit escaped rollback');
+
+    foreach ([$queued, $deferred] as $cancelled) {
+        emailTokenExpect(secureSendEmailDeleteTask($cancelled, true, []) && secureSendEmailDeleteTask($cancelled, true, []),
+            'Queued or deferred cancellation failed or was not idempotent');
+        emailTokenExpect(!secureSendEmailClaimTask($cancelled, $finishedAt + 601)
+            && DB::queryFirstField('SELECT increment_id FROM %b WHERE increment_id = %i', $tasks, $cancelled) === null
+            && (int) DB::queryFirstField('SELECT COUNT(*) FROM %b WHERE task_id = %i', $subtasks, $cancelled) === 0,
+            'A cancelled task or its subtasks remained runnable');
+    }
+    secureSendEmailFinishTask($queued, 'indeterminate', ['status' => 'failed', 'finished_at' => $finishedAt], []);
+    $cancelledOutcomes = DB::query('SELECT send_id, originator, reason FROM %b WHERE event = %s AND send_id > %i ORDER BY send_id',
+        $auditTable, 'email_outcome', 1);
+    emailTokenExpect(array_map('intval', array_column($cancelledOutcomes, 'send_id')) === [2, 3]
+        && array_map('intval', array_column($cancelledOutcomes, 'originator')) === [42, 42]
+        && array_column($cancelledOutcomes, 'reason') === ['not_submitted', 'not_submitted'],
+        'Cancellation did not retain exactly one outcome per invitation');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '1', 'Replay changed administrator email opt-in');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_api_enabled') === '1', 'Replay changed the Secure Send API opt-in');
     emailTokenExpect($revision === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision'), 'Replay changed the revision');
@@ -205,8 +276,9 @@ try {
     }
     echo "Email token storage and profiles: install, migration, replay, encryption, ownership, rollback and concurrency checks passed.\n";
     echo "OAuth2 identity binding: install, migration, replay and linking default checks passed.\n";
+    echo "Secure Send invitations: cancellation, claims, rollback and retained outcomes passed.\n";
 } finally {
-    foreach (['secure_send_attachments', 'secure_send_email', 'secure_send_audit', 'email_oauth_state', 'emails', 'misc', 'background_tasks', 'users'] as $table) {
+    foreach (['secure_send_attachments', 'secure_send_email', 'secure_send_audit', 'email_oauth_state', 'emails', 'misc', 'background_subtasks', 'background_tasks', 'users'] as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));
     }
     DB::disconnect();

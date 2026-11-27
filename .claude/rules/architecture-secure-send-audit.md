@@ -18,7 +18,7 @@ and from the existing `log_items` audit under the OTV system account.
 
 The audit foundation provides storage, lifecycle instrumentation and migration.
 Its dependent statistics change adds aggregates to the existing administrator
-statistics endpoint; the Users statistics card displays them below item activity.
+statistics endpoint; the dedicated Secure Send tab displays them.
 Governance/Reports can later consume the journal through their existing
 administrator-only, feature-gated handlers. No export or purge endpoint is added,
 and no access to another user's item contents is granted.
@@ -37,8 +37,9 @@ events are `logsAllowedSecureSendEvents()` = the keys of `secureSendAuditEventRe
 Link creation has a single implementation, the session-free `secureSendCreateLink()`
 (`secure_send_create.php`), shared by the web `generate_OTV_url` handler and the REST
 `POST /api/v1/secureSend/create` (`api-reference.md`), item and note sends alike. Both therefore
-write the same `created` event with the sender as actor; the journal does not record the
-channel. Its refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
+write the same `created` event with the sender as actor. The delivery channel means
+direct email or no direct email, independently of the web or API entry point.
+Its refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
 Revocation likewise has one implementation, `secureSendRevokeLink()`, shared by the web
 `revoke_secure_send` handler and `DELETE /api/v1/secureSend/revoke`; the owner is always the
 authenticated user (session or token), never a request member. The personal inventory
@@ -63,6 +64,8 @@ The append-only lifecycle rows (until administrator-configured retention) contai
 - `attachment_count`, `attachment_ids`: count and original vault file IDs on
   creation or download authorization. Historical events have no attachment
   metadata, and standalone notes have no vault file IDs.
+- `delivery_channel`: `direct_email` or `no_email` on new creations. Historical
+  creations keep NULL, and manual sharing outside TeamPass is unobservable.
 
 No payload, item label, note title, login, email, key, lookup code, URL, passphrase,
 IP address, request body or free-text error is accepted into the journal.
@@ -84,6 +87,7 @@ longer exists (for example, LEFT JOIN and an identifier fallback).
 | `created` | empty | Authorized encrypted link insertion |
 | `revealed` | empty | Successful server-side reveal/view reservation |
 | `download_authorized` | empty | First authorized request for a file on the link while its audit entry is retained |
+| `email_outcome` | `accepted`, `not_submitted`, `failed`, `indeterminate` | Final outcome of a direct invitation, at task finalization |
 | `reveal_failed` | `wrong_credentials` | Incorrect URL key or passphrase on a confirmed attempt |
 | `revoked` | `sender_revoked` | Owner-authorized removal |
 | `invalidated` | `sender_unavailable` | Note sender no longer eligible |
@@ -146,6 +150,21 @@ Fresh install and the 3.2.4 upgrade share the association DDL.
 Interrupted invitations are not resumed; both handler failure paths wipe their
 payload. Provider outcomes remain conservative: `not_sent` denotes a preflight
 refusal, while acceptance is not inbox delivery. Statuses are owner-scoped.
+The final task state and its metadata-only journal event commit under the task
+row lock. Administrators can cancel a queued invitation, including one waiting
+for a deferred retry. The same lock protects the cancellation and records
+`not_submitted` before the task is deleted. The scheduler claims the queued
+row before launching a worker, so a claimed invitation remains protected.
+A deferred retry leaves no final outcome until the task ends. If the link disappeared,
+the delivery association still identifies the send. A missing creation row
+leaves its source item/type unknown. Network submission stays outside the
+transaction, so a worker interruption can leave provider acceptance indeterminate.
+
+For `email_outcome`, `has_passphrase`, `is_public`, `max_views`, `expires_at`,
+`views` and `failed_attempts` contain zero placeholders for the required schema
+fields. Consumers must ignore these fields for this event, including in the
+forwarded syslog JSON. Use the event's reason and timestamp for delivery reporting.
+
 Resolve `#sender#` / optional `#sender_prefix#` at each submission under current
 `secure_send_show_sender_name`; hidden/empty profiles use shipped **Someone**,
 never login/email. Strip header controls, escape HTML and preserve custom subjects
@@ -180,6 +199,10 @@ The contract contains:
   `expired`, distinct `sends_revealed`, and distinct creation `senders`;
 - `creations`: `items`, `notes`, `unknown`, `protected`, `unprotected`,
   `public_links`, `internal_links`, counted only on `created` events;
+- `attachments`: creations with files, files made available, creations with
+  unknown file count and first download authorizations;
+- `delivery`: audited creation channels, files made available via direct email
+  invitations and final invitation outcomes;
 - `top_senders`: up to five original senders with creations in the period, their
   period creation/reveal/failure counts, last creation timestamp and current
   account identity/status (`active`, `disabled`, `deleted`, `missing`).
@@ -262,7 +285,7 @@ keeps all evidence; whole numbers from `1` to `36500` set the retention window.
 It appears in **Options / Collaboration / Secure sharing**, after the Secure Send
 view limit, with scheduling and irreversible-deletion warnings. It reuses the
 existing settings autosave JavaScript and Bootstrap responsive/dark-theme styles;
-only English/French catalogs are changed. The Users statistics card also warns
+only English/French catalogs are changed. The Secure Send statistics tab also explains
 that retention can make a selected period incomplete.
 The existing authenticated, administrator-only `save_option_change` handler
 validates the raw value before sanitization and invalidates ConfigManager's cache

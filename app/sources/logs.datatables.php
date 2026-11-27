@@ -368,6 +368,7 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 a.has_passphrase AS has_passphrase, a.is_public AS is_public, a.max_views AS max_views,
                 a.views AS views, a.failed_attempts AS failed_attempts, a.expires_at AS expires_at,
                 a.attachment_count AS attachment_count, a.attachment_ids AS attachment_ids,
+                a.delivery_channel AS delivery_channel,
                 u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS item_label
             FROM ' . $from . ' WHERE %l ORDER BY %l %l, a.id %l LIMIT %i, %i',
             $sWhere,
@@ -390,6 +391,7 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 // Codes, translated by the client like the item actions.
                 'event' => (string) $record['event'],
                 'reason' => (string) $record['reason'],
+                'delivery_channel' => $record['delivery_channel'] ?? null,
                 // An empty user means the account no longer exists; originator says which one was.
                 'user' => $record['login'] === null ? '' : ($fullname !== '' ? $fullname . ' ' : '')
                     . '[' . normalizeLogDisplayValue(trim((string) $record['login'])) . ']',

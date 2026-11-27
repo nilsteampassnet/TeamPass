@@ -775,11 +775,27 @@ logItems(
 
             // Get info about task
             $taskInfo = DB::queryFirstRow(
-                'SELECT p.process_type as process_type
+                'SELECT p.process_type
                 FROM ' . prefixTable('background_tasks') . ' as p
                 WHERE p.increment_id = %i',
                 $post_id
             );
+            if (($taskInfo['process_type'] ?? '') === 'secure_send_email') {
+                $canCancel = (int) $session->get('user-admin') === 1;
+                require_once __DIR__ . '/secure_send_email.php';
+                try {
+                    $deleted = secureSendEmailDeleteTask((int) $post_id, $canCancel, $SETTINGS);
+                    $message = $deleted ? '' : $lang->get($canCancel ? 'secure_send_email_cancel_running' : 'error_not_allowed_to');
+                } catch (RuntimeException) {
+                    $deleted = false;
+                    $message = $lang->get('an_error_occurred');
+                }
+                echo prepareExchangedData([
+                    'error' => !$deleted,
+                    'message' => $message,
+                ], 'encode');
+                break;
+            }
             if ($taskInfo !== null) {
                 // delete task
                 DB::query(

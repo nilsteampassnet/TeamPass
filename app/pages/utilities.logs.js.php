@@ -180,6 +180,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'secureSendExpires' => $lang->get('logs_secure_send_expires'),
             'secureSendAttachmentCount' => $lang->get('logs_secure_send_attachment_count'),
             'secureSendAttachmentIds' => $lang->get('logs_secure_send_attachment_ids'),
+            'secureSendDirectEmail' => $lang->get('logs_secure_send_email_queued'),
+            'secureSendNoEmail' => $lang->get('ops_secure_send_no_email'),
+            'secureSendUnknownChannel' => $lang->get('ops_secure_send_channel_unknown'),
         ],
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     ); ?>;
@@ -418,6 +421,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
       },
       send: (row) => escapeLogValue('#' + row.send),
       policy: (row) => {
+        if (row.event === 'email_outcome') return ''
         const parts = [logMessages.secureSendViews.replace('#tp_views#', row.views).replace('#tp_max#', row.max_views)]
         if (row.has_passphrase === true) parts.push(logMessages.secureSendPassphrase)
         if (row.is_public === true) parts.push(logMessages.secureSendPublic)
@@ -428,6 +432,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
         if (Array.isArray(row.attachment_ids) && row.attachment_ids.length > 0) {
           parts.push(logMessages.secureSendAttachmentIds.replace('#tp_ids#', row.attachment_ids.join(', ')))
+        }
+        if (row.event === 'created') {
+          parts.push(row.delivery_channel === 'direct_email' ? logMessages.secureSendDirectEmail
+            : row.delivery_channel === 'no_email' ? logMessages.secureSendNoEmail : logMessages.secureSendUnknownChannel)
         }
         return escapeLogValue(parts.join(' · '))
       },

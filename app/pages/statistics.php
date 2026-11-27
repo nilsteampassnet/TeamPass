@@ -90,7 +90,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     </div>
 </div>
 
-<link rel="stylesheet" href="./assets/css/statistics.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+<link rel="stylesheet" href="./assets/css/statistics.css?v=<?php echo filemtime(TEAMPASS_ROOT . '/public/assets/css/statistics.css'); ?>">
 
 <!-- Main content -->
 <div class='content'>
@@ -149,6 +149,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <li class='nav-item'>
                         <a class='nav-link' id='tp-ops-users-tab' data-toggle='tab' href='#tp-ops-users' role='tab' aria-controls='tp-ops-users' aria-selected='false'>
                             <i class='fas fa-users mr-1'></i><?php echo $lang->get('ops_tab_users'); ?>
+                        </a>
+                    </li>
+                    <li class='nav-item'>
+                        <a class='nav-link' id='tp-ops-secure-send-tab' data-toggle='tab' href='#tp-ops-secure-send' role='tab' aria-controls='tp-ops-secure-send' aria-selected='false'>
+                            <i class='fas fa-paper-plane mr-1' aria-hidden='true'></i><?php echo htmlspecialchars($lang->get('ops_secure_send_tab'), ENT_QUOTES, 'UTF-8'); ?>
                         </a>
                     </li>
                     <li class='nav-item'>
@@ -690,59 +695,178 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </div>
                             </div>
                         </div>
-                        <div class='card card-outline card-info' id='tp-secure-send-card' aria-busy='true'>
-                            <div class='card-header'>
-                                <h3 class='card-title'>
-                                    <i class='fas fa-paper-plane mr-2' aria-hidden='true'></i><?php echo htmlspecialchars($lang->get('ops_secure_send_title'), ENT_QUOTES, 'UTF-8'); ?>
-                                </h3>
-                                <div class='card-tools'>
-                                    <span class='badge badge-light' id='tp-secure-send-period'></span>
-                                </div>
-                            </div>
-                            <div class='card-body'>
-                                <p class='small text-muted'><?php echo htmlspecialchars($lang->get('ops_secure_send_scope'), ENT_QUOTES, 'UTF-8'); ?></p>
-                                <div id='tp-secure-send-status' role='status' aria-live='polite'><?php echo htmlspecialchars($lang->get('ops_secure_send_loading'), ENT_QUOTES, 'UTF-8'); ?></div>
-                                <div id='tp-secure-send-disabled' class='alert alert-light border py-2' hidden><?php echo htmlspecialchars($lang->get('ops_secure_send_disabled'), ENT_QUOTES, 'UTF-8'); ?></div>
-                                <div id='tp-secure-send-content' hidden>
-                                    <dl class='tp-secure-send-kpis mb-3'>
-                                        <?php foreach (['created', 'revealed', 'reveal_failed', 'senders'] as $metric) { ?>
-                                        <div>
-                                            <dt><?php echo htmlspecialchars($lang->get('ops_secure_send_' . $metric), ENT_QUOTES, 'UTF-8'); ?></dt>
-                                            <dd class='h3 mb-0' data-tp-secure-send-count='totals.<?php echo $metric; ?>'>—</dd>
-                                        </div>
+                    </div>
+
+                    <div class='tab-pane fade' id='tp-ops-secure-send' role='tabpanel' aria-labelledby='tp-ops-secure-send-tab' aria-busy='true'>
+                        <?php
+                        $secureSendLabel = static fn (string $key): string =>
+                            htmlspecialchars($lang->get('ops_secure_send_' . $key), ENT_QUOTES, 'UTF-8');
+                        $secureSendTypes = ['items' => 'info', 'notes' => 'primary', 'unknown' => 'secondary'];
+                        $secureSendOutcomes = [
+                            'email_accepted' => 'success', 'email_not_submitted' => 'secondary',
+                            'email_failed' => 'danger', 'email_indeterminate' => 'warning',
+                        ];
+                        $renderSecureSendMetrics = static function (array $paths, array $colors = []) use ($secureSendLabel): void {
+                            foreach ($paths as $path) {
+                                [, $metric] = explode('.', $path, 2);
+                                ?>
+                                <div class='tp-secure-send-metric'>
+                                    <dt>
+                                        <?php if (isset($colors[$metric])) { ?>
+                                            <i class='fas fa-circle fa-xs text-<?php echo $colors[$metric]; ?> mr-1' aria-hidden='true'></i>
                                         <?php } ?>
-                                    </dl>
-                                    <div class='row'>
-                                        <div class='col-xl-4 mb-3'>
-                                            <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_details'), ENT_QUOTES, 'UTF-8'); ?></h4>
-                                            <dl class='row small mb-0 tp-secure-send-breakdown'>
-                                                <?php foreach (['totals.sends_revealed', 'totals.revoked', 'totals.invalidated', 'totals.expired', 'creations.items', 'creations.notes', 'creations.unknown', 'creations.protected', 'creations.unprotected', 'creations.public_links', 'creations.internal_links'] as $metric) { ?>
-                                                <dt class='col-8'><?php echo htmlspecialchars($lang->get('ops_secure_send_' . explode('.', $metric)[1]), ENT_QUOTES, 'UTF-8'); ?></dt>
-                                                <dd class='col-4 text-right' data-tp-secure-send-count='<?php echo $metric; ?>'>—</dd>
-                                                <?php } ?>
-                                            </dl>
+                                        <?php echo $secureSendLabel($metric); ?>
+                                    </dt>
+                                    <dd data-tp-secure-send-count='<?php echo $path; ?>'>—</dd>
+                                </div>
+                                <?php
+                            }
+                        };
+                        ?>
+
+                        <p class='small text-muted mb-3'><i class='fas fa-info-circle mr-1' aria-hidden='true'></i><?php echo $secureSendLabel('scope'); ?></p>
+                        <div class='alert alert-light border' id='tp-secure-send-status' role='status' aria-live='polite'><?php echo $secureSendLabel('loading'); ?></div>
+                        <div class='alert alert-info py-2' id='tp-secure-send-disabled' hidden><?php echo $secureSendLabel('disabled'); ?></div>
+
+                        <div id='tp-secure-send-content' hidden>
+                            <div class='row'>
+                                <?php foreach ([
+                                    ['totals.created', 'paper-plane', 'primary'],
+                                    ['totals.revealed', 'eye', 'success'],
+                                    ['attachments.files_shared', 'paperclip', 'secondary'],
+                                    ['delivery.email_queued', 'envelope', 'info'],
+                                ] as [$metric, $icon, $color]) { ?>
+                                    <div class='col-6 col-xl-3 d-flex mb-3'>
+                                        <div class='info-box tp-ops-info-box w-100 mb-0'>
+                                            <span class='info-box-icon bg-<?php echo $color; ?>'><i class='fas fa-<?php echo $icon; ?>' aria-hidden='true'></i></span>
+                                            <div class='info-box-content'>
+                                                <span class='info-box-text'><?php echo $secureSendLabel(explode('.', $metric, 2)[1]); ?></span>
+                                                <span class='info-box-number' data-tp-secure-send-count='<?php echo $metric; ?>'>—</span>
+                                            </div>
                                         </div>
-                                        <div class='col-xl-8'>
-                                            <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_top_senders'), ENT_QUOTES, 'UTF-8'); ?></h4>
-                                            <div class='table-responsive'>
-                                                <table class='table table-sm table-hover mb-0 tp-secure-send-senders-table'>
-                                                    <caption class='sr-only'><?php echo htmlspecialchars($lang->get('ops_secure_send_top_senders'), ENT_QUOTES, 'UTF-8'); ?></caption>
-                                                    <thead><tr>
-                                                        <th scope='col'><?php echo htmlspecialchars($lang->get('ops_secure_send_sender'), ENT_QUOTES, 'UTF-8'); ?></th>
-                                                        <th scope='col' class='text-right'><?php echo htmlspecialchars($lang->get('ops_secure_send_created'), ENT_QUOTES, 'UTF-8'); ?></th>
-                                                        <th scope='col' class='text-right'><?php echo htmlspecialchars($lang->get('ops_secure_send_revealed'), ENT_QUOTES, 'UTF-8'); ?></th>
-                                                        <th scope='col' class='text-right'><?php echo htmlspecialchars($lang->get('ops_secure_send_reveal_failed'), ENT_QUOTES, 'UTF-8'); ?></th>
-                                                    </tr></thead>
-                                                    <tbody id='tp-secure-send-senders'></tbody>
-                                                </table>
+                                    </div>
+                                <?php } ?>
+                            </div>
+
+                            <div class='row'>
+                                <div class='col-xl-7'>
+                                    <div class='card mb-3'>
+                                        <div class='card-header'>
+                                            <h3 class='card-title'><i class='fas fa-link mr-2' aria-hidden='true'></i><?php echo $secureSendLabel('link_profile'); ?></h3>
+                                        </div>
+                                        <div class='card-body'>
+                                            <div class='row'>
+                                                <div class='col-sm-6 mb-3 mb-sm-0'>
+                                                    <h4 class='h6 mb-2'><?php echo $secureSendLabel('link_types'); ?></h4>
+                                                    <div class='progress tp-secure-send-distribution mb-2' aria-hidden='true'>
+                                                        <?php foreach ($secureSendTypes as $type => $color) { ?>
+                                                            <div class='progress-bar bg-<?php echo $color; ?>' data-tp-secure-send-type='<?php echo $type; ?>'></div>
+                                                        <?php } ?>
+                                                    </div>
+                                                    <dl class='mb-0'>
+                                                        <?php $renderSecureSendMetrics(['creations.items', 'creations.notes', 'creations.unknown'], $secureSendTypes); ?>
+                                                    </dl>
+                                                </div>
+                                                <div class='col-sm-6'>
+                                                    <h4 class='h6 mb-2'><?php echo $secureSendLabel('link_policy'); ?></h4>
+                                                    <dl class='mb-0'>
+                                                        <?php $renderSecureSendMetrics(['creations.protected', 'creations.unprotected', 'creations.internal_links', 'creations.public_links']); ?>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class='card mb-3'>
+                                        <div class='card-header'>
+                                            <h3 class='card-title'><i class='fas fa-history mr-2' aria-hidden='true'></i><?php echo $secureSendLabel('link_activity'); ?></h3>
+                                        </div>
+                                        <div class='card-body'>
+                                            <div class='row'>
+                                                <div class='col-sm-6'>
+                                                    <dl class='mb-0'>
+                                                        <?php $renderSecureSendMetrics(['totals.senders', 'totals.sends_revealed', 'totals.reveal_failed']); ?>
+                                                    </dl>
+                                                </div>
+                                                <div class='col-sm-6'>
+                                                    <dl class='mb-0'>
+                                                        <?php $renderSecureSendMetrics(['totals.revoked', 'totals.invalidated', 'totals.expired']); ?>
+                                                    </dl>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <p class='small text-muted mt-3 mb-1'><?php echo htmlspecialchars($lang->get('ops_secure_send_history'), ENT_QUOTES, 'UTF-8'); ?></p>
-                                <p class='small text-muted mb-0'><?php echo htmlspecialchars($lang->get('ops_secure_send_interpretation'), ENT_QUOTES, 'UTF-8'); ?></p>
+
+                                <div class='col-xl-5'>
+                                    <div class='card mb-3'>
+                                        <div class='card-header'>
+                                            <h3 class='card-title'><i class='fas fa-envelope mr-2' aria-hidden='true'></i><?php echo $secureSendLabel('delivery'); ?></h3>
+                                        </div>
+                                        <div class='card-body'>
+                                            <div class='row'>
+                                                <div class='col-sm-6 mb-3 mb-sm-0'>
+                                                    <h4 class='h6 mb-2'><?php echo $secureSendLabel('delivery_links'); ?></h4>
+                                                    <dl class='mb-0'>
+                                                        <?php $renderSecureSendMetrics(['delivery.no_email', 'delivery.channel_unknown', 'delivery.email_links_with_files', 'delivery.email_files_shared']); ?>
+                                                    </dl>
+                                                </div>
+                                                <div class='col-sm-6'>
+                                                    <h4 class='h6 mb-2'><?php echo $secureSendLabel('email_outcomes'); ?></h4>
+                                                    <dl class='mb-0'>
+                                                        <?php $renderSecureSendMetrics([
+                                                            'delivery.email_accepted', 'delivery.email_not_submitted', 'delivery.email_failed', 'delivery.email_indeterminate',
+                                                        ], $secureSendOutcomes); ?>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                            <p class='small text-muted mt-2 mb-0'><?php echo $secureSendLabel('email_outcomes_summary'); ?></p>
+                                        </div>
+                                    </div>
+
+                                    <div class='card mb-3'>
+                                        <div class='card-header'>
+                                            <h3 class='card-title'><i class='fas fa-paperclip mr-2' aria-hidden='true'></i><?php echo $secureSendLabel('attachments'); ?></h3>
+                                        </div>
+                                        <div class='card-body'>
+                                            <dl class='mb-0'>
+                                                <?php $renderSecureSendMetrics(['attachments.links_with_files', 'attachments.downloads_authorized', 'attachments.file_count_unknown']); ?>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class='card mb-3'>
+                                <div class='card-header'>
+                                    <h3 class='card-title'><i class='fas fa-users mr-2' aria-hidden='true'></i><?php echo $secureSendLabel('top_senders'); ?></h3>
+                                </div>
+                                <div class='table-responsive'>
+                                    <table class='table table-sm table-hover mb-0 tp-secure-send-senders-table'>
+                                        <caption class='sr-only'><?php echo $secureSendLabel('top_senders'); ?></caption>
+                                        <thead><tr>
+                                            <th scope='col'><?php echo $secureSendLabel('sender'); ?></th>
+                                            <?php foreach (['created', 'revealed', 'reveal_failed'] as $metric) { ?>
+                                                <th scope='col' class='text-right' aria-label='<?php echo $secureSendLabel($metric); ?>'>
+                                                    <span class='d-none d-sm-inline'><?php echo $secureSendLabel($metric); ?></span>
+                                                    <span class='d-sm-none' aria-hidden='true'><?php echo $secureSendLabel($metric . '_short'); ?></span>
+                                                </th>
+                                            <?php } ?>
+                                        </tr></thead>
+                                        <tbody id='tp-secure-send-senders'></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
+
+                        <details class='small text-muted mb-2'>
+                            <summary class='font-weight-bold'><?php echo $secureSendLabel('reading_guide'); ?></summary>
+                            <p class='mt-2 mb-1'><?php echo $secureSendLabel('history'); ?></p>
+                            <p class='mb-1'><?php echo $secureSendLabel('interpretation'); ?></p>
+                            <p class='mb-1'><?php echo $secureSendLabel('attachment_scope'); ?></p>
+                            <p class='mb-1'><?php echo $secureSendLabel('delivery_scope'); ?></p>
+                            <p class='mb-0'><?php echo $secureSendLabel('email_outcomes_scope'); ?></p>
+                        </details>
                     </div>
 
                     <div class='tab-pane fade' id='tp-ops-lapr' role='tabpanel' aria-labelledby='tp-ops-lapr-tab'>

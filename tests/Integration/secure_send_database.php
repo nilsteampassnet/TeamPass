@@ -123,19 +123,20 @@ try {
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     $legacyAudit = prefixTable('secure_send_audit_legacy');
     DB::query('CREATE TABLE %b LIKE %b', $legacyAudit, prefixTable('secure_send_audit'));
-    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids', $legacyAudit);
+    DB::query('ALTER TABLE %b DROP COLUMN attachment_count, DROP COLUMN attachment_ids, DROP COLUMN delivery_channel', $legacyAudit);
     $historical = secureSendAuditRecord(['id' => 29, 'originator' => 42, 'item_id' => 123], 'revealed');
     DB::insert($legacyAudit, $historical);
-    secureSendUpgradeAuditAttachmentColumns(DB::getMDB()->get(), $legacyAudit);
+    secureSendUpgradeAuditColumns(DB::getMDB()->get(), $legacyAudit);
     $metadata = secureSendAuditRecord(
         ['id' => 30, 'originator' => 42, 'item_id' => 123], 'created',
-        actorId: 42, attachmentCount: 1, attachmentIds: [9010]
+        actorId: 42, attachmentCount: 1, attachmentIds: [9010], deliveryChannel: 'direct_email'
     );
     DB::insert($legacyAudit, $metadata);
     $beforeReplay = DB::query('SELECT * FROM %b ORDER BY id', $legacyAudit);
-    secureSendUpgradeAuditAttachmentColumns(DB::getMDB()->get(), $legacyAudit);
+    secureSendUpgradeAuditColumns(DB::getMDB()->get(), $legacyAudit);
     check($beforeReplay[0]['attachment_count'] === null && $beforeReplay[0]['attachment_ids'] === null
-        && $beforeReplay[1]['attachment_ids'] === '[9010]'
+        && $beforeReplay[0]['delivery_channel'] === null && $beforeReplay[1]['attachment_ids'] === '[9010]'
+        && $beforeReplay[1]['delivery_channel'] === 'direct_email'
         && DB::query('SELECT * FROM %b ORDER BY id', $legacyAudit) === $beforeReplay,
         'Replay of the audit upgrade changed historical evidence or new attachment metadata');
     $auditIndexes = DB::query('SHOW INDEX FROM ' . prefixTable('secure_send_audit'));

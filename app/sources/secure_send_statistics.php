@@ -64,6 +64,8 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         ],
         'totals' => null,
         'creations' => null,
+        'attachments' => null,
+        'delivery' => null,
         'top_senders' => [],
     ];
     $excludedIds = array_values(array_unique(array_filter(array_map('intval', $systemUserIds),
@@ -92,9 +94,22 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
                 SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 1 THEN 1 ELSE 0 END) AS protected,
                 SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 0 THEN 1 ELSE 0 END) AS unprotected,
                 SUM(CASE WHEN a.event = 'created' AND a.is_public = 1 THEN 1 ELSE 0 END) AS public_links,
-                SUM(CASE WHEN a.event = 'created' AND a.is_public = 0 THEN 1 ELSE 0 END) AS internal_links
+                SUM(CASE WHEN a.event = 'created' AND a.is_public = 0 THEN 1 ELSE 0 END) AS internal_links,
+                SUM(CASE WHEN a.event = 'created' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS links_with_files,
+                SUM(CASE WHEN a.event = 'created' THEN a.attachment_count ELSE 0 END) AS files_shared,
+                SUM(CASE WHEN a.event = 'created' AND a.attachment_count IS NULL THEN 1 ELSE 0 END) AS file_count_unknown,
+                SUM(CASE WHEN a.event = 'download_authorized' THEN 1 ELSE 0 END) AS downloads_authorized,
+                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN 1 ELSE 0 END) AS email_queued,
+                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'no_email' THEN 1 ELSE 0 END) AS no_email,
+                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel IS NULL THEN 1 ELSE 0 END) AS channel_unknown,
+                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS email_links_with_files,
+                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN a.attachment_count ELSE 0 END) AS email_files_shared,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'accepted' THEN 1 ELSE 0 END) AS email_accepted,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'not_submitted' THEN 1 ELSE 0 END) AS email_not_submitted,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'failed' THEN 1 ELSE 0 END) AS email_failed,
+                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'indeterminate' THEN 1 ELSE 0 END) AS email_indeterminate
             FROM " . prefixTable('secure_send_audit') . " a
-            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired')
+            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired', 'download_authorized', 'email_outcome')
                 AND {$where}",
             ...$parameters
         );
@@ -132,6 +147,17 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         foreach (['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links'] as $key) {
             $creations[$key] = (int) ($summary[$key] ?? 0);
         }
+        $attachments = [];
+        foreach (['links_with_files', 'files_shared', 'file_count_unknown', 'downloads_authorized'] as $key) {
+            $attachments[$key] = (int) ($summary[$key] ?? 0);
+        }
+        $delivery = [];
+        foreach ([
+            'email_queued', 'no_email', 'channel_unknown', 'email_links_with_files', 'email_files_shared',
+            'email_accepted', 'email_not_submitted', 'email_failed', 'email_indeterminate',
+        ] as $key) {
+            $delivery[$key] = (int) ($summary[$key] ?? 0);
+        }
         $senders = [];
         foreach ($rows as $row) {
             $deleted = !in_array($row['deleted_at'] ?? null, [null, '', 0, '0'], true);
@@ -152,6 +178,8 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         $payload['reason'] = 'ok';
         $payload['totals'] = $totals;
         $payload['creations'] = $creations;
+        $payload['attachments'] = $attachments;
+        $payload['delivery'] = $delivery;
         $payload['top_senders'] = $senders;
     } catch (Throwable $e) {
         // These reads bind only integer bounds/account IDs. MeekroDB keeps SQL in

@@ -61,7 +61,7 @@ class SecureSendStatisticsTest extends TestCase
             occurred_at INTEGER, originator INTEGER, actor_id INTEGER, item_id INTEGER,
             send_type TEXT, created_at INTEGER, has_passphrase INTEGER, is_public INTEGER,
             max_views INTEGER, expires_at INTEGER, views INTEGER, failed_attempts INTEGER,
-            attachment_count INTEGER, attachment_ids TEXT)');
+            attachment_count INTEGER, attachment_ids TEXT, delivery_channel TEXT)');
         DB::$connection->exec('CREATE TABLE stats_fixture_users (
             id INTEGER PRIMARY KEY, login TEXT, name TEXT, lastname TEXT, disabled INTEGER DEFAULT 0,
             deleted_at TEXT, email TEXT, admin INTEGER DEFAULT 0, gestionnaire INTEGER DEFAULT 0,
@@ -85,14 +85,14 @@ class SecureSendStatisticsTest extends TestCase
     }
 
     /** Insert real allowlisted journal rows, including no fabricated creation for legacy sends. */
-    private function event(string $event, int $sender = 42, int $sendId = 1, int $timestamp = 500, array $changes = []): void
+    private function event(string $event, int $sender = 42, int $sendId = 1, int $timestamp = 500, array $changes = [], ?string $reason = null): void
     {
         $link = array_replace([
             'id' => $sendId, 'originator' => $sender, 'send_type' => 'item', 'item_id' => 123,
             'timestamp' => 10, 'time_limit' => 10000, 'max_views' => 5, 'views' => 0,
             'has_passphrase' => 0, 'shared_globaly' => 0, 'failed_attempts' => 0,
         ], $changes);
-        $reason = ['revoked' => 'sender_revoked', 'invalidated' => 'attempts_exhausted',
+        $reason ??= ['revoked' => 'sender_revoked', 'invalidated' => 'attempts_exhausted',
             'expired' => 'deadline_elapsed', 'reveal_failed' => 'wrong_credentials'][$event] ?? '';
         $actor = in_array($event, ['created', 'revoked'], true) ? $sender : null;
         $download = $event === 'download_authorized';
@@ -121,7 +121,7 @@ class SecureSendStatisticsTest extends TestCase
         self::assertTrue($data['enabled']);
         self::assertSame('ok', $data['reason']);
         self::assertSame([], $data['top_senders']);
-        foreach (array_merge($data['totals'], $data['creations']) as $value) {
+        foreach (array_merge($data['totals'], $data['creations'], $data['attachments'], $data['delivery']) as $value) {
             self::assertSame(0, $value);
         }
         self::assertSame(['period'], $data['meta']['filters_applied']);
@@ -150,6 +150,23 @@ class SecureSendStatisticsTest extends TestCase
         self::assertSame(5, $data['top_senders'][0]['reveal_failed']);
     }
 
+    public function testAttachmentCountsUseOnlyCreationsAndDownloadAuthorizationsInPeriod(): void
+    {
+        $this->event('created', 42, 1);
+        $this->event('created', 42, 2);
+        $this->event('created', 42, 3);
+        DB::$connection->exec('UPDATE stats_fixture_secure_send_audit SET attachment_count = 2 WHERE send_id = 1');
+        DB::$connection->exec('UPDATE stats_fixture_secure_send_audit SET attachment_count = NULL WHERE send_id = 3');
+        $this->event('download_authorized', 42, 4, 900);
+        $this->event('download_authorized', 42, 5, 901);
+        $this->event('download_authorized', 43, 6);
+
+        self::assertSame([
+            'links_with_files' => 1, 'files_shared' => 2, 'file_count_unknown' => 1,
+            'downloads_authorized' => 1,
+        ], $this->statistics(excluded: [43])['attachments']);
+    }
+
     public function testCreationsArePartitionedByTypeProtectionAndPublicPolicy(): void
     {
         $this->event('created', 42, 1, 500, ['send_type' => 'item_v2', 'has_passphrase' => 1, 'shared_globaly' => 1]);
@@ -162,6 +179,30 @@ class SecureSendStatisticsTest extends TestCase
             'unprotected' => 2, 'public_links' => 1, 'internal_links' => 2], $data['creations']);
         self::assertSame(3, $data['totals']['created']);
         self::assertSame(2, $data['totals']['senders']);
+    }
+
+    public function testEmailChannelAndFileCountsUseOnlyAuditedCreations(): void
+    {
+        $this->event('created', 42, 1);
+        $this->event('created', 42, 2);
+        $this->event('created', 42, 3);
+        $this->event('created', 42, 4, 901);
+        DB::$connection->exec("UPDATE stats_fixture_secure_send_audit
+            SET delivery_channel = 'direct_email', attachment_count = 2 WHERE send_id IN (1, 4)");
+        DB::$connection->exec("UPDATE stats_fixture_secure_send_audit
+            SET delivery_channel = 'no_email', attachment_count = 3 WHERE send_id = 2");
+        $this->event('email_outcome', 42, 1, 901, reason: 'accepted');
+        $this->event('email_outcome', 42, 5, 100, reason: 'accepted');
+        $this->event('email_outcome', 42, 6, 900, reason: 'not_submitted');
+        $this->event('email_outcome', 42, 7, 500, reason: 'failed');
+        $this->event('email_outcome', 42, 8, 500, reason: 'indeterminate');
+        $this->event('email_outcome', 43, 9, 500, reason: 'indeterminate');
+
+        self::assertSame([
+            'email_queued' => 1, 'no_email' => 1, 'channel_unknown' => 1,
+            'email_links_with_files' => 1, 'email_files_shared' => 2,
+            'email_accepted' => 1, 'email_not_submitted' => 1, 'email_failed' => 1, 'email_indeterminate' => 1,
+        ], $this->statistics(excluded: [43])['delivery']);
     }
 
     public function testPeriodIncludesBothBoundariesAndUsesObservationNotLinkCreationTime(): void
@@ -247,7 +288,8 @@ class SecureSendStatisticsTest extends TestCase
         foreach (['item_id', 'send_id', 'actor_id', 'encrypted', 'protected_key', 'email'] as $forbidden) {
             self::assertStringNotContainsString('"' . $forbidden . '"', json_encode($data), $forbidden);
         }
-        foreach (['item_id', 'actor_id', 'encrypted', 'protected_key', 'email', 'SELECT *', 'stats_fixture_items', 'stats_fixture_otv'] as $forbidden) {
+        foreach (['item_id', 'actor_id', 'encrypted', 'protected_key', 'u.email', 'SELECT *',
+            'stats_fixture_items', 'stats_fixture_otv', 'stats_fixture_secure_send_email', 'background_tasks'] as $forbidden) {
             self::assertStringNotContainsString($forbidden, implode("\n", DB::$queries), $forbidden);
         }
     }
