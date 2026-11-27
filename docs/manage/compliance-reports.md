@@ -49,10 +49,14 @@ Available when [Data classification](../features/classification.md) is enabled: 
 
 Select the Secure Send tile to open the report and its date filters. The
 default period covers the last 30 days of retained audit events. The report counts
-public-address links created without a passphrase, revocations, invalidations
-related to access or sender availability, attachments and direct email
-invitations. It includes audited item shares and standalone notes. Links with
-an unknown delivery channel or file count are counted separately.
+public-address links created without a passphrase, link activity, attachments
+and direct email invitations. It includes audited item shares and standalone
+notes. Links with an unknown delivery channel or file count are counted separately.
+
+Successful reveals count server-side decryptions. Failed credential attempts
+count incorrect link keys or passphrases on confirmed attempts. The total
+invalidations include invalidations related to access or sender availability.
+Expired links are counted when they are cleaned up.
 
 The report and CSV include the observation bounds, generation time, configured
 time zone and audit retention. Timestamps use the TeamPass regional date and

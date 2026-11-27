@@ -81,7 +81,12 @@ class ComplianceReportsLogicTest extends TestCase
             $translate = static fn (string $key): string => $messages[$key];
             $rows = reportsSecureSendRows([
                 'public_unprotected' => '3',
+                'revealed' => '7',
+                'reveal_failed' => 3,
+                'revoked' => 1,
+                'invalidated' => 5,
                 'invalidated_access' => 2,
+                'expired' => 4,
                 'channel_unknown' => 4,
                 'file_count_unknown' => 1,
                 'email_indeterminate' => null,
@@ -94,11 +99,19 @@ class ComplianceReportsLogicTest extends TestCase
             self::assertSame('Europe/Paris', $values[$translate('compliance_report_secure_send_timezone')]);
             self::assertSame(90, $values[$translate('secure_send_audit_retention_days')]);
             self::assertSame(3, $values[$translate('ops_secure_send_public_unprotected')]);
-            self::assertSame(2, $values[$translate('ops_secure_send_invalidated_access')]);
             self::assertSame(4, $values[$translate('ops_secure_send_channel_unknown')]);
             self::assertSame(1, $values[$translate('ops_secure_send_file_count_unknown')]);
             self::assertSame(0, $values[$translate('ops_secure_send_email_indeterminate')]);
             $csv = reportsBuildCsv(['Section', 'Indicator', 'Value'], $rows, ['section', 'indicator', 'value']);
+            $csvRows = array_map(static fn (string $line): array => str_getcsv($line, escape: ''), explode("\r\n", rtrim($csv)));
+            foreach ([
+                'revealed' => 7, 'reveal_failed' => 3, 'revoked' => 1,
+                'invalidated' => 5, 'invalidated_access' => 2, 'expired' => 4,
+            ] as $metric => $count) {
+                $label = $translate('ops_secure_send_' . $metric);
+                self::assertSame($count, $values[$label]);
+                self::assertContains([$translate('ops_secure_send_link_activity'), $label, (string) $count], $csvRows);
+            }
             self::assertStringContainsString($start, $csv);
             self::assertStringContainsString($end, $csv);
             self::assertStringContainsString($generated, $csv);

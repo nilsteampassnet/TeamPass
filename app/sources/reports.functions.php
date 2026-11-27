@@ -200,7 +200,7 @@ function reportsSecureSendRows(
     }
     foreach ([
         'ops_secure_send_link_profile' => ['created', 'public_links', 'public_unprotected'],
-        'ops_secure_send_link_activity' => ['revoked', 'invalidated_access'],
+        'ops_secure_send_link_activity' => ['revealed', 'reveal_failed', 'revoked', 'invalidated', 'invalidated_access', 'expired'],
         'ops_secure_send_attachments' => ['links_with_files', 'files_shared', 'downloads_authorized', 'file_count_unknown'],
         'ops_secure_send_delivery' => [
             'email_queued', 'email_links_with_files', 'email_files_shared', 'channel_unknown',
