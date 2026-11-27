@@ -109,6 +109,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ['flagged_at', '<?php echo $lang->get('date'); ?>'],
             ['status', '<?php echo $lang->get('status'); ?>'],
         ],
+        'secure_send': [
+            ['indicator', <?php echo json_encode($lang->get('compliance_report_secure_send_indicator'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
+            ['value', <?php echo json_encode($lang->get('compliance_report_secure_send_value'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
+        ],
         'classification': [
             ['level', '<?php echo $lang->get('classification'); ?>'],
             ['items', '<?php echo $lang->get('items'); ?>'],
@@ -141,6 +145,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'access_changes': '<?php echo $lang->get('compliance_report_access_changes_tip'); ?>',
         'posture_summary': '<?php echo $lang->get('compliance_report_posture_summary_tip'); ?>',
         'rotation_evidence': '<?php echo $lang->get('compliance_report_rotation_evidence_tip'); ?>',
+        'secure_send': <?php echo json_encode($lang->get('compliance_report_secure_send_tip'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         'classification': '<?php echo $lang->get('compliance_report_classification_tip'); ?>',
         'rotation_overdue': <?php echo json_encode($lang->get('compliance_report_rotation_overdue_tip'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         'rotation_sla': <?php echo json_encode($lang->get('compliance_report_rotation_sla_tip'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
@@ -148,14 +153,43 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     let tpReportCsv = ''
     let tpReportName = ''
+    let tpReportRequestId = 0
+
+    function tpReportClearResult() {
+        tpReportRequestId++
+        tpReportCsv = ''
+        $('#report-export-csv').prop('disabled', true)
+        $('#report-results-card').hide()
+        toastr.remove()
+    }
+
+    function tpReportShowError(message) {
+        const [fallback, caution] = [
+            <?php echo json_encode($lang->get('compliance_report_load_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        ]
+        toastr.remove()
+        toastr.error(htmlEncode(typeof message === 'string' && message !== '' ? message : fallback), htmlEncode(caution), {
+            timeOut: 5000,
+            progressBar: true
+        })
+    }
 
     // Show/hide the period selectors + tip on report change
     function tpReportTypeChanged() {
         const reportType = $('#report-type').val()
-        $('.report-period').toggle(reportType === 'access_changes')
+        $('.report-period').toggle(['access_changes', 'secure_send'].includes(reportType))
         $('#report-type-tip').text(tpReportTips[reportType] || '')
     }
-    $(document).on('change', '#report-type', tpReportTypeChanged)
+    $(document).on('change', '#report-type', function() {
+        tpReportTypeChanged()
+        tpReportClearResult()
+    })
+    $(document).on('change', '#report-start, #report-end', tpReportClearResult)
+    $(document).on('click', '#report-secure-send', function() {
+        $('#report-type').val('secure_send').trigger('change')
+        $('#report-start').trigger('focus')
+    })
     $(function() {
         tpReportTypeChanged()
     })
@@ -163,8 +197,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Generate the selected report
     $(document).on('click', '#report-generate', function() {
         const reportType = $('#report-type').val()
-
-        toastr.remove();
+        tpReportClearResult()
+        const requestId = tpReportRequestId
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         const postData = {
@@ -180,24 +214,29 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (endVal !== '') {
                 postData.end = Math.floor(new Date(endVal + 'T23:59:59').getTime() / 1000)
             }
+        } else if (reportType === 'secure_send') {
+            postData.start_date = $('#report-start').val()
+            postData.end_date = $('#report-end').val()
         }
 
         $.post(
             'sources/reports.queries.php',
             postData,
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (requestId !== tpReportRequestId) {
+                    return
+                }
+                try {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+                } catch {
+                    tpReportShowError()
+                    return
+                }
                 if (debugJavascript === true) console.log(data);
 
                 toastr.remove();
-                if (data.error !== false) {
-                    toastr.error(
-                        data.message,
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
+                if (data?.error !== false) {
+                    tpReportShowError(data?.message)
                     return;
                 }
 
@@ -208,7 +247,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 renderReportTable(reportType, data)
                 toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
             }
-        );
+        ).fail(function() {
+            if (requestId === tpReportRequestId) {
+                tpReportShowError()
+            }
+        })
     })
 
     // Download the last generated report as CSV
@@ -264,11 +307,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         let html = '<table class="table table-bordered table-striped table-sm mb-0"><thead><tr>'
         columns.forEach(col => {
-            html += '<th>' + col[1] + '</th>'
+            html += '<th scope="col">' + htmlEncode(col[1]) + '</th>'
         })
-        html += '</tr></thead><tbody>'
+        html += '</tr></thead>'
 
+        let currentSection = null
         rows.forEach(row => {
+            const section = reportType === 'secure_send' ? row.section : ''
+            if (section !== currentSection) {
+                if (currentSection !== null) {
+                    html += '</tbody>'
+                }
+                html += '<tbody>'
+                if (section) {
+                    html += '<tr class="table-active"><th scope="rowgroup" colspan="' + columns.length + '">' + htmlEncode(section) + '</th></tr>'
+                }
+                currentSection = section
+            }
             html += '<tr>'
             columns.forEach(col => {
                 html += '<td>' + htmlEncode(String(row[col[0]] !== undefined && row[col[0]] !== null ? row[col[0]] : '')) + '</td>'

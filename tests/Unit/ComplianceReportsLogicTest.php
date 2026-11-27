@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * Copyright (c) 2009-2026 Teampass.net
+ * Licensed under the GNU General Public License, version 3 or later.
+ * See LICENSE.md for details.
+ */
+
 use PHPUnit\Framework\TestCase;
 
 // Real production logic (DB-free) shared with the reports.queries.php
@@ -20,6 +27,99 @@ require_once __DIR__ . '/../../app/sources/reports.functions.php';
  */
 class ComplianceReportsLogicTest extends TestCase
 {
+    public function testSecureSendCalendarPeriodFollowsDaylightSaving(): void
+    {
+        $timezone = new DateTimeZone('Europe/Paris');
+        $now = (new DateTimeImmutable('2026-11-01T12:00:00+01:00'))->getTimestamp();
+        $bounds = reportsSecureSendPeriod('2026-03-29', '2026-03-29', $timezone, $now);
+        self::assertSame((new DateTimeImmutable('2026-03-29T00:00:00+01:00'))->getTimestamp(), $bounds['start']);
+        self::assertSame((new DateTimeImmutable('2026-03-29T23:59:59+02:00'))->getTimestamp(), $bounds['end']);
+        self::assertSame(
+            [
+                'start' => (new DateTimeImmutable('2026-02-28T00:00:00+01:00'))->getTimestamp(),
+                'end' => (new DateTimeImmutable('2026-03-29T23:59:59+02:00'))->getTimestamp(),
+            ],
+            reportsSecureSendPeriod('', '2026-03-29', $timezone, $now)
+        );
+        self::assertSame(['start' => $now - 30 * 86400, 'end' => $now],
+            reportsSecureSendPeriod('', '', $timezone, $now));
+    }
+
+    public function testSecureSendCalendarPeriodRejectsInvalidDates(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        reportsSecureSendPeriod('2026-02-30', '2026-03-01', new DateTimeZone('Europe/Paris'), 1790000000);
+    }
+
+    public function testSecureSendCalendarPeriodRejectsReversedDates(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        reportsSecureSendPeriod('2026-12-01', '2026-11-30', new DateTimeZone('Europe/Paris'), 1790000000);
+    }
+
+    public function testSecureSendEvidenceCarriesScopeAndOnlyAggregateValuesInBothLanguages(): void
+    {
+        $timezone = new DateTimeZone('Europe/Paris');
+        $now = (new DateTimeImmutable('2026-04-01T15:05:00+02:00'))->getTimestamp();
+        $period = reportsSecureSendPeriod('2026-03-29', '2026-03-29', $timezone, $now);
+        $formats = [
+            'english' => [
+                'm/d/Y g:i:s a',
+                '03/29/2026 12:00:00 am +01:00',
+                '03/29/2026 11:59:59 pm +02:00',
+                '04/01/2026 3:05:00 pm +02:00',
+            ],
+            'french' => [
+                'd/m/Y H:i:s',
+                '29/03/2026 00:00:00 +01:00',
+                '29/03/2026 23:59:59 +02:00',
+                '01/04/2026 15:05:00 +02:00',
+            ],
+        ];
+        foreach ($formats as $language => [$format, $start, $end, $generated]) {
+            $messages = require __DIR__ . '/../../app/includes/language/' . $language . '.php';
+            $translate = static fn (string $key): string => $messages[$key];
+            $rows = reportsSecureSendRows([
+                'public_unprotected' => '3',
+                'revealed' => '7',
+                'reveal_failed' => 3,
+                'revoked' => 1,
+                'invalidated' => 5,
+                'invalidated_access' => 2,
+                'expired' => 4,
+                'channel_unknown' => 4,
+                'file_count_unknown' => 1,
+                'email_indeterminate' => null,
+                'originator' => 'private-originator-canary',
+            ], $period, $timezone, $format, $now, 90, $translate);
+            $values = array_column($rows, 'value', 'indicator');
+            self::assertSame($start, $values[$translate('compliance_report_secure_send_period_start')]);
+            self::assertSame($end, $values[$translate('compliance_report_secure_send_period_end')]);
+            self::assertSame($generated, $values[$translate('compliance_report_secure_send_generated_at')]);
+            self::assertSame('Europe/Paris', $values[$translate('compliance_report_secure_send_timezone')]);
+            self::assertSame(90, $values[$translate('secure_send_audit_retention_days')]);
+            self::assertSame(3, $values[$translate('ops_secure_send_public_unprotected')]);
+            self::assertSame(4, $values[$translate('ops_secure_send_channel_unknown')]);
+            self::assertSame(1, $values[$translate('ops_secure_send_file_count_unknown')]);
+            self::assertSame(0, $values[$translate('ops_secure_send_email_indeterminate')]);
+            $csv = reportsBuildCsv(['Section', 'Indicator', 'Value'], $rows, ['section', 'indicator', 'value']);
+            $csvRows = array_map(static fn (string $line): array => str_getcsv($line, escape: ''), explode("\r\n", rtrim($csv)));
+            foreach ([
+                'revealed' => 7, 'reveal_failed' => 3, 'revoked' => 1,
+                'invalidated' => 5, 'invalidated_access' => 2, 'expired' => 4,
+            ] as $metric => $count) {
+                $label = $translate('ops_secure_send_' . $metric);
+                self::assertSame($count, $values[$label]);
+                self::assertContains([$translate('ops_secure_send_link_activity'), $label, (string) $count], $csvRows);
+            }
+            self::assertStringContainsString($start, $csv);
+            self::assertStringContainsString($end, $csv);
+            self::assertStringContainsString($generated, $csv);
+            self::assertStringContainsString('Europe/Paris', $csv);
+            self::assertStringNotContainsString('private-originator-canary', $csv);
+        }
+    }
+
     // -------------------------------------------------------------------
     // reportsParseRoleIds()
     // -------------------------------------------------------------------

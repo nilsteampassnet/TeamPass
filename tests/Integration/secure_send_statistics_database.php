@@ -111,6 +111,36 @@ function secureSendStatisticsDatabaseChecks(array $settings): void
         $top = secureSendBuildOperationalStatistics(100, 200, $settings, []);
         check(array_column($top['top_senders'], 'id') === [9011, 9020, 9021, 9022, 9023],
             'MariaDB top five was not bounded and deterministic');
+
+        $link = ['id' => 9200, 'originator' => 9201, 'send_type' => 'note', 'shared_globaly' => 1];
+        $otherLink = array_replace($link, ['id' => 9202, 'has_passphrase' => 1]);
+        $unknownLink = array_replace($link, ['id' => 9203, 'shared_globaly' => 0]);
+        $excludedLink = array_replace($link, ['id' => 9204, 'originator' => 9299]);
+        $unknownCreation = secureSendAuditRecord($unknownLink, 'created', actorId: 9201, now: 307);
+        $unknownCreation['attachment_count'] = null;
+        foreach ([
+            secureSendAuditRecord($link, 'created', actorId: 9201, now: 300, attachmentCount: 1, deliveryChannel: 'direct_email'),
+            secureSendAuditRecord($link, 'download_authorized', now: 301, attachmentCount: 1),
+            secureSendAuditRecord($link, 'email_outcome', 'accepted', now: 312),
+            secureSendAuditRecord($otherLink, 'created', actorId: 9201, now: 305, deliveryChannel: 'no_email'),
+            secureSendAuditRecord($otherLink, 'invalidated', 'attempts_exhausted', now: 306),
+            $unknownCreation,
+            secureSendAuditRecord($unknownLink, 'invalidated', 'sender_unavailable', now: 310),
+            secureSendAuditRecord($excludedLink, 'created', actorId: 9299, now: 303, deliveryChannel: 'direct_email'),
+        ] as $record) {
+            DB::insert(prefixTable('secure_send_audit'), $record);
+        }
+        $governance = secureSendReadAuditPeriodSummary(300, 310, [9299]);
+        foreach ([
+            'created' => 3, 'public_links' => 2, 'public_unprotected' => 1, 'invalidated_access' => 1,
+            'downloads_authorized' => 1, 'email_queued' => 1, 'email_files_shared' => 1,
+            'file_count_unknown' => 1, 'channel_unknown' => 1, 'email_accepted' => 0,
+        ] as $metric => $expected) {
+            check((int) $governance[$metric] === $expected, 'Secure Send governance count differs for ' . $metric);
+        }
+        $later = secureSendReadAuditPeriodSummary(311, 312, []);
+        check((int) $later['created'] === 0 && (int) $later['email_accepted'] === 1,
+            'Invitation outcomes must follow their own observation time');
         echo "OK: Secure Send statistics preserve history, period boundaries and exact top five with ONLY_FULL_GROUP_BY\n";
     } finally {
         DB::query('SET SESSION sql_mode = %s', $sqlMode);

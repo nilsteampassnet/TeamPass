@@ -121,6 +121,106 @@ function reportsPeriodBounds(?string $start, ?string $end, int $now): array
 }
 
 /**
+ * Interpret Secure Send calendar filters in the configured TeamPass timezone.
+ *
+ * @return array{start:int,end:int} Inclusive observation bounds
+ * @throws InvalidArgumentException For invalid dates or a reversed period
+ */
+function reportsSecureSendPeriod(string $startDate, string $endDate, DateTimeZone $timezone, int $now): array
+{
+    $calendarDate = static function (string $value) use ($timezone): ?DateTimeImmutable {
+        if ($value === '') {
+            return null;
+        }
+        if (preg_match('/\A[0-9]{4}-[0-9]{2}-[0-9]{2}\z/', $value) !== 1) {
+            throw new InvalidArgumentException('Invalid Secure Send report date');
+        }
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, $timezone);
+        if ($date === false || $date->format('Y-m-d') !== $value || $date->getTimestamp() < 0) {
+            throw new InvalidArgumentException('Invalid Secure Send report date');
+        }
+
+        return $date;
+    };
+
+    $startDay = $calendarDate($startDate);
+    $endDay = $calendarDate($endDate);
+    $end = $endDay === null ? $now : $endDay->modify('+1 day')->getTimestamp() - 1;
+    if ($startDay !== null) {
+        $start = $startDay->getTimestamp();
+    } elseif ($endDay !== null) {
+        // Include the selected end date in the 30 calendar days.
+        $start = max(0, $endDay->modify('-29 days')->getTimestamp());
+    } else {
+        $start = max(0, $now - 30 * 86400);
+    }
+    if ($start > $end) {
+        throw new InvalidArgumentException('Invalid Secure Send report period');
+    }
+
+    return ['start' => $start, 'end' => $end];
+}
+
+/**
+ * Shape aggregate Secure Send audit evidence for the report table and CSV.
+ *
+ * @param array<string,int|string|null> $summary Aggregate journal counters
+ * @param array{start:int,end:int} $period Inclusive observation bounds
+ * @param string $dateTimeFormat Configured TeamPass date and time format
+ * @param callable(string):string $translate Report language lookup
+ * @return list<array{section:string,indicator:string,value:int|string}>
+ */
+function reportsSecureSendRows(
+    array $summary,
+    array $period,
+    DateTimeZone $timezone,
+    string $dateTimeFormat,
+    int $generatedAt,
+    ?int $retentionDays,
+    callable $translate
+): array {
+    $formatTime = static fn (int $timestamp): string =>
+        (new DateTimeImmutable('@' . $timestamp))->setTimezone($timezone)->format($dateTimeFormat . ' P');
+    $retention = match ($retentionDays) {
+        null => $translate('unknown'),
+        0 => $translate('compliance_report_secure_send_retention_all'),
+        default => $retentionDays,
+    };
+    $scope = $translate('compliance_report_secure_send_scope');
+    $rows = [];
+    foreach ([
+        'compliance_report_secure_send_period_start' => $formatTime($period['start']),
+        'compliance_report_secure_send_period_end' => $formatTime($period['end']),
+        'compliance_report_secure_send_generated_at' => $formatTime($generatedAt),
+        'compliance_report_secure_send_timezone' => $timezone->getName(),
+        'secure_send_audit_retention_days' => $retention,
+        'compliance_report_secure_send_coverage' => $translate('compliance_report_secure_send_coverage_note'),
+    ] as $indicator => $value) {
+        $rows[] = ['section' => $scope, 'indicator' => $translate($indicator), 'value' => $value];
+    }
+    foreach ([
+        'ops_secure_send_link_profile' => ['created', 'public_links', 'public_unprotected'],
+        'ops_secure_send_link_activity' => ['revealed', 'reveal_failed', 'revoked', 'invalidated', 'invalidated_access', 'expired'],
+        'ops_secure_send_attachments' => ['links_with_files', 'files_shared', 'downloads_authorized', 'file_count_unknown'],
+        'ops_secure_send_delivery' => [
+            'email_queued', 'email_links_with_files', 'email_files_shared', 'channel_unknown',
+            'email_accepted', 'email_not_submitted', 'email_failed', 'email_indeterminate',
+        ],
+    ] as $label => $metrics) {
+        $section = $translate($label);
+        foreach ($metrics as $metric) {
+            $rows[] = [
+                'section' => $section,
+                'indicator' => $translate('ops_secure_send_' . $metric),
+                'value' => (int) ($summary[$metric] ?? 0),
+            ];
+        }
+    }
+
+    return $rows;
+}
+
+/**
  * Shape the vault posture summary, distinguishing live flags from scan flags.
  *
  * Metadata only — the input is counters, never a password or an item name,

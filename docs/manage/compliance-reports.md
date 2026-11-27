@@ -45,6 +45,36 @@ Available when [Data classification](../features/classification.md) is enabled: 
 
 ---
 
+### Secure Send sharing governance
+
+Choose the Secure Send report from the list. When Secure Send is enabled, its
+tile also opens the report and its date filters. The default period covers the
+last 30 days of retained audit events. The report counts
+public-address links created without a passphrase, link activity, attachments
+and direct email invitations. It includes audited item shares and standalone
+notes. Links with an unknown delivery channel or file count are counted separately.
+
+Successful reveals count server-side decryptions. Failed credential attempts
+count incorrect link keys or passphrases on confirmed attempts. The total
+invalidations include invalidations related to access or sender availability.
+Expired links are counted when they are cleaned up.
+
+The report and CSV include the observation bounds, generation time, configured
+time zone and audit retention. Timestamps use the TeamPass regional date and
+time formats and include the UTC offset. Calendar dates use the TeamPass time zone.
+When you select only an end date, the period covers 30 calendar days through
+the end of that date.
+Each count uses the timestamp of its own event. An accepted invitation was
+handed off to the mail service. A first download authorization is a server-side
+decision before a transfer. The CSV includes aggregate evidence and report
+metadata. For a specific share, use the internal identifier in the Secure Send
+audit log.
+
+Complete the Secure Send audit schema upgrade before generating the report.
+The report can read retained events when Secure Send is disabled.
+
+---
+
 ## CSV export
 
 After generating a report, click **Export CSV**. Files are UTF-8 (BOM included for spreadsheet compatibility) with RFC 4180 quoting. Cell values starting with `=`, `+`, `-` or `@` are prefixed with a quote to neutralise spreadsheet formula injection — evidence files are safe to open in Excel/LibreOffice.

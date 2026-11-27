@@ -30,6 +30,96 @@ declare(strict_types=1);
  */
 
 /**
+ * Build the bound period and sender condition for queries of the Secure Send audit journal.
+ *
+ * @param array<int,int|string> $systemUserIds Internal accounts excluded by original sender id
+ * @return array{0:string,1:list<int|list<int>>}
+ */
+function secureSendAuditPeriodCondition(int $fromTs, int $toTs, array $systemUserIds): array
+{
+    $excludedIds = array_values(array_unique(array_filter(array_map('intval', $systemUserIds),
+        static fn (int $id): bool => $id > 0)));
+    $where = 'a.occurred_at BETWEEN %i AND %i';
+    $parameters = [$fromTs, $toTs];
+    if ($excludedIds !== []) {
+        $where .= ' AND a.originator NOT IN %li';
+        $parameters[] = $excludedIds;
+    }
+
+    return [$where, $parameters];
+}
+
+/**
+ * Read aggregate Secure Send audit metadata without joining user, item or task data.
+ *
+ * @param array<int,int|string> $systemUserIds Internal accounts excluded by original sender id
+ * @return array<string, int|string|null> Aggregate row with nullable sums on an empty period
+ * @throws RuntimeException When the aggregate row is unavailable
+ */
+function secureSendReadAuditPeriodSummary(int $fromTs, int $toTs, array $systemUserIds): array
+{
+    [$where, $parameters] = secureSendAuditPeriodCondition($fromTs, $toTs, $systemUserIds);
+    $summary = DB::queryFirstRow(
+        "SELECT
+            SUM(CASE WHEN a.event = 'created' THEN 1 ELSE 0 END) AS created,
+            SUM(CASE WHEN a.event = 'revealed' THEN 1 ELSE 0 END) AS revealed,
+            SUM(CASE WHEN a.event = 'reveal_failed' THEN 1 ELSE 0 END) AS reveal_failed,
+            SUM(CASE WHEN a.event = 'revoked' THEN 1 ELSE 0 END) AS revoked,
+            SUM(CASE WHEN a.event = 'invalidated' THEN 1 ELSE 0 END) AS invalidated,
+            SUM(CASE WHEN a.event = 'invalidated' AND a.reason IN ('item_access_lost', 'sender_unavailable') THEN 1 ELSE 0 END) AS invalidated_access,
+            SUM(CASE WHEN a.event = 'expired' THEN 1 ELSE 0 END) AS expired,
+            COUNT(DISTINCT CASE WHEN a.event = 'revealed' THEN a.send_id END) AS sends_revealed,
+            COUNT(DISTINCT CASE WHEN a.event = 'created' THEN a.originator END) AS senders,
+            SUM(CASE WHEN a.event = 'created' AND a.send_type = 'item' THEN 1 ELSE 0 END) AS items,
+            SUM(CASE WHEN a.event = 'created' AND a.send_type = 'note' THEN 1 ELSE 0 END) AS notes,
+            SUM(CASE WHEN a.event = 'created' AND a.send_type NOT IN ('item', 'note') THEN 1 ELSE 0 END) AS unknown,
+            SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 1 THEN 1 ELSE 0 END) AS protected,
+            SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 0 THEN 1 ELSE 0 END) AS unprotected,
+            SUM(CASE WHEN a.event = 'created' AND a.is_public = 1 THEN 1 ELSE 0 END) AS public_links,
+            SUM(CASE WHEN a.event = 'created' AND a.is_public = 1 AND a.has_passphrase = 0 THEN 1 ELSE 0 END) AS public_unprotected,
+            SUM(CASE WHEN a.event = 'created' AND a.is_public = 0 THEN 1 ELSE 0 END) AS internal_links,
+            SUM(CASE WHEN a.event = 'created' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS links_with_files,
+            SUM(CASE WHEN a.event = 'created' THEN a.attachment_count ELSE 0 END) AS files_shared,
+            SUM(CASE WHEN a.event = 'created' AND a.attachment_count IS NULL THEN 1 ELSE 0 END) AS file_count_unknown,
+            SUM(CASE WHEN a.event = 'download_authorized' THEN 1 ELSE 0 END) AS downloads_authorized,
+            SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN 1 ELSE 0 END) AS email_queued,
+            SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'no_email' THEN 1 ELSE 0 END) AS no_email,
+            SUM(CASE WHEN a.event = 'created' AND a.delivery_channel IS NULL THEN 1 ELSE 0 END) AS channel_unknown,
+            SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS email_links_with_files,
+            SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN a.attachment_count ELSE 0 END) AS email_files_shared,
+            SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'accepted' THEN 1 ELSE 0 END) AS email_accepted,
+            SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'not_submitted' THEN 1 ELSE 0 END) AS email_not_submitted,
+            SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'failed' THEN 1 ELSE 0 END) AS email_failed,
+            SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'indeterminate' THEN 1 ELSE 0 END) AS email_indeterminate
+        FROM " . prefixTable('secure_send_audit') . " a
+        WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired', 'download_authorized', 'email_outcome')
+            AND {$where}",
+        ...$parameters
+    );
+    if (!is_array($summary) || !array_key_exists('created', $summary)) {
+        throw new RuntimeException('Secure Send audit aggregate missing');
+    }
+
+    return $summary;
+}
+
+/**
+ * Describe a failed audit read for the server log on a single line.
+ *
+ * @param Throwable $error Failure raised while reading the Secure Send journal
+ * @return string Exception class and, for MeekroDB, the database diagnostic
+ */
+function secureSendAuditFailureLogContext(Throwable $error): string
+{
+    // MeekroDB exposes the SQL separately in getQuery(). Log only its diagnostic.
+    $diagnostic = $error instanceof MeekroDBException
+        ? ': ' . json_encode($error->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        : '';
+
+    return '(' . get_class($error) . ')' . $diagnostic;
+}
+
+/**
  * Aggregate observed Secure Send events for the administrator statistics dashboard.
  *
  * The caller must enforce the authenticated admin/session-key boundary. This helper
@@ -68,54 +158,9 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         'delivery' => null,
         'top_senders' => [],
     ];
-    $excludedIds = array_values(array_unique(array_filter(array_map('intval', $systemUserIds),
-        static fn (int $id): bool => $id > 0)));
-    $where = 'a.occurred_at BETWEEN %i AND %i';
-    $parameters = [$fromTs, $toTs];
-    if ($excludedIds !== []) {
-        $where .= ' AND a.originator NOT IN %li';
-        $parameters[] = $excludedIds;
-    }
-
     try {
-        $summary = DB::queryFirstRow(
-            "SELECT
-                SUM(CASE WHEN a.event = 'created' THEN 1 ELSE 0 END) AS created,
-                SUM(CASE WHEN a.event = 'revealed' THEN 1 ELSE 0 END) AS revealed,
-                SUM(CASE WHEN a.event = 'reveal_failed' THEN 1 ELSE 0 END) AS reveal_failed,
-                SUM(CASE WHEN a.event = 'revoked' THEN 1 ELSE 0 END) AS revoked,
-                SUM(CASE WHEN a.event = 'invalidated' THEN 1 ELSE 0 END) AS invalidated,
-                SUM(CASE WHEN a.event = 'expired' THEN 1 ELSE 0 END) AS expired,
-                COUNT(DISTINCT CASE WHEN a.event = 'revealed' THEN a.send_id END) AS sends_revealed,
-                COUNT(DISTINCT CASE WHEN a.event = 'created' THEN a.originator END) AS senders,
-                SUM(CASE WHEN a.event = 'created' AND a.send_type = 'item' THEN 1 ELSE 0 END) AS items,
-                SUM(CASE WHEN a.event = 'created' AND a.send_type = 'note' THEN 1 ELSE 0 END) AS notes,
-                SUM(CASE WHEN a.event = 'created' AND a.send_type NOT IN ('item', 'note') THEN 1 ELSE 0 END) AS unknown,
-                SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 1 THEN 1 ELSE 0 END) AS protected,
-                SUM(CASE WHEN a.event = 'created' AND a.has_passphrase = 0 THEN 1 ELSE 0 END) AS unprotected,
-                SUM(CASE WHEN a.event = 'created' AND a.is_public = 1 THEN 1 ELSE 0 END) AS public_links,
-                SUM(CASE WHEN a.event = 'created' AND a.is_public = 0 THEN 1 ELSE 0 END) AS internal_links,
-                SUM(CASE WHEN a.event = 'created' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS links_with_files,
-                SUM(CASE WHEN a.event = 'created' THEN a.attachment_count ELSE 0 END) AS files_shared,
-                SUM(CASE WHEN a.event = 'created' AND a.attachment_count IS NULL THEN 1 ELSE 0 END) AS file_count_unknown,
-                SUM(CASE WHEN a.event = 'download_authorized' THEN 1 ELSE 0 END) AS downloads_authorized,
-                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN 1 ELSE 0 END) AS email_queued,
-                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'no_email' THEN 1 ELSE 0 END) AS no_email,
-                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel IS NULL THEN 1 ELSE 0 END) AS channel_unknown,
-                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' AND a.attachment_count > 0 THEN 1 ELSE 0 END) AS email_links_with_files,
-                SUM(CASE WHEN a.event = 'created' AND a.delivery_channel = 'direct_email' THEN a.attachment_count ELSE 0 END) AS email_files_shared,
-                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'accepted' THEN 1 ELSE 0 END) AS email_accepted,
-                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'not_submitted' THEN 1 ELSE 0 END) AS email_not_submitted,
-                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'failed' THEN 1 ELSE 0 END) AS email_failed,
-                SUM(CASE WHEN a.event = 'email_outcome' AND a.reason = 'indeterminate' THEN 1 ELSE 0 END) AS email_indeterminate
-            FROM " . prefixTable('secure_send_audit') . " a
-            WHERE a.event IN ('created', 'revealed', 'reveal_failed', 'revoked', 'invalidated', 'expired', 'download_authorized', 'email_outcome')
-                AND {$where}",
-            ...$parameters
-        );
-        if (!is_array($summary) || !array_key_exists('created', $summary)) {
-            throw new RuntimeException('Secure Send statistics aggregate missing');
-        }
+        $summary = secureSendReadAuditPeriodSummary($fromTs, $toTs, $systemUserIds);
+        [$where, $parameters] = secureSendAuditPeriodCondition($fromTs, $toTs, $systemUserIds);
 
         // Rank the full sender population in SQL, not a pre-truncated activity sample.
         // Join identity only after aggregation: deleted/missing accounts retain their history.
@@ -182,13 +227,7 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         $payload['delivery'] = $delivery;
         $payload['top_senders'] = $senders;
     } catch (Throwable $e) {
-        // These reads bind only integer bounds/account IDs. MeekroDB keeps SQL in
-        // getQuery(), separate from the database diagnostic; never log that query.
-        // Encode control characters to keep the server-only diagnostic on one line.
-        $diagnostic = $e instanceof MeekroDBException
-            ? ': ' . json_encode($e->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-            : '';
-        error_log('TEAMPASS Secure Send statistics failed (' . get_class($e) . ')' . $diagnostic);
+        error_log('TEAMPASS Secure Send statistics failed ' . secureSendAuditFailureLogContext($e));
     }
 
     return $payload;

@@ -109,6 +109,19 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
             </div>
         </div>
 <?php else : ?>
+<?php if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1) : ?>
+        <div class='row'>
+            <div class='col-md-6 col-xl-4'>
+                <button type='button' class='info-box btn btn-default d-flex w-100 text-left mb-3' id='report-secure-send' aria-controls='report-type'>
+                    <span class='info-box-icon bg-info'><i class='fas fa-paper-plane' aria-hidden='true'></i></span>
+                    <span class='info-box-content text-wrap'>
+                        <strong><?php echo htmlspecialchars($lang->get('compliance_report_secure_send'), ENT_QUOTES, 'UTF-8'); ?></strong>
+                    </span>
+                    <i class='fas fa-chevron-right align-self-center mr-2' aria-hidden='true'></i>
+                </button>
+            </div>
+        </div>
+<?php endif; ?>
         <div class='row'>
             <div class='col-md-12'>
                 <div class='card card-primary'>
@@ -125,6 +138,7 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
                                     <option value='access_changes'><?php echo $lang->get('compliance_report_access_changes'); ?></option>
                                     <option value='posture_summary'><?php echo $lang->get('compliance_report_posture_summary'); ?></option>
                                     <option value='rotation_evidence'><?php echo $lang->get('compliance_report_rotation_evidence'); ?></option>
+                                    <option value='secure_send'><?php echo htmlspecialchars($lang->get('compliance_report_secure_send'), ENT_QUOTES, 'UTF-8'); ?></option>
 <?php if ((int) ($SETTINGS['data_classification_enabled'] ?? 0) === 1) : ?>
                                     <option value='classification'><?php echo $lang->get('compliance_report_classification'); ?></option>
 <?php endif; ?>
