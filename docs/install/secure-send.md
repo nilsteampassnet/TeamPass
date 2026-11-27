@@ -1351,12 +1351,22 @@ including during stale-task cleanup, retaining only failure/interruption flags.
 They are not resumed automatically. Inspect the provider before manually creating another
 invitation after an uncertain outcome.
 
+In **Tasks**, administrators can cancel an invitation that is still queued,
+including one waiting for a retry. Cancellation records a `not_submitted`
+outcome and removes the task. The link continues to follow its own validity
+and access rules. Invitations are protected while a worker processes them.
+
 Monitoring → Logs records one final outcome for each invitation observed after
 the upgrade: accepted by the mail service, not submitted, confirmed failure or
 indeterminate. The journal stores the link identifier, sender and outcome time
 without the recipient address, link or message. Task cleanup does not remove
 this event. Under **Statistics → Secure Send**, counts reflect invitations and associated files at
 creation, and final outcomes at completion. Older outcomes are not reconstructed.
+
+In an `email_outcome` event, the fields `has_passphrase`, `is_public`,
+`max_views`, `expires_at`, `views` and `failed_attempts` are zero-filled
+schema placeholders. Ignore them when reading these events in the journal or
+in syslog JSON. Use the outcome reason and event time for delivery reporting.
 
 Delivery associations remain while their link exists. Maintenance and subsequent
 creations prune at most 100 obsolete associations after the one-hour quota window,

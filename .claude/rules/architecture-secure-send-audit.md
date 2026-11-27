@@ -151,10 +151,20 @@ Interrupted invitations are not resumed; both handler failure paths wipe their
 payload. Provider outcomes remain conservative: `not_sent` denotes a preflight
 refusal, while acceptance is not inbox delivery. Statuses are owner-scoped.
 The final task state and its metadata-only journal event commit under the task
-row lock. A deferred retry leaves no final outcome. If the link disappeared,
+row lock. Administrators can cancel a queued invitation, including one waiting
+for a deferred retry. The same lock protects the cancellation and records
+`not_submitted` before the task is deleted. The scheduler claims the queued
+row before launching a worker, so a claimed invitation remains protected.
+A deferred retry leaves no final outcome until the task ends. If the link disappeared,
 the delivery association still identifies the send. A missing creation row
 leaves its source item/type unknown. Network submission stays outside the
 transaction, so a worker interruption can leave provider acceptance indeterminate.
+
+For `email_outcome`, `has_passphrase`, `is_public`, `max_views`, `expires_at`,
+`views` and `failed_attempts` contain zero placeholders for the required schema
+fields. Consumers must ignore these fields for this event, including in the
+forwarded syslog JSON. Use the event's reason and timestamp for delivery reporting.
+
 Resolve `#sender#` / optional `#sender_prefix#` at each submission under current
 `secure_send_show_sender_name`; hidden/empty profiles use shipped **Someone**,
 never login/email. Strip header controls, escape HTML and preserve custom subjects
