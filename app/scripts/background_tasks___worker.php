@@ -2031,6 +2031,8 @@ $worker = new TaskWorker($taskId, $processType, $taskData);
 try {
     $worker->execute();
 } catch (Throwable $error) {
-    error_log('TEAMPASS background task worker failed for task ' . $taskId . ' (' . get_class($error) . ')');
+    // Class and throw site only: the message may carry task data.
+    error_log('TEAMPASS background task worker failed for task ' . $taskId . ' (' . get_class($error)
+        . ' at ' . basename($error->getFile()) . ':' . $error->getLine() . ')');
     exit(1);
 }
