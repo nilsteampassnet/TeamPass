@@ -139,6 +139,12 @@ class ItemController extends BaseController
         if (array_key_exists('renewal_period', $params)) {
             $intent['renewal_period'] = $params['renewal_period'];
         }
+        // An empty restriction is no restriction: keep it out so legacy fingerprints still match.
+        foreach (['restricted_to', 'restricted_to_roles'] as $restrictionField) {
+            if (empty($params[$restrictionField]) === false) {
+                $intent[$restrictionField] = $params[$restrictionField];
+            }
+        }
         return $intent;
     }
 
@@ -399,6 +405,20 @@ class ItemController extends BaseController
                         if (array_key_exists('renewal_period', $arrQueryStringParams)) {
                             try {
                                 $arrItemParams['renewal_period'] = renewalValidatePeriod($arrQueryStringParams['renewal_period']);
+                            } catch (InvalidArgumentException $exception) {
+                                $this->sendProblemFromHeader('HTTP/1.1 422 Unprocessable Entity', $exception->getMessage());
+                                return;
+                            }
+                        }
+
+                        // Optional item-level restriction. Malformed lists are refused here, before
+                        // any idempotency reservation; rights and settings are checked by the model.
+                        foreach (['restricted_to', 'restricted_to_roles'] as $restrictionField) {
+                            try {
+                                $arrItemParams[$restrictionField] = itemRestrictionNormalizeRequestedIds(
+                                    $arrQueryStringParams[$restrictionField] ?? null,
+                                    $restrictionField
+                                );
                             } catch (InvalidArgumentException $exception) {
                                 $this->sendProblemFromHeader('HTTP/1.1 422 Unprocessable Entity', $exception->getMessage());
                                 return;
@@ -1200,6 +1220,8 @@ class ItemController extends BaseController
                                         'totp_digits',
                                         'totp_period',
                                         'fields',
+                                        'restricted_to',
+                                        'restricted_to_roles',
                                     ];
                                     $hasUpdateField = false;
                                     foreach ($updateableFields as $field) {

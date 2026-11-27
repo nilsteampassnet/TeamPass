@@ -538,6 +538,17 @@ class ItemModel
             // Step 6: Check for duplicates in the system
             $this->checkForDuplicates($label, $SETTINGS, $itemInfos);
 
+            // Step 6b: Resolve the optional item-level restriction (users and roles)
+            $restriction = $this->resolveCreateRestriction(
+                $arrItemParams['restricted_to'] ?? null,
+                $arrItemParams['restricted_to_roles'] ?? null,
+                $folderId,
+                $userId,
+                $itemInfos,
+                $SETTINGS
+            );
+            $data['restrictedTo'] = implode(';', $restriction['users']);
+
             // Step 7: Encrypt password if provided
             // Keep the plaintext for the post-insert security-posture refresh (reuse hashing).
             $plaintextPasswordForHealth = $password;
@@ -568,6 +579,16 @@ class ItemModel
                 $passwordIv,
                 $idempotencyReservation === null ? null : (int) $idempotencyReservation['id']
             );
+
+            foreach ($restriction['roles'] as $restrictedRoleId) {
+                DB::insert(
+                    prefixTable('restriction_to_roles'),
+                    [
+                        'role_id' => $restrictedRoleId,
+                        'item_id' => $newID,
+                    ]
+                );
+            }
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
             $fieldsForTasks = $this->handlePostInsertTasks(
@@ -946,6 +967,248 @@ class ItemModel
     }
 
     /**
+     * Validates the item-level restriction requested on creation and returns what to store.
+     *
+     * The web form only offers folder members, but its handler stores whatever it receives.
+     * The API checks it server-side instead (assertRestrictionEntriesAllowed()). The author is
+     * always kept in the user list (itemRestrictionUsersWithAuthor()).
+     *
+     * The restriction is an authorization filter only: it does not change who receives a
+     * sharekey, exactly like the web.
+     *
+     * @param mixed $requestedUsers Requested user ids (restricted_to), null when absent
+     * @param mixed $requestedRoles Requested role ids (restricted_to_roles), null when absent
+     * @param int   $folderId       Target folder
+     * @param int   $authorId       User creating the item
+     * @param array $itemInfos      Folder settings from getFolderSettings()
+     * @param array $SETTINGS       Instance settings
+     * @return array{users: int[], roles: int[]} Ids to store, both empty when nothing is restricted
+     * @throws InvalidArgumentException When the restriction cannot be applied
+     */
+    private function resolveCreateRestriction(
+        $requestedUsers,
+        $requestedRoles,
+        int $folderId,
+        int $authorId,
+        array $itemInfos,
+        array $SETTINGS
+    ) : array
+    {
+        $userIds = itemRestrictionNormalizeRequestedIds($requestedUsers, 'restricted_to');
+        $roleIds = itemRestrictionNormalizeRequestedIds($requestedRoles, 'restricted_to_roles');
+        if (count($userIds) === 0 && count($roleIds) === 0) {
+            return ['users' => [], 'roles' => []];
+        }
+
+        $this->assertRestrictionEntriesAllowed($userIds, $roleIds, $folderId, $authorId, $itemInfos, $SETTINGS);
+
+        return [
+            'users' => itemRestrictionUsersWithAuthor($userIds, $roleIds, $authorId),
+            'roles' => $roleIds,
+        ];
+    }
+
+    /**
+     * Resolves a restriction change requested on update.
+     *
+     * Each list that is sent replaces the stored one, an empty list clears it, an absent (or null)
+     * list keeps it. Only the entries the request ADDS are validated: an entry already stored stays
+     * accepted as is, so a read-modify-write client resending the current lists is never refused
+     * because a listed user was disabled since, and lifting a restriction is always possible. The
+     * caller is kept in the user list whenever a restriction remains, like the web edit form.
+     *
+     * @param int   $itemId      Item being updated
+     * @param array $params      Request parameters
+     * @param array $currentItem Current items row
+     * @param int   $folderId    Folder the item will be in after this update
+     * @param int   $callerId    User performing the update
+     * @param array $SETTINGS    Instance settings
+     * @return array{users: int[], roles: int[], previous_users: int[], previous_roles: int[]}|null
+     *         What to store, or null when the request changes nothing
+     * @throws InvalidArgumentException When an added entry cannot be applied
+     */
+    private function resolveUpdateRestriction(
+        int $itemId,
+        array $params,
+        array $currentItem,
+        int $folderId,
+        int $callerId,
+        array $SETTINGS
+    ) : ?array
+    {
+        $currentUserIds = itemRestrictionParseIdList(
+            isset($currentItem['restricted_to']) === true ? (string) $currentItem['restricted_to'] : null
+        );
+        $currentRoleIds = array_values(array_unique(array_map(
+            'intval',
+            DB::queryFirstColumn(
+                'SELECT role_id FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id = %i',
+                $itemId
+            )
+        )));
+
+        $userIds = isset($params['restricted_to']) === true
+            ? itemRestrictionNormalizeRequestedIds($params['restricted_to'], 'restricted_to')
+            : $currentUserIds;
+        $roleIds = isset($params['restricted_to_roles']) === true
+            ? itemRestrictionNormalizeRequestedIds($params['restricted_to_roles'], 'restricted_to_roles')
+            : $currentRoleIds;
+
+        $this->assertRestrictionEntriesAllowed(
+            array_values(array_diff($userIds, $currentUserIds)),
+            array_values(array_diff($roleIds, $currentRoleIds)),
+            $folderId,
+            $callerId,
+            $this->getFolderSettings($folderId),
+            $SETTINGS
+        );
+        $userIds = itemRestrictionUsersWithAuthor($userIds, $roleIds, $callerId);
+
+        $sortedUserIds = $userIds;
+        $sortedCurrentUserIds = $currentUserIds;
+        $sortedRoleIds = $roleIds;
+        $sortedCurrentRoleIds = $currentRoleIds;
+        sort($sortedUserIds);
+        sort($sortedCurrentUserIds);
+        sort($sortedRoleIds);
+        sort($sortedCurrentRoleIds);
+        if ($sortedUserIds === $sortedCurrentUserIds && $sortedRoleIds === $sortedCurrentRoleIds) {
+            return null;
+        }
+
+        return [
+            'users' => $userIds,
+            'roles' => $roleIds,
+            'previous_users' => $currentUserIds,
+            'previous_roles' => $currentRoleIds,
+        ];
+    }
+
+    /**
+     * Readable form of a restriction for the item history, the way the web logs it:
+     * user full names (login when empty), then role titles.
+     *
+     * @param int[] $userIds Restricted user ids
+     * @param int[] $roleIds Restricted role ids
+     * @return string Comma-separated list, empty when nothing is restricted
+     */
+    private function describeRestriction(array $userIds, array $roleIds): string
+    {
+        $labels = [];
+        if (count($userIds) > 0) {
+            foreach (DB::query(
+                'SELECT login, name, lastname FROM ' . prefixTable('users') . ' WHERE id IN %li ORDER BY id',
+                $userIds
+            ) as $user) {
+                $fullName = trim((string) $user['name'] . ' ' . (string) $user['lastname']);
+                $labels[] = $fullName !== '' ? $fullName : (string) $user['login'];
+            }
+        }
+        if (count($roleIds) > 0) {
+            foreach (DB::queryFirstColumn(
+                'SELECT title FROM ' . prefixTable('roles_title') . ' WHERE id IN %li ORDER BY title',
+                $roleIds
+            ) as $roleTitle) {
+                $labels[] = (string) $roleTitle;
+            }
+        }
+
+        return implode(', ', $labels);
+    }
+
+    /**
+     * Refuses restriction entries that would not do what the client asked.
+     *
+     * A restriction naming someone who cannot open the folder would never grant them anything,
+     * and the client would not find out; a role must grant access to the folder, like the roles
+     * the web form offers. Nothing to check when both lists are empty.
+     *
+     * @param int[] $userIds   User ids to check
+     * @param int[] $roleIds   Role ids to check
+     * @param int   $folderId  Folder the item is (or will be) in
+     * @param int   $callerId  User performing the request (already authorized on the folder)
+     * @param array $itemInfos Folder settings from getFolderSettings()
+     * @param array $SETTINGS  Instance settings
+     * @return void
+     * @throws InvalidArgumentException When an entry cannot be applied
+     */
+    private function assertRestrictionEntriesAllowed(
+        array $userIds,
+        array $roleIds,
+        int $folderId,
+        int $callerId,
+        array $itemInfos,
+        array $SETTINGS
+    ) : void
+    {
+        if (count($userIds) === 0 && count($roleIds) === 0) {
+            return;
+        }
+
+        if ((int) ($SETTINGS['restricted_to'] ?? 0) !== 1) {
+            throw new InvalidArgumentException('Item restriction is disabled on this instance.');
+        }
+        if (count($roleIds) > 0 && (int) ($SETTINGS['restricted_to_roles'] ?? 0) !== 1) {
+            throw new InvalidArgumentException('Role restriction is disabled on this instance.');
+        }
+        if ((int) $itemInfos['personal_folder'] === 1) {
+            throw new InvalidArgumentException('An item in a personal folder cannot be restricted.');
+        }
+
+        // Each restricted user must be able to open the folder, resolved exactly like that
+        // user's own API session (getUserCompleteData() + buildUserFoldersList()). Administrators
+        // are refused as the web form does: they never read items.
+        $systemUserIds = [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID];
+        $authModel = null;
+        foreach ($userIds as $restrictedUserId) {
+            if ($restrictedUserId === $callerId) {
+                continue;
+            }
+
+            $userRow = in_array($restrictedUserId, $systemUserIds, true) === true
+                ? null
+                : getUserCompleteData(null, $restrictedUserId);
+            $canOpenFolder = false;
+            if (is_array($userRow) === true
+                && (int) ($userRow['admin'] ?? 0) === 0
+                && (int) ($userRow['disabled'] ?? 0) === 0
+            ) {
+                if ($authModel === null) {
+                    require_once API_ROOT_PATH . '/Model/AuthModel.php';
+                    $authModel = new AuthModel();
+                }
+                $canOpenFolder = in_array($folderId, $authModel->buildUserFoldersList($userRow)['folders'], true);
+            }
+
+            if ($canOpenFolder === false) {
+                throw new InvalidArgumentException(
+                    'restricted_to: user ' . $restrictedUserId
+                    . ' cannot be given this item (unknown, disabled, administrator or without access to the folder).'
+                );
+            }
+        }
+
+        // Each restricted role must grant access to the folder: the roles the web form offers.
+        if (count($roleIds) > 0) {
+            $folderRoleIds = array_map(
+                'intval',
+                DB::queryFirstColumn(
+                    'SELECT DISTINCT role_id FROM ' . prefixTable('roles_values') . '
+                    WHERE folder_id = %i AND role_id IN %li AND type IN ("W", "ND", "NE", "NDNE", "R")',
+                    $folderId,
+                    $roleIds
+                )
+            );
+            $refusedRoleIds = array_values(array_diff($roleIds, $folderRoleIds));
+            if (count($refusedRoleIds) > 0) {
+                throw new InvalidArgumentException(
+                    'restricted_to_roles: role ' . $refusedRoleIds[0] . ' has no access to this folder.'
+                );
+            }
+        }
+    }
+
+    /**
      * Validates that the password meets the complexity requirements of the folder.
      * Throws an exception if the password is too weak.
      * Returns the computed complexity level so the caller can reuse it without a second zxcvbn pass.
@@ -1069,7 +1332,7 @@ class ItemModel
             'id_tree' => $data['folderId'],
             'login' => $data['login'],
             'inactif' => 0,
-            'restricted_to' => '',
+            'restricted_to' => (string) ($data['restrictedTo'] ?? ''),
             'perso' => $itemInfos['personal_folder'],
             'anyone_can_modify' => $data['anyoneCanModify'],
             'renewal_period' => $data['renewalPeriod'],
@@ -1875,6 +2138,7 @@ class ItemModel
                             'label', 'password', 'description', 'login', 'email', 'url', 'tags',
                             'anyone_can_modify', 'icon', 'fields', 'renewal_period',
                             'totp', 'totp_algorithm', 'totp_digits', 'totp_period',
+                            'restricted_to', 'restricted_to_roles',
                         ]
                     );
                     if (empty($conflictingUpdateFields) === false) {
@@ -1988,6 +2252,23 @@ class ItemModel
                     ];
                 }
             }
+
+            // Item-level restriction (#5476), checked against the folder the item ends up in.
+            $restrictionUpdate = null;
+            if (isset($params['restricted_to']) === true || isset($params['restricted_to_roles']) === true) {
+                $restrictionUpdate = $this->resolveUpdateRestriction(
+                    $itemId,
+                    $params,
+                    $currentItem,
+                    (int) ($updateData['id_tree'] ?? $currentItem['id_tree']),
+                    (int) $userData['id'],
+                    $SETTINGS
+                );
+                if ($restrictionUpdate !== null) {
+                    $updateData['restricted_to'] = implode(';', $restrictionUpdate['users']);
+                }
+            }
+
             $fieldsDefinitions = [
                 'label'             => ['db_key' => 'label', 'type' => 'encoded'],
                 'description'       => ['db_key' => 'description', 'type' => 'richtext'],
@@ -2115,12 +2396,13 @@ class ItemModel
                 );
             }
             
-            // A password change is audited on its own (at_pw). The generic at_modification
-            // entry must therefore describe only what else the request touched, otherwise a
-            // combined update would report the password twice and hide the rest.
+            // A password change is audited on its own (at_pw), and so is a restriction change
+            // (at_restriction). The generic at_modification entry must therefore describe only
+            // what else the request touched, otherwise a combined update would report the
+            // password twice and hide the rest.
             $hasNonPasswordUpdate = count(array_diff(
                     array_keys($updateData),
-                    ['pw', 'pw_iv', 'pw_len', 'complexity_level']
+                    ['pw', 'pw_iv', 'pw_len', 'complexity_level', 'restricted_to']
                 )) > 0
                 || $hasTotpUpdate === true
                 || isset($params['tags'])
@@ -2133,8 +2415,10 @@ class ItemModel
                 $updateData['updated_at'] = time();
 
                 // The folder change and the key purge are one step: an item must never become
-                // personal while other users still hold its keys.
-                if ($restrictSharekeysToOwner === true) {
+                // personal while other users still hold its keys. Likewise the user and role
+                // halves of a restriction change land together, never one without the other.
+                $useTransaction = $restrictSharekeysToOwner === true || $restrictionUpdate !== null;
+                if ($useTransaction === true) {
                     DB::startTransaction();
                 }
                 try {
@@ -2146,10 +2430,24 @@ class ItemModel
                     );
                     if ($restrictSharekeysToOwner === true) {
                         deleteForeignItemSharekeys($itemId, (int) $userData['id']);
+                    }
+                    if ($restrictionUpdate !== null) {
+                        DB::delete(prefixTable('restriction_to_roles'), 'item_id = %i', $itemId);
+                        foreach ($restrictionUpdate['roles'] as $restrictedRoleId) {
+                            DB::insert(
+                                prefixTable('restriction_to_roles'),
+                                [
+                                    'role_id' => $restrictedRoleId,
+                                    'item_id' => $itemId,
+                                ]
+                            );
+                        }
+                    }
+                    if ($useTransaction === true) {
                         DB::commit();
                     }
                 } catch (Throwable $e) {
-                    if ($restrictSharekeysToOwner === true) {
+                    if ($useTransaction === true) {
                         DB::rollback();
                     }
                     throw $e;
@@ -2276,6 +2574,24 @@ class ItemModel
                     TP_ENCRYPTION_NAME,
                     null,
                     (string) $encryptedPreviousPassword
+                );
+            }
+
+            // Same reason format as the other web field changes ('previous => new'). Through
+            // logItems() it also bumps the revision, so an offline client that was just
+            // excluded receives its out_of_scope tombstone from item/changes.
+            if ($restrictionUpdate !== null) {
+                logItems(
+                    $SETTINGS,
+                    $itemId,
+                    (string) $label,
+                    (int) $userData['id'],
+                    'at_modification',
+                    (string) $userData['username'],
+                    'at_restriction : '
+                        . $this->describeRestriction($restrictionUpdate['previous_users'], $restrictionUpdate['previous_roles'])
+                        . ' => '
+                        . $this->describeRestriction($restrictionUpdate['users'], $restrictionUpdate['roles'])
                 );
             }
 

@@ -628,7 +628,7 @@
             "post": {
                 "operationId": "itemCreate",
                 "summary": "Create a new item",
-                "description": "All required fields must be present, even if empty. renewal_period is optional and defaults to 0. Idempotency-Key is optional; within the configured offline synchronization window (90 days by default, 0 for no limit) the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
+                "description": "All required fields must be present, even if empty. renewal_period is optional and defaults to 0. restricted_to and restricted_to_roles are optional and restrict the item to those users and role members, like the web form; a restriction that cannot be applied returns 422 and creates nothing. Idempotency-Key is optional; within the configured offline synchronization window (90 days by default, 0 for no limit) the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/IdempotencyKey"
@@ -697,7 +697,7 @@
             "put": {
                 "operationId": "itemUpdate",
                 "summary": "Update an existing item",
-                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields, renewal_period). Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently. Moving a shared item into the caller's personal folder deletes the other users' encryption keys in the same step; it returns 422 when the caller does not hold every key of the item yet. A move requires the delete right on the item's current folder and the edit right on the target folder, like the web interface: it returns 403 on a current folder granted as ND or NDNE, or a target folder granted as NE, NDNE or R. Omitting renewal_period preserves it; 0 disables the individual policy without resetting password age. A change to renewal_period returns 409 for an item linked to LAPR while the module is enabled (managed account or endpoint connection credential); an unchanged value is accepted.",
+                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields, renewal_period, restricted_to, restricted_to_roles). Each restriction list that is sent replaces the stored one ([] clears it); only added entries are validated, and an entry that cannot be applied returns 422. Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently. Moving a shared item into the caller's personal folder deletes the other users' encryption keys in the same step; it returns 422 when the caller does not hold every key of the item yet. A move requires the delete right on the item's current folder and the edit right on the target folder, like the web interface: it returns 403 on a current folder granted as ND or NDNE, or a target folder granted as NE, NDNE or R. Omitting renewal_period preserves it; 0 disables the individual policy without resetting password age. A change to renewal_period returns 409 for an item linked to LAPR while the module is enabled (managed account or endpoint connection credential); an unchanged value is accepted.",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -2418,6 +2418,24 @@
                         "maximum": 36500,
                         "default": 0,
                         "description": "Stored individual password renewal period in days; 0 disables only the individual policy. Available for personal and shared items, independently of folder expiration. The shortest active item/folder period applies. This value is not the calculated effective period. Expiration is advisory and does not block authorized reading. Ordinary renewal is inactive for all LAPR-linked items while the LAPR module is enabled."
+                    },
+                    "restricted_to": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "maxItems": 100,
+                        "description": "User IDs the item is restricted to. Each user must be able to open the target folder (disabled users and administrators are refused). The creating account is always added when any restriction is set. Requires the 'Restricted to' setting and a shared folder; otherwise 422."
+                    },
+                    "restricted_to_roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "maxItems": 100,
+                        "description": "Role IDs the item is restricted to. Each role must have access to the target folder. Requires the 'Restricted to' and 'Restricted to roles' settings and a shared folder; otherwise 422."
                     }
                 }
             },
@@ -2507,6 +2525,30 @@
                         "minimum": 0,
                         "maximum": 36500,
                         "description": "Stored individual password renewal period in days; 0 disables only the individual policy. Available for personal and shared items, independently of folder expiration. The shortest active item/folder period applies. This value is not the calculated effective period. Expiration is advisory and does not block authorized reading. Omission preserves the stored value. Changing the period does not reset password age. While LAPR is enabled, changing this value for a managed account or an endpoint connection credential returns HTTP 409; omitting it or resending the current value is allowed."
+                    },
+                    "restricted_to": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "maxItems": 100,
+                        "description": "User IDs the item is restricted to, replacing the stored list; [] removes the user restriction, omission or null keeps it. Only added users are validated (they must be able to open the folder, otherwise 422). The caller is kept in the list whenever a restriction remains. An effective change is logged as at_restriction and allocates a revision."
+                    },
+                    "restricted_to_roles": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "maxItems": 100,
+                        "description": "Role IDs the item is restricted to, replacing the stored list; [] removes the role restriction, omission or null keeps it. Only added roles are validated (they must have access to the folder, otherwise 422)."
                     }
                 }
             },

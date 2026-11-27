@@ -5898,28 +5898,46 @@ switch ($inputData['type']) {
             );
         }
 
-        // Batch-load all users for all folder roles in a single query instead of one per role.
+        // Users who can open the folder: members of its roles, whatever the source of the role
+        // (manual, AD/LDAP group mapping, OAuth2), and users granted the folder directly. Listing
+        // only manual role members hid directory users, and an edit-form save then silently
+        // dropped them from a restriction set elsewhere (API, #5476).
+        $candidateUsers = [];
         if (!empty($listOptionsForRoles)) {
             $roleIds = array_column($listOptionsForRoles, 'id');
-            $allRoleUsers = DB::query(
+            $candidateUsers = DB::query(
                 'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname
                 FROM ' . prefixTable('users') . ' AS u
                 INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                WHERE u.admin = 0 AND ur.role_id IN %ls AND ur.source = %s',
-                $roleIds,
-                'manual'
+                WHERE u.admin = 0 AND ur.role_id IN %ls',
+                $roleIds
             );
-            foreach ($allRoleUsers as $user) {
-                array_push(
-                    $listOptionsForUsers,
-                    array(
-                        'id' => $user['id'],
-                        'login' => $user['login'],
-                        'name' => strval($user['name']) . ' ' . strval($user['lastname']),
-                        'email' => $user['email'],
-                    )
-                );
+        }
+        $candidateUsers = array_merge(
+            $candidateUsers,
+            DB::query(
+                'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname
+                FROM ' . prefixTable('users') . ' AS u
+                INNER JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+                WHERE u.admin = 0 AND ug.group_id = %i',
+                $inputData['folderId']
+            )
+        );
+        $listedUserIds = [];
+        foreach ($candidateUsers as $user) {
+            if (isset($listedUserIds[(int) $user['id']]) === true) {
+                continue;
             }
+            $listedUserIds[(int) $user['id']] = true;
+            array_push(
+                $listOptionsForUsers,
+                array(
+                    'id' => $user['id'],
+                    'login' => $user['login'],
+                    'name' => strval($user['name']) . ' ' . strval($user['lastname']),
+                    'email' => $user['email'],
+                )
+            );
         }
 
         // Get access level for this folder
