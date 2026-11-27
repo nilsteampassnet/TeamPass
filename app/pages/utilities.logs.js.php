@@ -180,7 +180,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'secureSendExpires' => $lang->get('logs_secure_send_expires'),
             'secureSendAttachmentCount' => $lang->get('logs_secure_send_attachment_count'),
             'secureSendAttachmentIds' => $lang->get('logs_secure_send_attachment_ids'),
-            'secureSendDirectEmail' => $lang->get('ops_secure_send_email_queued'),
+            'secureSendDirectEmail' => $lang->get('logs_secure_send_email_queued'),
             'secureSendNoEmail' => $lang->get('ops_secure_send_no_email'),
             'secureSendUnknownChannel' => $lang->get('ops_secure_send_channel_unknown'),
         ],
