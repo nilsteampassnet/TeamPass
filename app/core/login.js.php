@@ -262,7 +262,10 @@ declare(strict_types=1);
             }
         }, 1000);
 
-        $('#warningModalButtonAction').off('click').on('click', function() {
+        // beginLoginAttempt() disables every button of .login-box: should the
+        // modal ever end up inside it again (unbalanced markup did exactly
+        // that), "Refresh now" must stay clickable.
+        $('#warningModalButtonAction').prop('disabled', false).off('click').on('click', function() {
             clearInterval(refreshTimer);
             document.location.reload();
         });
