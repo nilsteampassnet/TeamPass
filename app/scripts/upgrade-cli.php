@@ -664,7 +664,7 @@ function upgradeCliMigrate(array &$journal, array $options, array &$SETTINGS, Tp
         $problems[] = 'teampass_version_full is "' . $db['db_version_full'] . '"';
     }
     if (upgradeRequired() === true) {
-        $problems[] = 'upgrade_timestamp is below UPGRADE_MIN_DATE';
+        $problems[] = 'upgrade_timestamp or teampass_schema_level is below UPGRADE_MIN_DATE';
     }
     if ($problems !== []) {
         return upgradeCliFail($journal, $options, $SETTINGS, $logger, 'verify', '', 'Verification failed: ' . implode('; ', $problems), false);

@@ -467,6 +467,8 @@ function tpRecoveryRun(string $id, int $verificationTimeout = 1800): array
                 'cpassman_dir' => TEAMPASS_ROOT, 'path_to_upload_folder' => TEAMPASS_ROOT . '/storage/upload',
                 'path_to_files_folder' => TEAMPASS_ROOT . '/storage/files',
                 'teampass_version' => TP_VERSION, 'teampass_version_full' => TP_VERSION . '.' . TP_VERSION_MINOR,
+                // The level of an upgraded archive would otherwise keep the restored instance closed.
+                'teampass_schema_level' => (string) UPGRADE_MIN_DATE,
                 'upgrade_timestamp' => (string) UPGRADE_MIN_DATE, 'recovery_pending_checks' => '1', 'recovery_job_id' => $job['id'],
                 'recovery_generation' => bin2hex(random_bytes(16))] as $name => $value) {
                 tpRecoverySetSetting($db, $prefix, $name, $value);

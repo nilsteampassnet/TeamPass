@@ -25,8 +25,11 @@ declare(strict_types=1);
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  *
- * CLI helper for the Docker entrypoint. Prints misc.upgrade_timestamp, the
- * schema level the database actually reached.
+ * CLI helper for the Docker entrypoint. Prints the schema level the database
+ * actually reached: misc.upgrade_timestamp, lowered to misc.teampass_schema_level
+ * when that one is numeric and older (tpEffectiveSchemaLevel()). A 3.2.4.5
+ * database upgraded after the 3.2.4.6 cutoff has a fresh timestamp but still
+ * records the 3.2.4.5 level.
  *
  * This is the value the application itself tests in upgradeRequired()
  * (app/sources/main.functions.php) against the UPGRADE_MIN_DATE constant, and
@@ -102,16 +105,29 @@ if ($stmt === false) {
     exit(0);
 }
 
-$settingKey = 'upgrade_timestamp';
-mysqli_stmt_bind_param($stmt, 's', $settingKey);
-mysqli_stmt_execute($stmt);
-mysqli_stmt_bind_result($stmt, $timestamp);
-$found = mysqli_stmt_fetch($stmt);
+$values = [];
+foreach (['upgrade_timestamp', 'teampass_schema_level'] as $settingKey) {
+    mysqli_stmt_bind_param($stmt, 's', $settingKey);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_result($stmt, $value);
+    if (mysqli_stmt_fetch($stmt) === true && $value !== null) {
+        $values[$settingKey] = trim((string) $value);
+    }
+    mysqli_stmt_free_result($stmt);
+}
 mysqli_stmt_close($stmt);
+mysqli_close($link);
 
-if ($found === true && $timestamp !== null && trim((string) $timestamp) !== '') {
-    echo trim((string) $timestamp);
+// No timestamp: emit nothing, as before. The schema level alone never decides.
+$timestamp = $values['upgrade_timestamp'] ?? '';
+if ($timestamp === '') {
+    exit(0);
+}
+if (ctype_digit($timestamp) === false) {
+    echo $timestamp;
+    exit(0);
 }
 
-mysqli_close($link);
+require_once __DIR__ . '/../sources/upgrade_requirement_logic.php';
+echo tpEffectiveSchemaLevel((int) $timestamp, $values['teampass_schema_level'] ?? '');
 exit(0);

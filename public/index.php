@@ -151,7 +151,11 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
 // The cached setting spares a query on every page; upgradeRequired() reads the database,
 // so a stale cache cannot log users out once the upgrade is done.
 if ($session->has('user-id') === true
-    && (int) ($SETTINGS['upgrade_timestamp'] ?? 0) < (int) UPGRADE_MIN_DATE
+    && tpSchemaUpgradeRequired(
+        (int) ($SETTINGS['upgrade_timestamp'] ?? 0),
+        (string) ($SETTINGS['teampass_schema_level'] ?? ''),
+        (int) UPGRADE_MIN_DATE
+    ) === true
     && upgradeRequired() === true
 ) {
     $session->invalidate();

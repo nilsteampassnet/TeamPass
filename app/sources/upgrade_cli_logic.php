@@ -37,6 +37,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+require_once __DIR__ . '/upgrade_requirement_logic.php';
+
 /**
  * Oldest database version the command line upgrades. Below it the manifest interleaves
  * operations that read their parameters from POST; the web wizard handles those databases.
@@ -152,14 +154,11 @@ function tpUpgradeCliDecide(array $state, string $floor = TP_UPGRADE_CLI_FLOOR):
     if ($comparison < 0) {
         return ['decision' => 'upgrade', 'reason' => 'VERSION_BEHIND'];
     }
-    $schemaLevel = $state['db_schema_level'];
-    if ($state['upgrade_timestamp'] < $state['min_date']
-        || (ctype_digit($schemaLevel) && (int) $schemaLevel < $state['min_date'])
-    ) {
+    if (tpSchemaUpgradeRequired($state['upgrade_timestamp'], $state['db_schema_level'], $state['min_date']) === true) {
         return ['decision' => 'upgrade', 'reason' => 'SCHEMA_BEHIND'];
     }
     if ($state['db_version_full'] !== $state['files_version_full']
-        || $schemaLevel !== (string) $state['min_date']
+        || $state['db_schema_level'] !== (string) $state['min_date']
     ) {
         // A patch release without schema change: only the release record is stale.
         return ['decision' => 'record_release_only', 'reason' => 'RELEASE_RECORD_STALE'];
