@@ -420,7 +420,7 @@ return array(
     'error_no_email' => 'Questo utente non ha un indirizzo email!',
     'error_no_user' => 'Nessun utente trovato!',
     'email_ga_subject' => 'Il tuo codice flash per Teampass con Google Authenticator',
-    'email_ga_text' => 'Ciao,<br><br>Questa è un’e-mail generata dal gestore delle password di Teampass.<br><br>Il tuo amministratore si aspetta che tu utilizzi l’autenticazione TwoFactor per connetterti a Teampass.<br>Per la tua prima connessione a Teampass con TwoFactor, utilizza il codice che trovi di seguito nel campo Codice identificativo":<br><br>----------------------<br># 2FACode#<br>----------------------<br><br>Avrai quindi l’opportunità di impostare le tue credenziali monouso per la password Teampass manager.<br><br>Saluti',
+    'email_ga_text' => 'Ciao,<br><br>Questa è un’e-mail generata dal gestore delle password di Teampass.<br><br>Il tuo amministratore si aspetta che tu utilizzi l’autenticazione TwoFactor per connetterti a Teampass.<br>Per la tua prima connessione a Teampass con TwoFactor, utilizza il codice che trovi di seguito nel campo Codice identificativo":<br><br>----------------------<br>#2FACode#<br>----------------------<br><br>Avrai quindi l’opportunità di impostare le tue credenziali monouso per la password Teampass manager.<br><br>Saluti',
     'ga_identification_code' => 'Codice identificativo',
     'ga_enter_credentials' => 'Devi inserire le tue credenziali di login',
     'ga_bad_code' => 'Il codice di Google Authenticator è errato',
