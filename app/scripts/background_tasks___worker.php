@@ -2028,4 +2028,9 @@ if (empty($rawArguments) === false) {
 
 // Initialize the worker
 $worker = new TaskWorker($taskId, $processType, $taskData);
-$worker->execute();
+try {
+    $worker->execute();
+} catch (Throwable $error) {
+    error_log('TEAMPASS background task worker failed for task ' . $taskId . ' (' . get_class($error) . ')');
+    exit(1);
+}
