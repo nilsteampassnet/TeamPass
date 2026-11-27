@@ -104,6 +104,22 @@ function secureSendReadAuditPeriodSummary(int $fromTs, int $toTs, array $systemU
 }
 
 /**
+ * Describe a failed audit read for the server log on a single line.
+ *
+ * @param Throwable $error Failure raised while reading the Secure Send journal
+ * @return string Exception class and, for MeekroDB, the database diagnostic
+ */
+function secureSendAuditFailureLogContext(Throwable $error): string
+{
+    // MeekroDB exposes the SQL separately in getQuery(). Log only its diagnostic.
+    $diagnostic = $error instanceof MeekroDBException
+        ? ': ' . json_encode($error->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        : '';
+
+    return '(' . get_class($error) . ')' . $diagnostic;
+}
+
+/**
  * Aggregate observed Secure Send events for the administrator statistics dashboard.
  *
  * The caller must enforce the authenticated admin/session-key boundary. This helper
@@ -211,13 +227,7 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         $payload['delivery'] = $delivery;
         $payload['top_senders'] = $senders;
     } catch (Throwable $e) {
-        // These reads bind only integer bounds/account IDs. MeekroDB keeps SQL in
-        // getQuery(), separate from the database diagnostic; never log that query.
-        // Encode control characters to keep the server-only diagnostic on one line.
-        $diagnostic = $e instanceof MeekroDBException
-            ? ': ' . json_encode($e->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-            : '';
-        error_log('TEAMPASS Secure Send statistics failed (' . get_class($e) . ')' . $diagnostic);
+        error_log('TEAMPASS Secure Send statistics failed ' . secureSendAuditFailureLogContext($e));
     }
 
     return $payload;

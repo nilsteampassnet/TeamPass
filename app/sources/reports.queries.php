@@ -602,7 +602,7 @@ switch ($post_type) {
                 [TP_USER_ID, OTV_USER_ID, API_USER_ID, SSH_USER_ID]
             );
         } catch (Throwable $error) {
-            error_log('TEAMPASS Secure Send governance report failed (' . get_class($error) . ')');
+            error_log('TEAMPASS Secure Send governance report failed ' . secureSendAuditFailureLogContext($error));
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('compliance_report_secure_send_unavailable')],
                 'encode'
