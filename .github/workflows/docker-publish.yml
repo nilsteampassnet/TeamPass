@@ -154,7 +154,14 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64
+          # arm64 (Graviton, Ampere, Raspberry Pi with a 64-bit OS) is built under the QEMU
+          # emulation set up above, which makes compiling the PHP extensions several times
+          # slower than on amd64. The layer cache absorbs it on ordinary pushes; the weekly
+          # no-cache rebuild and every version bump pay it in full. Both platforms are built
+          # in one step, so an arm64 failure also blocks the amd64 publish.
+          # The SBOM and Trivy steps below pull the tag for the runner's own platform, so
+          # they only ever cover the amd64 variant; test-image starts both.
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -234,10 +241,18 @@ jobs:
   # Test the built image
   # ----------------------------------------
   test-image:
-    name: Test Docker Image
+    name: Test Docker Image (${{ matrix.runner }})
     needs: build-and-push
-    runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
+
+    # One run per published architecture, each on a native runner: `docker pull` picks
+    # the variant matching the host, so the arm64 image is really started on arm64
+    # hardware rather than only built under emulation.
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
 
     # The job only checks out the repository and pulls the image that
     # build-and-push published, so read access to the contents is all it needs.

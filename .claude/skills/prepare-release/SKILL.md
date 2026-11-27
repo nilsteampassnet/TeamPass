@@ -166,9 +166,16 @@ Manual checks the gate does not cover — run them when the range touches the ma
   trusting the bump — a missing or split package is the usual breakage:
 
   ```bash
-  curl -sS "https://dl-cdn.alpinelinux.org/alpine/v<TARGET>/main/x86_64/APKINDEX.tar.gz" -o /tmp/idx.tar.gz
-  tar xzf /tmp/idx.tar.gz -O APKINDEX | grep -x 'P:<package>'
+  # The image is published for linux/amd64 and linux/arm64: check both indexes.
+  for arch in x86_64 aarch64; do
+    curl -sS "https://dl-cdn.alpinelinux.org/alpine/v<TARGET>/main/$arch/APKINDEX.tar.gz" -o /tmp/idx-$arch.tar.gz
+    tar xzf /tmp/idx-$arch.tar.gz -O APKINDEX | grep -x 'P:<package>' || echo "MISSING on $arch"
+  done
   ```
+
+  The arm64 half is built under QEMU, so a release build takes noticeably longer than the
+  amd64-only builds did; `test-image` then starts each variant on a native runner
+  (`ubuntu-latest`, `ubuntu-24.04-arm`).
 
   Since 3.2.2.8 the image has **no Composer stage**: it ships the committed `app/vendor/`, like
   every other installation, and only removes untracked development packages with

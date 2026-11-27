@@ -425,7 +425,7 @@ docker-compose up -d --force-recreate
 | Registry | Docker Hub | Docker Hub + GHCR |
 | Security scans | ❌ | ✅ (Trivy) |
 | SBOM | ❌ | ✅ |
-| Multi-arch | ❌ | ✅ (amd64) |
+| Multi-arch | ❌ | ✅ (amd64, arm64) |
 
 ---
 

@@ -16,6 +16,7 @@ Teampass can be deployed using Docker and Docker Compose. This is the recommende
 - Docker Engine 20.10+ or Docker Desktop
 - Docker Compose 2.0+
 - At least 2 GB of free disk space
+- A 64-bit host: x86-64 (`linux/amd64`) or ARM64 (`linux/arm64`, e.g. AWS Graviton or a Raspberry Pi running a 64-bit OS). Docker pulls the matching variant automatically; 32-bit ARM is not published.
 
 ---
 
