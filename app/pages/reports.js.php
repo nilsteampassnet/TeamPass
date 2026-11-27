@@ -164,8 +164,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     function tpReportShowError(message) {
-        const fallback = <?php echo json_encode($lang->get('compliance_report_load_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-        const caution = <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        const [fallback, caution] = [
+            <?php echo json_encode($lang->get('compliance_report_load_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        ]
         toastr.remove()
         toastr.error(htmlEncode(typeof message === 'string' && message !== '' ? message : fallback), htmlEncode(caution), {
             timeOut: 5000,

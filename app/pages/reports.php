@@ -109,6 +109,7 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
             </div>
         </div>
 <?php else : ?>
+<?php if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1) : ?>
         <div class='row'>
             <div class='col-md-6 col-xl-4'>
                 <button type='button' class='info-box btn btn-default d-flex w-100 text-left mb-3' id='report-secure-send' aria-controls='report-type'>
@@ -120,6 +121,7 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
                 </button>
             </div>
         </div>
+<?php endif; ?>
         <div class='row'>
             <div class='col-md-12'>
                 <div class='card card-primary'>

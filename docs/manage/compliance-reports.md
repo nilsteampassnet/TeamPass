@@ -47,8 +47,9 @@ Available when [Data classification](../features/classification.md) is enabled: 
 
 ### Secure Send sharing governance
 
-Select the Secure Send tile to open the report and its date filters. The
-default period covers the last 30 days of retained audit events. The report counts
+Choose the Secure Send report from the list. When Secure Send is enabled, its
+tile also opens the report and its date filters. The default period covers the
+last 30 days of retained audit events. The report counts
 public-address links created without a passphrase, link activity, attachments
 and direct email invitations. It includes audited item shares and standalone
 notes. Links with an unknown delivery channel or file count are counted separately.

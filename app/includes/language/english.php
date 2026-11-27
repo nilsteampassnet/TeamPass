@@ -3618,7 +3618,7 @@ return array(
     'compliance_report_rotation_evidence_tip' => 'Every credential flagged for rotation after an offboarding, with its current state.',
     'compliance_report_load_error' => 'The report could not be generated.',
     'compliance_report_secure_send' => 'Secure Send sharing governance',
-    'compliance_report_secure_send_tip' => 'Review retained sharing activity and download aggregate evidence. Dates use the TeamPass timezone.',
+    'compliance_report_secure_send_tip' => 'Review retained sharing activity and export the aggregate evidence as CSV. Dates use the TeamPass timezone.',
     'compliance_report_secure_send_section' => 'Section',
     'compliance_report_secure_send_indicator' => 'Indicator',
     'compliance_report_secure_send_value' => 'Value',
