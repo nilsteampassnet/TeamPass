@@ -432,5 +432,7 @@ echo '
         </div>
     </div>
 
+    </div>
+    <!-- /.card -->
 </div>
 <!-- /.login-box -->';
