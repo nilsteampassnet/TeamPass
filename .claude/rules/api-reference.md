@@ -272,7 +272,21 @@ Get all distinct item tags accessible to the user.
 
 Create a new item.
 
-**Body:** `label`, `password`, `folder_id`, optional `description`, `login`, `email`, `url`, `tags`, `totp`, `fields`.
+**Body:** `label`, `password`, `folder_id`, optional `description`, `login`, `email`, `url`, `tags`, `totp`, `fields`, `restricted_to`, `restricted_to_roles`.
+
+**Item restriction on creation (#5476):** `restricted_to` (user ids) and `restricted_to_roles`
+(role ids) write `items.restricted_to` and `restriction_to_roles` inside the create transaction.
+Syntax is normalized in the controller **before** the idempotency reservation
+(`itemRestrictionNormalizeRequestedIds()`, DB-free, max 100 ids); the model
+(`ItemModel::resolveCreateRestriction()`) then refuses with `422`: setting `restricted_to` off (or
+`restricted_to_roles` off for roles), a personal folder, a user who is unknown, disabled, admin, a
+system account or cannot open the folder (`getUserCompleteData()` + `buildUserFoldersList()`, the
+same resolution as that user's own API session), a role without a `roles_values` row on the folder.
+**Rule: the author is always added to `restricted_to` when any restriction is set**
+(`itemRestrictionUsersWithAuthor()`) — otherwise the caller would get `403` on its own item.
+The restriction changes no sharekey (the background fan-out still keys every folder member), exactly
+like the web. Non-empty lists only enter the idempotency fingerprint, so legacy fingerprints match.
+Also on `PUT /item/update` (see there).
 
 **Optional idempotency:** `Idempotency-Key: <opaque-key>` (1–128 visible ASCII characters,
 without spaces). Its identity is scoped to the authenticated user and `item.create`. The first
@@ -296,7 +310,19 @@ neither those values, the request body nor the raw key is persisted.
 
 Update an existing item. **Only PUT is accepted** — POST returns 405.
 
-**Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`, `fields`.
+**Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`, `fields`, `restricted_to`, `restricted_to_roles`.
+
+**Restriction change (#5476)** — `ItemModel::resolveUpdateRestriction()`. Each list sent **replaces**
+the stored one, `[]` clears it, absent/`null` keeps it. **Rule: only the entries the request adds
+are validated** (`assertRestrictionEntriesAllowed()`, same checks as create, against the folder the
+item ends up in) — a read-modify-write client resending the current lists must never be refused
+because a listed user was disabled since, and lifting a restriction is always allowed. The caller is
+kept in `restricted_to` whenever a restriction remains (web edit form parity). A no-op (same sets
+after the caller rule) writes nothing. An effective change writes `items.restricted_to` and replaces
+`restriction_to_roles` in **one transaction**, then logs `at_modification` / `at_restriction :
+<previous> => <new>` (names, like the web) — that entry bumps the revision, which is what lets
+`item/changes` send the `out_of_scope` tombstone to a user just excluded. Excluded from the generic
+`at_modification` entry like `at_pw`. Part of the personal→shared conflict list (`422`).
 
 **Optimistic concurrency — `revision` (optional).** The revision the client's edit was based on. When it differs from `items.revision`, the update is rejected with `409` and **nothing is written**; omitting it keeps last-writer-wins, so existing clients are unaffected. It is a **precondition, not an updatable field**: it is absent from the `$updateableFields` list in `ItemController::updateAction()`, so `{id, revision}` alone still answers `400 'At least one supported field to update must be provided.'`, and it never triggers the personal→shared move conflict guard.
 
@@ -325,7 +351,7 @@ Every other field stays updatable in the meantime; only `password` needs the cur
 
 | Condition | Status |
 |---|---|
-| Combined with a field that would also be written (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`) | `422` — submit the move as a dedicated request |
+| Combined with a field that would also be written (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`, `restricted_to*`) | `422` — submit the move as a dedicated request |
 | A source encryption key is missing or unusable | `422` — the item stays personal, nothing is destroyed |
 | The item was moved or re-encrypted concurrently | `409` — retry |
 

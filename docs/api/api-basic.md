@@ -630,6 +630,36 @@ payload returns `409`. A duplicate request still processing returns `409` and `R
 | `totp_digits` | integer | ❌ | Code length for a bare secret: 6 (default) or 8 |
 | `totp_period` | integer | ❌ | Period for a bare secret: 30 seconds by default, from 1 to 86400 |
 | `fields` | array | ❌ | Custom fields: array of `{ "id": <field_id>, "value": "<text>" }`. Only fields tied to the item's folder are stored; empty values are ignored. Requires the *item extra fields* feature to be enabled. |
+| `restricted_to` | array | ❌ | Restrict the item to these user IDs (at most 100). See *Item restriction* below. |
+| `restricted_to_roles` | array | ❌ | Restrict the item to the members of these role IDs (at most 100). See *Item restriction* below. |
+
+**Item restriction:** `restricted_to` and `restricted_to_roles` do on creation what the *Restricted
+to* field of the web form does: only the listed users, and the members of the listed roles, can then
+open the item, even though the whole folder can see it. An empty or absent list means no restriction.
+
+- The account creating the item is always added to `restricted_to` when a restriction is set, so it
+  keeps access to the item it created (the web form does the same).
+- Every listed user must be able to open the target folder; disabled users and administrators are
+  refused. Every listed role must have access to the folder.
+- The folder must not be personal, the *Restricted to* setting must be enabled, and the *Restricted
+  to roles* setting as well for `restricted_to_roles`.
+- Any of these failures returns `422` and creates nothing.
+
+An administrator token can list user IDs with `GET /api/index.php/user/list`.
+
+```json
+{
+  "label": "VPN - jdoe",
+  "folder_id": 5,
+  "password": "SecureP@ss123",
+  "login": "jdoe",
+  "email": "",
+  "url": "",
+  "tags": "",
+  "anyone_can_modify": 0,
+  "restricted_to": [42]
+}
+```
 
 **Response (success):**
 ```json
@@ -651,7 +681,7 @@ payload returns `409`. A duplicate request still processing returns `409` and `R
 | 401 | Invalid token or expired session |
 | 403 | Create permission denied or access denied to folder |
 | 409 | Key already used with another payload, or an identical request is still processing |
-| 422 | Item validation failed |
+| 422 | Item validation failed, or the requested restriction cannot be applied |
 | 500 | Server error |
 
 **Example:**
@@ -725,8 +755,25 @@ secret or custom-field values.
 | `totp_digits` | integer | ❌ | TOTP code length: 6 or 8 |
 | `totp_period` | integer | ❌ | TOTP period in seconds, from 1 to 86400 |
 | `fields` | array | ❌ | Custom fields to set: array of `{ "id": <field_id>, "value": "<text>" }`. A field is created if absent and updated when its value changes; empty values are ignored. Requires the *item extra fields* feature. |
+| `restricted_to` | array | ❌ | User IDs the item is restricted to, replacing the current list; `[]` removes the user restriction. See *Changing the restriction* below. |
+| `restricted_to_roles` | array | ❌ | Role IDs the item is restricted to, replacing the current list; `[]` removes the role restriction. See *Changing the restriction* below. |
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
+
+#### Changing the restriction {#update-item-restriction}
+
+`restricted_to` and `restricted_to_roles` work like on [creation](#create-item), with these
+differences:
+
+- Each list you send replaces the stored one. A list you omit (or send as `null`) is kept as it is.
+  Send both as `[]` to lift the restriction entirely.
+- Only the users and roles you **add** are checked. Entries already on the item are kept even if, for
+  example, a listed user was disabled since, so resending the current lists never fails.
+- You must already be allowed to open the item (otherwise the whole update answers `403`), and you
+  are kept in `restricted_to` whenever a restriction remains, like in the web edit form.
+- An effective change is recorded in the item history (`at_restriction`, previous and new lists) and
+  allocates a new revision: a user who has just been excluded receives the item as removed
+  (`out_of_scope`) from [`item/changes`](#item-changes). Resending the current lists changes nothing.
 
 #### Moving an item {#update-item-move}
 
@@ -739,7 +786,7 @@ Sending a `folder_id` different from the item's current folder moves the item. T
 
 Both are checked before anything is written: a refused move answers `403` and leaves the item untouched, including the other fields of the request. Read `can_delete` on the current folder and `can_edit` on the target folder in [`folder/writableFolders`](#writable-folders) to know in advance whether a move is allowed.
 
-> ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.** That move re-encrypts the item's keys for every user who will now have access, and it is committed immediately. Combining it with any other updatable field (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`) is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a second request. All other moves (shared → shared, shared → personal, personal → personal) can still be combined freely with other fields.
+> ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.** That move re-encrypts the item's keys for every user who will now have access, and it is committed immediately. Combining it with any other updatable field (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`, `restricted_to*`) is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a second request. All other moves (shared → shared, shared → personal, personal → personal) can still be combined freely with other fields.
 
 **Response (success):**
 ```json

@@ -28,6 +28,9 @@
  * API. It exists because the two enforcement paths had drifted: the web denied a restricted read
  * while the API served the plaintext password (GHSA-gxc6-rgv6-wx99).
  *
+ * It also normalizes the restriction an API client requests on item creation
+ * (itemRestrictionNormalizeRequestedIds / itemRestrictionUsersWithAuthor).
+ *
  * Included by:
  *   - app/sources/main.functions.php            (web + API adapters)
  *   - app/sources/security_posture_logic.php    (posture wrappers, kept for their callers)
@@ -162,5 +165,73 @@ if (function_exists('itemRestrictionParseIdList') === false) {
             . ' LIKE \'%;' . $userId . ';%\''
             . $roleRestrictionClause
             . ')';
+    }
+
+    /**
+     * Normalize a restriction id list received from an API client (restricted_to or
+     * restricted_to_roles on item creation).
+     *
+     * Strict on purpose: a value that is not a list of positive integers is refused rather
+     * than silently dropped, because a dropped restriction leaves the item open to every
+     * folder member — the opposite of what the client asked for.
+     *
+     * @param mixed  $raw       Decoded request value; null means "no restriction".
+     * @param string $fieldName Request field name, used in the error message.
+     * @param int    $maxCount  Largest accepted list (a wider audience belongs in a role).
+     *
+     * @return int[] Unique ids in request order, empty when no restriction is requested.
+     *
+     * @throws InvalidArgumentException When the value is not a list of positive integers.
+     */
+    function itemRestrictionNormalizeRequestedIds($raw, string $fieldName, int $maxCount = 100): array
+    {
+        if ($raw === null) {
+            return [];
+        }
+        if (is_array($raw) === false) {
+            throw new InvalidArgumentException($fieldName . ' must be an array of positive integer IDs.');
+        }
+
+        $ids = [];
+        foreach ($raw as $value) {
+            if (is_string($value) === true && ctype_digit(trim($value)) === true) {
+                $value = (int) trim($value);
+            }
+            if (is_int($value) === false || $value <= 0) {
+                throw new InvalidArgumentException($fieldName . ' must be an array of positive integer IDs.');
+            }
+            $ids[$value] = $value;
+        }
+
+        if (count($ids) > $maxCount) {
+            throw new InvalidArgumentException($fieldName . ' accepts at most ' . $maxCount . ' IDs.');
+        }
+
+        return array_values($ids);
+    }
+
+    /**
+     * User list stored on an item created with a restriction: the author is always kept in it.
+     *
+     * Same rule as the web form (items.js.php adds the author to any user restriction), extended
+     * to a role-only restriction: without it, the account that created the item would be refused
+     * its own item at the next read, update or delete.
+     *
+     * @param int[] $userIds  Restricted user ids, already normalized.
+     * @param int[] $roleIds  Restricted role ids, already normalized.
+     * @param int   $authorId User creating the item.
+     *
+     * @return int[] User ids to store in items.restricted_to, empty when nothing is restricted.
+     */
+    function itemRestrictionUsersWithAuthor(array $userIds, array $roleIds, int $authorId): array
+    {
+        if (count($userIds) === 0 && count($roleIds) === 0) {
+            return [];
+        }
+        if ($authorId > 0 && in_array($authorId, $userIds, true) === false) {
+            $userIds[] = $authorId;
+        }
+
+        return array_values($userIds);
     }
 }

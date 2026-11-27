@@ -112,6 +112,71 @@ class ItemRestrictionLogicTest extends TestCase
         self::assertStringNotContainsString('OR 1=1', $sql);
     }
 
+    public function testRequestedIdsAreNormalizedToUniquePositiveIntegers(): void
+    {
+        self::assertSame([], itemRestrictionNormalizeRequestedIds(null, 'restricted_to'));
+        self::assertSame([], itemRestrictionNormalizeRequestedIds([], 'restricted_to'));
+        self::assertSame([42, 7], itemRestrictionNormalizeRequestedIds([42, '7', ' 42 '], 'restricted_to'));
+    }
+
+    /**
+     * @return array<string, array{0: mixed}>
+     */
+    public static function malformedRequestedIdsProvider(): array
+    {
+        return [
+            'scalar string' => ['5;7'],
+            'integer' => [5],
+            'zero' => [[0]],
+            'negative' => [[-3]],
+            'float' => [[5.0]],
+            'boolean' => [[true]],
+            'junk string' => [['7 OR 1=1']],
+            'empty string' => [['']],
+            'nested list' => [[[5]]],
+        ];
+    }
+
+    /**
+     * A dropped restriction would leave the item open to the whole folder, so malformed input is
+     * refused rather than filtered.
+     *
+     * @dataProvider malformedRequestedIdsProvider
+     */
+    public function testMalformedRequestedIdsAreRefused($raw): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('restricted_to_roles must be an array of positive integer IDs.');
+        itemRestrictionNormalizeRequestedIds($raw, 'restricted_to_roles');
+    }
+
+    public function testRequestedIdsAreCapped(): void
+    {
+        self::assertCount(3, itemRestrictionNormalizeRequestedIds([1, 2, 3, 3], 'restricted_to', 3));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('restricted_to accepts at most 3 IDs.');
+        itemRestrictionNormalizeRequestedIds([1, 2, 3, 4], 'restricted_to', 3);
+    }
+
+    public function testAuthorIsKeptInAnyRestriction(): void
+    {
+        // No restriction: nothing is stored, the author is not added.
+        self::assertSame([], itemRestrictionUsersWithAuthor([], [], 42));
+
+        self::assertSame([7, 42], itemRestrictionUsersWithAuthor([7], [], 42));
+        self::assertSame([42, 7], itemRestrictionUsersWithAuthor([42, 7], [], 42));
+
+        // Role-only restriction: without the author, the creator loses its own item.
+        self::assertSame([42], itemRestrictionUsersWithAuthor([], [5], 42));
+        self::assertTrue(itemRestrictionAllows(
+            implode(';', itemRestrictionUsersWithAuthor([], [5], 42)),
+            [5],
+            42,
+            []
+        ));
+    }
+
     public function testPostureWrappersDelegateToTheCanonicalDecision(): void
     {
         require_once __DIR__ . '/../../app/sources/security_posture_logic.php';
