@@ -1290,18 +1290,24 @@ class BackgroundTasksHandler {
      * @return Process|null
      */
     private function launchTask(array $task): ?Process {
-        // Mark task as in progress
-        DB::update(
-            prefixTable('background_tasks'),
-            [
-                'is_in_progress' => 1,
-                'started_at' => time(),
-                'updated_at' => time(),
-                'status' => 'in_progress'
-            ],
-            'increment_id = %i',
-            $task['increment_id']
-        );
+        $now = time();
+        if ($task['process_type'] === 'secure_send_email') {
+            if (!secureSendEmailClaimTask((int) $task['increment_id'], $now)) {
+                return null;
+            }
+        } else {
+            DB::update(
+                prefixTable('background_tasks'),
+                [
+                    'is_in_progress' => 1,
+                    'started_at' => $now,
+                    'updated_at' => $now,
+                    'status' => 'in_progress'
+                ],
+                'increment_id = %i',
+                $task['increment_id']
+            );
+        }
 
         // Build command
         // Prefer the resolved CLI binary (handles FPM/override); fall back to PHP_BINARY.

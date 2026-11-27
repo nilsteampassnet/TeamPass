@@ -4407,4 +4407,5 @@ return array(
     'secure_send_api_enabled_tip' => 'Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, and for notes when notes are allowed, with the same limits as the web interface. Also requires "User can propose One-Time-View links" (Options > Collaborative & advanced features > Secure sharing).',
     'secure_send_email_not_allowed' => 'Email invitations are disabled by your administrator.',
     'secure_send_email_not_sent' => 'Not sent: the link was no longer usable or email invitations were disabled',
+    'secure_send_email_cancel_running' => 'This Secure Send invitation is already being processed and cannot be cancelled.',
 );

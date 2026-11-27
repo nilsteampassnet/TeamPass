@@ -313,6 +313,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Handle delete task
         $("#modal-btn-delete").on("click", function() {
+            const fallback = <?php echo json_encode($lang->get('an_error_occurred'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+            function finishDeletion(errorMessage) {
+                $("#task-delete-user-confirm").modal('hide');
+                oTableProcesses.ajax.reload();
+                toastr.remove();
+                if (errorMessage !== null) {
+                    toastr.error(htmlEncode(errorMessage));
+                    return;
+                }
+                toastr.success(<?php echo json_encode($lang->get('done'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, '', { timeOut: 1000 });
+            }
+
             toastr.remove();
             toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             
@@ -323,23 +335,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-
-                    $("#task-delete-user-confirm").modal('hide');
-
-                    // Rrefresh list of tasks in Teampass
-                    oTableProcesses.ajax.reload();
-                    
-                    // Inform user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
+                    try {
+                        data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                    } catch {
+                        finishDeletion(fallback);
+                        return;
+                    }
+                    if (data?.error === false) {
+                        finishDeletion(null);
+                        return;
+                    }
+                    finishDeletion(typeof data?.message === 'string' && data.message !== '' ? data.message : fallback);
                 }
-            );
+            ).fail(function() {
+                finishDeletion(fallback);
+            });
         });
 
         $("#modal-btn-cancel").on("click", function(){

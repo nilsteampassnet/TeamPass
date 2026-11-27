@@ -4391,4 +4391,5 @@ return array(
     'secure_send_api_enabled_tip' => 'Permet à l’extension de navigateur, aux appareils mobiles appairés et aux scripts de l’API de créer des liens Secure Send pour les éléments que l’utilisateur peut lire, et pour des notes quand les notes sont autorisées, avec les mêmes limites que l’interface web. Nécessite aussi « L’utilisateur peut proposer des liens à usage unique pour des objets » (Options > Fonctionnalités collaboratives & avancées > Partage sécurisé).',
     'secure_send_email_not_allowed' => 'Les invitations par e-mail sont désactivées par votre administrateur.',
     'secure_send_email_not_sent' => 'Non envoyé : le lien n’était plus utilisable ou les invitations par e-mail ont été désactivées',
+    'secure_send_email_cancel_running' => 'Cette invitation Secure Send est en cours de traitement et ne peut pas être annulée.',
 );

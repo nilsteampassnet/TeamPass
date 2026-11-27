@@ -117,8 +117,91 @@ function secureSendEmailQueue(array $message, array $link, array $settings, int 
 }
 
 /**
+ * Claim a due invitation before starting a worker. A cancelled or already
+ * claimed candidate must not be launched.
+ */
+function secureSendEmailClaimTask(int $taskId, int $now): bool
+{
+    DB::update(prefixTable('background_tasks'), [
+        'is_in_progress' => 1,
+        'started_at' => $now,
+        'updated_at' => $now,
+        'status' => 'in_progress',
+    ], "increment_id = %i AND process_type = 'secure_send_email' AND status = 'queued'
+        AND is_in_progress = 0 AND next_attempt_at <= %i", $taskId, $now);
+
+    return DB::affectedRows() === 1;
+}
+
+/**
+ * Record an invitation outcome while the caller holds the task row lock.
+ *
+ * @return array|null Audit record, or null when no association exists
+ */
+function secureSendEmailAuditOutcome(int $taskId, string $outcome, int $now): ?array
+{
+    // Use the creation audit to identify the source when it is still retained.
+    $link = DB::queryFirstRow('SELECT e.send_id AS id, e.originator, e.created_at AS timestamp,
+            a.item_id, a.send_type
+        FROM ' . prefixTable('secure_send_email') . ' e
+        LEFT JOIN ' . prefixTable('secure_send_audit') . " a
+            ON a.send_id = e.send_id AND a.originator = e.originator AND a.event = 'created'
+        WHERE e.task_id = %i ORDER BY a.id DESC LIMIT 1", $taskId);
+    if (!$link) {
+        return null;
+    }
+
+    $link['send_type'] ??= 'unknown';
+    return secureSendAudit($link, 'email_outcome', $outcome, now: $now);
+}
+
+/**
+ * Delete a terminal or unclaimed Secure Send task. Cancellation writes its
+ * outcome in the same transaction as deleting the task and its subtasks.
+ *
+ * @return bool False when an active invitation cannot be cancelled
+ * @throws RuntimeException When the task cannot be removed safely
+ */
+function secureSendEmailDeleteTask(int $taskId, bool $canCancel, array $settings): bool
+{
+    $tasks = prefixTable('background_tasks');
+    $event = null;
+    DB::startTransaction();
+    try {
+        $task = DB::queryFirstRow("SELECT status, is_in_progress FROM {$tasks}
+            WHERE increment_id = %i AND process_type = 'secure_send_email' FOR UPDATE", $taskId);
+        if ($task === null) {
+            DB::commit();
+            return true;
+        }
+        if (!in_array($task['status'], ['completed', 'failed'], true)) {
+            if (!$canCancel || $task['status'] !== 'queued' || (int) $task['is_in_progress'] !== 0) {
+                DB::commit();
+                return false;
+            }
+            $event = secureSendEmailAuditOutcome($taskId, 'not_submitted', time());
+            if ($event === null) {
+                throw new RuntimeException('Missing Secure Send email association.');
+            }
+        }
+        DB::delete(prefixTable('background_subtasks'), 'task_id = %i', $taskId);
+        DB::delete($tasks, 'increment_id = %i', $taskId);
+        DB::commit();
+    } catch (Throwable $error) {
+        DB::rollback();
+        error_log('TEAMPASS Secure Send email task deletion failed (' . get_class($error) . ')');
+        throw new RuntimeException('Unable to delete the Secure Send email task.');
+    }
+    if ($event !== null) {
+        secureSendEmitAudit($event, $settings);
+    }
+
+    return true;
+}
+
+/**
  * Commit a terminal task update with one audit event, even after the link is gone.
- * The task row lock serializes worker completion and handler failure.
+ * The task row lock serializes completion, handler failure and cancellation.
  */
 function secureSendEmailFinishTask(
     int $taskId,
@@ -139,18 +222,7 @@ function secureSendEmailFinishTask(
     DB::startTransaction();
     try {
         if (DB::queryFirstField("SELECT increment_id FROM {$tasks} WHERE {$where} FOR UPDATE", ...$parameters) !== null) {
-            // The association survives while the task is active. Use the creation row if it
-            // is still retained to describe the source item or note without using live content.
-            $link = DB::queryFirstRow('SELECT e.send_id AS id, e.originator, e.created_at AS timestamp,
-                    a.item_id, a.send_type
-                FROM ' . prefixTable('secure_send_email') . ' e
-                LEFT JOIN ' . prefixTable('secure_send_audit') . " a
-                    ON a.send_id = e.send_id AND a.originator = e.originator AND a.event = 'created'
-                WHERE e.task_id = %i ORDER BY a.id DESC LIMIT 1", $taskId);
-            if ($link) {
-                $link['send_type'] ??= 'unknown';
-                $event = secureSendAudit($link, 'email_outcome', $outcome, now: (int) $update['finished_at']);
-            }
+            $event = secureSendEmailAuditOutcome($taskId, $outcome, (int) $update['finished_at']);
             DB::update($tasks, $update, 'increment_id = %i', $taskId);
         }
         DB::commit();
