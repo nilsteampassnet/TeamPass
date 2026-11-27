@@ -190,4 +190,23 @@ class ApiItemRestrictionTest extends TestCase
         self::assertStringContainsString('ug.group_id = %i', $candidates);
         self::assertStringContainsString('$listedUserIds', $candidates, 'A user in several roles is listed once.');
     }
+
+    /**
+     * The same answer discloses the folder's members (names, e-mails): it must be refused for a
+     * folder outside user-accessible_folders — which, unlike the role-based access level computed
+     * later, excludes the folders explicitly denied to the caller (users_groups_forbidden).
+     */
+    public function testWebRestrictionCandidatesRequireAnAccessibleFolder(): void
+    {
+        $handler = (string) file_get_contents(__DIR__ . '/../../../app/sources/items.queries.php');
+        $start = strpos($handler, "case 'get_complixity_level':");
+        self::assertNotFalse($start);
+        $case = substr($handler, (int) $start, (int) strpos($handler, '$candidateUsers = [];', (int) $start) - (int) $start);
+
+        $gate = strpos($case, "\$session->get('user-accessible_folders')");
+        self::assertNotFalse($gate, 'The member lists must be gated on the accessible folders.');
+        self::assertGreaterThan(strpos($case, 'getItemFolderIdFromDb('), $gate, 'Gate the folder actually answered for.');
+        self::assertLessThan(strpos($case, '$data_this_folder = DB::queryFirstRow('), $gate);
+        self::assertStringContainsString("error_not_allowed_to_access_this_folder", substr($case, (int) $gate));
+    }
 }

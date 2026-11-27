@@ -5789,6 +5789,24 @@ switch ($inputData['type']) {
             }
         }
 
+        // The answer lists the folder's members (names and e-mails). The access level computed
+        // below only looks at the caller's roles, so it let through a folder explicitly denied
+        // to the caller (users_groups_forbidden). user-accessible_folders already subtracts those.
+        if (in_array(
+            (int) $inputData['folderId'],
+            array_map('intval', (array) $session->get('user-accessible_folders')),
+            true
+        ) === false) {
+            echo (string) prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
         // do query on this folder
         $data_this_folder = DB::queryFirstRow(
             'SELECT id, personal_folder, title
