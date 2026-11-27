@@ -19,7 +19,8 @@ final class BackgroundHandlerSchemaGateTest extends TestCase
 
         $gate = strpos($main, "(string) (\$settings['teampass_version'] ?? '') !== TP_VERSION");
         $this->assertIsInt($gate, 'the handler must compare the recorded version with TP_VERSION');
-        $this->assertStringContainsString("(int) (\$settings['upgrade_timestamp'] ?? 0) < (int) UPGRADE_MIN_DATE", $main);
+        $this->assertStringContainsString('tpSchemaUpgradeRequired(', $main);
+        $this->assertStringContainsString("(string) (\$settings['teampass_schema_level'] ?? '')", $main);
         $this->assertLessThan((int) strpos($main, 'new BackgroundTasksHandler('), $gate);
     }
 }

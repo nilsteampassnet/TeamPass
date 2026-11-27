@@ -1948,7 +1948,11 @@ try {
     // that left the new files in place, every task would query columns that do not exist yet.
     if (defined('TP_VERSION') === true
         && ((string) ($settings['teampass_version'] ?? '') !== TP_VERSION
-            || (int) ($settings['upgrade_timestamp'] ?? 0) < (int) UPGRADE_MIN_DATE)
+            || tpSchemaUpgradeRequired(
+                (int) ($settings['upgrade_timestamp'] ?? 0),
+                (string) ($settings['teampass_schema_level'] ?? ''),
+                (int) UPGRADE_MIN_DATE
+            ) === true)
     ) {
         exit(0);
     }

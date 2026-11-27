@@ -71,6 +71,13 @@ final class UpgradeCliLogicTest extends TestCase
         yield 'below the floor' => [['db_version' => '3.2.1'], 'blocked', 'BELOW_FLOOR'];
         yield 'older version' => [['db_version' => '3.2.2', 'db_version_full' => ''], 'upgrade', 'VERSION_BEHIND'];
         yield 'patch release with schema change' => [['upgrade_timestamp' => 1799999999], 'upgrade', 'SCHEMA_BEHIND'];
+        yield 'fresh upgrade timestamp with an older recorded schema level' => [
+            ['db_version_full' => '3.2.3.3', 'db_schema_level' => '1799999999'],
+            'upgrade',
+            'SCHEMA_BEHIND',
+        ];
+        // Release recorded without its level, as a disaster recovery of an upgraded archive did.
+        yield 'same release with an older recorded schema level' => [['db_schema_level' => '1799999999'], 'upgrade', 'SCHEMA_BEHIND'];
         yield 'patch release without schema change' => [['db_version_full' => '3.2.3.3'], 'record_release_only', 'RELEASE_RECORD_STALE'];
         yield 'schema level never recorded' => [['db_schema_level' => ''], 'record_release_only', 'RELEASE_RECORD_STALE'];
     }

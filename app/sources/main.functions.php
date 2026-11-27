@@ -58,6 +58,7 @@ require_once __DIR__ . '/security_posture_logic.php';
 require_once __DIR__ . '/operational_statistics_logic.php';
 require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
+require_once __DIR__ . '/upgrade_requirement_logic.php';
 require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/ldap_config_logic.php';
@@ -9328,6 +9329,9 @@ function getFullUserInfos(
 /**
  * Is required an upgrade
  *
+ * Reads the database, never the cached settings, so a stale cache cannot keep users out once the
+ * upgrade is done. See tpSchemaUpgradeRequired() for the rule.
+ *
  * @return boolean
  */
 function upgradeRequired(): bool
@@ -9335,19 +9339,27 @@ function upgradeRequired(): bool
     // Get settings.php
     include_once TEAMPASS_APP. '/config/settings.php';
 
-    // Get timestamp in DB
-    $val = DB::queryFirstRow(
-        'SELECT valeur
-        FROM ' . prefixTable('misc') . '
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'upgrade_timestamp'
-    );
+    if (defined('UPGRADE_MIN_DATE') === false) {
+        return true;
+    }
 
-    // Check if upgrade is required
-    return (
-        is_null($val) || count($val) === 0 || !defined('UPGRADE_MIN_DATE') || 
-        empty($val['valeur']) || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE
+    $rows = DB::query(
+        'SELECT intitule, valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule IN %ls',
+        'admin',
+        ['upgrade_timestamp', 'teampass_schema_level']
+    );
+    $values = [];
+    foreach ($rows as $row) {
+        $values[(string) $row['intitule']] = (string) $row['valeur'];
+    }
+
+    // A missing timestamp reads 0: the upgrade is required, as before.
+    return tpSchemaUpgradeRequired(
+        (int) ($values['upgrade_timestamp'] ?? 0),
+        $values['teampass_schema_level'] ?? '',
+        (int) UPGRADE_MIN_DATE
     );
 }
 

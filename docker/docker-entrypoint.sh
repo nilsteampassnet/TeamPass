@@ -228,7 +228,9 @@ db_version_label() {
     esac
 }
 
-# Read the schema level recorded in the database (teampass_misc.upgrade_timestamp).
+# Read the schema level recorded in the database (teampass_misc.upgrade_timestamp,
+# lowered to teampass_schema_level when that one is older: an older release upgraded
+# after this image's cutoff has a fresh timestamp but still records its own level).
 #
 # This is the value the application itself tests in upgradeRequired()
 # (app/sources/main.functions.php) against the UPGRADE_MIN_DATE constant, and it
