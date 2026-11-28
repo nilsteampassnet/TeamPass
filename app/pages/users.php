@@ -35,6 +35,7 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -416,14 +417,34 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body">
-                    <div class="row col-12">
-                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="oauth2-existing-users">
+                    <div class="d-flex flex-wrap align-items-center mb-3" id="oauth2-users-toolbar">
+                        <div class="input-group input-group-sm mr-2 mb-2" id="oauth2-users-search-wrapper">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                            <input type="text" role="searchbox" class="form-control" placeholder="<?php echo htmlspecialchars($lang->get('find'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" aria-label="<?php echo htmlspecialchars($lang->get('find'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" id="oauth2-users-search">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-default" title="<?php echo htmlspecialchars($lang->get('reset'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" aria-label="<?php echo htmlspecialchars($lang->get('reset'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" id="oauth2-users-search-clear" disabled>
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <?php if ($canUseOauth2Sync && OAuth2Controller::isEntraEndpoint((string) ($SETTINGS['oauth2_client_endpoint'] ?? ''))) { ?>
+                        <div class="custom-control custom-checkbox mr-3 mb-2" id="oauth2-users-group-filter">
+                            <input type="checkbox" class="custom-control-input" id="oauth2-users-allowed-groups" autocomplete="off" aria-controls="oauth2-users-table">
+                            <label class="custom-control-label" for="oauth2-users-allowed-groups"><?php echo htmlspecialchars($lang->get('oauth2_sync_allowed_groups_only'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?></label>
+                        </div>
+                        <?php } ?>
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2 mb-2" data-action="oauth2-existing-users">
                             <i class="fa-solid fa-sync-alt mr-2"></i><?php echo $lang->get('list_users'); ?>
                         </button>
-                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="oauth2-add-role">
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2 mb-2" data-action="oauth2-add-role">
                             <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo $lang->get('add_role_tip'); ?>
                         </button>
                     </div>
+                    <p class="small mb-2 hidden" id="oauth2-users-group-status" role="status"></p>
                     <div class="row">
                         <div class="col-12">
                             <div class="card hidden mt-4 mb-5 card-info" id="oauth2-new-role">
@@ -469,6 +490,9 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                                     <tbody id="row-oauth2-body">
                                     </tbody>
                                 </table>
+                                <div class="mt-2 px-3 hidden" id="oauth2-users-search-no-results" role="status">
+                                    <i class="fa-solid fa-info mr-2 text-warning" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('no_item_to_display'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
+                                </div>
                             </div>
                         </div>
                     </div>

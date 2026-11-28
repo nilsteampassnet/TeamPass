@@ -11,9 +11,8 @@ use TeampassClasses\OAuth2Controller\OAuth2Controller;
 use TheNetworg\OAuth2\Client\Provider\Azure;
 
 /**
- * Directory queries of the "Test a user" check of the OAuth page (OAuth2Controller::
- * describeDirectoryUsers() and checkGroupNames()). Graph is replaced by canned answers keyed by
- * URL; no network call is made.
+ * Tests the Entra queries for the OAuth diagnostics and directory synchronization.
+ * Graph is replaced by canned answers keyed by URL.
  */
 final class OAuth2EntraDirectoryTest extends TestCase
 {
@@ -21,6 +20,9 @@ final class OAuth2EntraDirectoryTest extends TestCase
 
     /** @var array<int, string> URLs requested, in order */
     private array $requested = [];
+
+    /** @var array<string, string> ConsistencyLevel header sent for each URL */
+    private array $consistency = [];
 
     /** @var array<int, string> Grants the access tokens were requested with */
     private array $grants = [];
@@ -82,9 +84,10 @@ final class OAuth2EntraDirectoryTest extends TestCase
             }
         );
         $provider->method('getAuthenticatedRequest')->willReturnCallback(
-            function (string $method, string $url, string $token): RequestInterface {
+            function (string $method, string $url, string $token, array $options = []): RequestInterface {
                 $this->assertSame('app-token', $token);
                 $this->requested[] = $url;
+                $this->consistency[$url] = $options['headers']['ConsistencyLevel'] ?? '';
 
                 return new Request($method, $url);
             }
@@ -117,6 +120,12 @@ final class OAuth2EntraDirectoryTest extends TestCase
     {
         return self::GRAPH . 'groups?$filter=' . rawurlencode("displayName eq '" . $name . "'")
             . '&$select=id,displayName&$top=10';
+    }
+
+    private static function membersUrl(string $id): string
+    {
+        return self::GRAPH . 'groups/' . $id . '/transitiveMembers/microsoft.graph.user?$count=true'
+            . '&$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime&$top=999';
     }
 
     /** @return array<string, mixed> */
@@ -247,5 +256,100 @@ final class OAuth2EntraDirectoryTest extends TestCase
 
         $this->assertTrue($result['error']);
         $this->assertSame(403, $result['code']);
+    }
+
+    public function testFullSyncStillListsUsersWhenOneMembershipLookupFails(): void
+    {
+        $first = self::GRAPH . 'users?$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime&$top=999';
+        $next = self::GRAPH . 'users?$skiptoken=more-users';
+        $result = $this->controller([
+            $first => ['value' => [['id' => 'u1', 'userPrincipalName' => 'sam@example.net']], '@odata.nextLink' => $next],
+            self::GRAPH . 'users/u1/memberOf' => ['value' => [self::group('g1', 'Support')]],
+            $next => ['value' => [['id' => 'u2', 'userPrincipalName' => 'jules@example.net']]],
+            self::GRAPH . 'users/u2/memberOf' => new IdentityProviderException('Forbidden', 403, ''),
+        ])->getAllUsers();
+
+        $this->assertFalse($result['error'], $result['message']);
+        $this->assertSame(['u1', 'u2'], array_column($result['users'], 'id'));
+        $this->assertSame([['id' => 'g1', 'displayName' => 'Support']], $result['users'][0]['groups']);
+        $this->assertSame([], $result['users'][1]['groups']);
+    }
+
+    public function testFilteredSyncReadsAllMatchingGroupsAndPagesAndEnrichesEachUserOnce(): void
+    {
+        $groupId = '0a1b2c3d-0000-4000-8000-00000000abcd';
+        $missing = '0a1b2c3d-0000-4000-8000-00000000ffff';
+        $groupsNext = self::GRAPH . 'groups?$skiptoken=more-groups';
+        $membersNext = self::GRAPH . 'groups/first/transitiveMembers/microsoft.graph.user?$skiptoken=more-users';
+        $rolesNext = self::GRAPH . 'users/u1/memberOf?$skiptoken=more-roles';
+        $name = 'R&D "Lead" <Ops> O\'Brien';
+        $firstUser = ['id' => 'u1', 'userPrincipalName' => 'sam@example.net', 'displayName' => 'Sam', 'accountEnabled' => false];
+        $secondUser = ['id' => 'u2', 'userPrincipalName' => 'jules@example.net', 'mail' => 'jules@example.net'];
+        $result = $this->controller([
+            self::groupsByNameUrl('R&D "Lead" <Ops> O\'\'Brien') => [
+                'value' => [self::group('first', $name)], '@odata.nextLink' => $groupsNext,
+            ],
+            $groupsNext => ['value' => [self::group($groupId, $name)]],
+            self::GRAPH . 'groups/' . $groupId . '?$select=id,displayName' => self::group($groupId, $name),
+            self::GRAPH . 'groups/' . $missing . '?$select=id,displayName' => new IdentityProviderException('Not found', 404, ''),
+            self::membersUrl('first') => ['value' => [$firstUser], '@odata.nextLink' => $membersNext],
+            $membersNext => ['value' => [$secondUser]],
+            self::membersUrl($groupId) => ['value' => [$firstUser]],
+            self::GRAPH . 'users/u1/memberOf' => [
+                'value' => [self::group('first', $name)], '@odata.nextLink' => $rolesNext,
+            ],
+            $rolesNext => ['value' => [self::group('support', 'Support')]],
+            self::GRAPH . 'users/u2/memberOf' => ['value' => []],
+        ])->getUsersInGroups([$name, $groupId, $missing]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame([$missing], $result['unmatchedGroups']);
+        $this->assertSame(['u1', 'u2'], array_column($result['users'], 'id'));
+        $this->assertFalse($result['users'][0]['accountEnabled']);
+        $this->assertSame('jules@example.net', $result['users'][1]['mail']);
+        $this->assertSame([$name, 'Support'], array_column($result['users'][0]['groups'], 'displayName'));
+        $this->assertSame(['client_credentials'], $this->grants);
+        $this->assertSame('eventual', $this->consistency[self::membersUrl('first')]);
+        $this->assertSame('eventual', $this->consistency[$membersNext]);
+        $this->assertCount(1, array_keys($this->requested, self::GRAPH . 'users/u1/memberOf', true));
+        $this->assertCount(1, array_keys($this->requested, self::membersUrl($groupId), true));
+        $this->assertCount(10, $this->requested);
+    }
+
+    public function testFilteredSyncWithNoConfiguredGroupsIssuesNoGraphRequest(): void
+    {
+        $result = $this->controller([])->getUsersInGroups([]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame([], $result['users']);
+        $this->assertSame([], $this->grants);
+        $this->assertSame([], $this->requested);
+    }
+
+    public function testFilteredSyncReportsGraphFailureOnALaterPageWithoutPartialResults(): void
+    {
+        $next = self::GRAPH . 'groups/g1/transitiveMembers/microsoft.graph.user?$skiptoken=second';
+        $result = $this->controller([
+            self::groupsByNameUrl('Allowed') => ['value' => [self::group('g1', 'Allowed')]],
+            self::membersUrl('g1') => ['value' => [['id' => 'u1']], '@odata.nextLink' => $next],
+            $next => new IdentityProviderException('Too Many Requests', 429, ''),
+        ])->getUsersInGroups(['Allowed']);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame(429, $result['code']);
+        $this->assertSame([], $result['users']);
+        $this->assertSame($next, end($this->requested));
+    }
+
+    public function testFilteredSyncRejectsInvalidContinuationLinksBeforeSendingTheToken(): void
+    {
+        $result = $this->controller([
+            self::groupsByNameUrl('Allowed') => ['value' => [self::group('g1', 'Allowed')]],
+            self::membersUrl('g1') => ['value' => [], '@odata.nextLink' => 'https://directory.example.net/next'],
+        ])->getUsersInGroups(['Allowed']);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame([], $result['users']);
+        $this->assertSame([self::groupsByNameUrl('Allowed'), self::membersUrl('g1')], $this->requested);
     }
 }

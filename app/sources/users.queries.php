@@ -3831,13 +3831,45 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Création d'une instance du contrôleur
-            // The constructor throws on an invalid OAuth2 configuration (e.g. multi-tenant),
-            // and getAllUsers() reports provider/Graph failures in its envelope. Both must be
-            // surfaced to the admin instead of being iterated as if they were a user list.
+            $onlyAllowedGroups = filter_input(INPUT_POST, 'only_allowed_groups') === '1';
+            if ($onlyAllowedGroups && (
+                (int) $session->get('user-admin') !== 1
+                || (int) ($SETTINGS['oauth2_enabled'] ?? 0) !== 1
+                || !OAuth2Controller::isEntraEndpoint((string) ($SETTINGS['oauth2_client_endpoint'] ?? ''))
+            )) {
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ], 'encode');
+                break;
+            }
+
+            require_once __DIR__ . '/oauth2_self_register_logic.php';
+            $selfRegisterGroups = oauth2ParseAllowedGroups((string) ($SETTINGS['oauth_self_register_groups'] ?? ''));
+            $groupStatus = '';
+
             try {
                 $OAuth2 = new OAuth2Controller($SETTINGS);
-                $oauth2Answer = $OAuth2->getAllUsers();
+                if ($onlyAllowedGroups && $selfRegisterGroups === []) {
+                    $oauth2Answer = ['error' => false, 'users' => []];
+                    $groupStatus = $lang->get('oauth2_sync_groups_unconfigured');
+                } elseif ($onlyAllowedGroups && !in_array(OAUTH2_SELF_REGISTER_ANYONE, $selfRegisterGroups, true)) {
+                    $oauth2Answer = $OAuth2->getUsersInGroups($selfRegisterGroups);
+                    if ($oauth2Answer['error']) {
+                        $oauth2Answer['message'] = $lang->get(match ($oauth2Answer['code']) {
+                            403 => 'oauth2_sync_groups_permissions',
+                            429 => 'oauth2_sync_groups_throttled',
+                            default => 'oauth2_sync_groups_failed',
+                        });
+                    } elseif ($oauth2Answer['unmatchedGroups'] !== []) {
+                        $groupStatus = str_replace('#groups#', implode(', ', $oauth2Answer['unmatchedGroups']), $lang->get('oauth2_sync_groups_missing'));
+                    }
+                } else {
+                    $oauth2Answer = $OAuth2->getAllUsers();
+                    if ($onlyAllowedGroups) {
+                        $groupStatus = $lang->get('oauth2_sync_groups_unrestricted');
+                    }
+                }
             } catch (Exception $e) {
                 $oauth2Answer = [
                     'error' => true,
@@ -3847,7 +3879,8 @@ if (null !== $post_type) {
             }
 
             if ($oauth2Answer['error'] === true) {
-                error_log('TEAMPASS OAuth2 - user sync failed: ' . $oauth2Answer['message']);
+                $detail = isset($oauth2Answer['code']) ? 'Graph code ' . $oauth2Answer['code'] : $oauth2Answer['message'];
+                error_log('TEAMPASS OAuth2 - user sync failed: ' . $detail);
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3859,8 +3892,6 @@ if (null !== $post_type) {
             }
 
             $usersList = $oauth2Answer['users'];
-
-            require_once __DIR__ . '/oauth2_self_register_logic.php';
 
             // Get all groups in Teampass
             $teampassRoles = array();
@@ -3882,8 +3913,6 @@ if (null !== $post_type) {
             $adUsersToSync = [];
             $adRoles = [];
             $usersAlreadyInTeampass = [];
-            $selfRegisterGroups = oauth2ParseAllowedGroups((string) ($SETTINGS['oauth_self_register_groups'] ?? ''));
-
             function nameFromEmail($email) {
                 // Guard against null / non-string values (e.g. Entra hybrid objects
                 // returned without a userPrincipalName) — preg_match() would fatal on PHP 8.
@@ -3980,12 +4009,17 @@ if (null !== $post_type) {
                 error_log('TEAMPASS OAuth2 - user sync skipped ' . $skippedUsersWithoutUpn . ' directory object(s) without a usable userPrincipalName');
             }
 
+            if ($onlyAllowedGroups && $groupStatus === '' && $adUsersToSync === []) {
+                $groupStatus = $lang->get('oauth2_sync_groups_no_users');
+            }
+
             echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'ad_users' => $adUsersToSync,
                     'ad_groups' => $adRoles,
                     'teampass_groups' => $teampassRoles,
+                    'group_status' => $groupStatus,
                 ), 
                 'encode'
             );
