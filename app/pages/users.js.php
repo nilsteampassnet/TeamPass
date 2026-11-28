@@ -160,6 +160,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         })
     })
 
+    let oauth2UsersRequest;
+    $(document).on('change', '#oauth2-users-allowed-groups', refreshListUsersOAuth2);
+
     //Launch the datatables pluggin
     var oTable = $('#table-users').DataTable({
         'paging': true,
@@ -2063,10 +2066,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'oauth2-sync') {
+            // Let the administrator choose the scope before querying the directory.
             $('.extra-form, .form').addClass('hidden');
             $('#row-oauth2').removeClass('hidden');
-
-            refreshListUsersOAuth2();
 
             //
             // --- END
@@ -2178,7 +2180,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'oauth2-add-role') {
-            $('#oauth2-users-search-wrapper').addClass('hidden');
+            $('#oauth2-users-search-wrapper, #oauth2-users-group-filter').addClass('hidden');
             $('#oauth2-users-table').addClass('hidden');
             $('#oauth2-new-role').removeClass('hidden');
 
@@ -2186,7 +2188,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'close-new-role-oauth2') {
-            $('#oauth2-users-search-wrapper').removeClass('hidden');
+            $('#oauth2-users-search-wrapper, #oauth2-users-group-filter').removeClass('hidden');
             $('#oauth2-users-table').removeClass('hidden');
             $('#oauth2-new-role').addClass('hidden');
 
@@ -2249,7 +2251,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             );
                         } else {
                             $('#oauth2-new-role-selection').val('');
-                            $('#oauth2-users-search-wrapper').removeClass('hidden');
+                            $('#oauth2-users-search-wrapper, #oauth2-users-group-filter').removeClass('hidden');
                             $('#oauth2-users-table').removeClass('hidden');
                             $('#row-oauth2-body').html('');
                             $('#oauth2-new-role').addClass('hidden');
@@ -3588,16 +3590,20 @@ function refreshListInactiveUsers(filterValue) {
             return false;
         }
 
+        oauth2UsersRequest?.abort();
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
+        const $groupStatus = $('#oauth2-users-group-status').addClass('hidden').text('');
+        $('#oauth2-new-role-selection').empty();
         $('#row-oauth2-body')
             .addClass('overlay')
             .html('');
         filterDirectoryUsersTable('oauth2');
 
-        $.post(
+        oauth2UsersRequest = $.post(
             "sources/users.queries.php", {
                 type: "get_list_of_users_in_oauth2",
+                only_allowed_groups: $('#oauth2-users-allowed-groups').prop('checked') === true ? '1' : '0',
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(response) {
@@ -3613,6 +3619,8 @@ function refreshListInactiveUsers(filterValue) {
                         }
                     );
                 } else {
+                    const groupStatus = data.group_status || '';
+                    $groupStatus.text(groupStatus).toggleClass('hidden', groupStatus === '');
                     let html = '';
                     $.each(data.ad_users, function(i, user) {
                         const login = decodeStorageEntities(user.login ?? '');
@@ -3697,11 +3705,13 @@ function refreshListInactiveUsers(filterValue) {
                     );
                 }
             }
-        ).fail(function() {
-            toastr.error(
-                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
-                '<?php echo $lang->get('caution'); ?>'
-            );
+        ).fail(function(xhr, status) {
+            if (status !== 'abort') {
+                toastr.error(
+                    <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                    '<?php echo $lang->get('caution'); ?>'
+                );
+            }
         }).always(function() {
             $('#row-oauth2-body').removeClass('overlay');
             $('.close-toastr-progress').closest('.toast').remove();

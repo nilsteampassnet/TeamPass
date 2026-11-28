@@ -50,6 +50,8 @@ class OAuth2Controller
      */
     public const ENTRA_IDENTITY_ISSUER = 'entra';
 
+    private const DIRECTORY_USER_FIELDS = 'id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime';
+
     protected $provider;
     protected $settings;
 
@@ -537,19 +539,16 @@ class OAuth2Controller
         }
 
         try {
-            // Exchange the authorization code for an access token
-            $token = $this->provider->getAccessToken('client_credentials', [
-                'scope' => 'https://graph.microsoft.com/.default',
-            ]);
+            $token = $this->applicationToken();
 
             // Call Graph API to retrieve users
-            $graphUrl = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime&$top=999';
+            $graphUrl = 'https://graph.microsoft.com/v1.0/users?$select=' . self::DIRECTORY_USER_FIELDS . '&$top=999';
             $usersList = [];
 
             // Graph paginates its collections: follow @odata.nextLink until exhausted,
             // otherwise only the first page of the directory would ever be synchronized.
             while (empty($graphUrl) === false) {
-                $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
+                $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token);
                 $usersResponse = $this->provider->getParsedResponse($response);
 
                 if (isset($usersResponse['value']) && is_array($usersResponse['value'])) {
@@ -560,17 +559,7 @@ class OAuth2Controller
                         }
 
                         // Add user with their groups to the list
-                        $usersList[] = [
-                            'id' => $user['id'],
-                            'displayName' => $user['displayName'] ?? null,
-                            'userPrincipalName' => $user['userPrincipalName'] ?? null,
-                            'givenName' => $user['givenName'] ?? null,
-                            'surname' => $user['surname'] ?? null,
-                            'mail' => $user['mail'] ?? null,
-                            'accountEnabled' => $user['accountEnabled'] ?? null,
-                            'lastPasswordChangeDateTime' => $user['lastPasswordChangeDateTime'] ?? null,
-                            'groups' => $this->getUserGroups((string) $user['id'], $token->getToken()),
-                        ];
+                        $usersList[] = self::directoryUser($user, $this->getUserGroups((string) $user['id'], $token));
                     }
                 }
 
@@ -593,36 +582,133 @@ class OAuth2Controller
     }
 
     /**
+     * Retrieve the users in any of the specified Entra groups, including nested memberships.
+     *
+     * @param list<string> $entries Concrete group names or object IDs from the saved settings
+     * @return array{error: bool, code: int, users: list<array<string, mixed>>, unmatchedGroups: list<string>}
+     */
+    public function getUsersInGroups(array $entries): array
+    {
+        $result = ['error' => false, 'code' => 0, 'users' => [], 'unmatchedGroups' => []];
+        if (($this->provider instanceof Azure) === false) {
+            return array_replace($result, ['error' => true]);
+        }
+        if ($entries === []) {
+            return $result;
+        }
+
+        try {
+            $token = $this->applicationToken();
+            $groupIds = [];
+            foreach ($entries as $entry) {
+                $groups = $this->directoryGroupsNamed($entry, $token);
+                if ($groups === []) {
+                    $result['unmatchedGroups'][] = $entry;
+                }
+                foreach ($groups as $group) {
+                    $groupIds[strtolower($group['id'])] = $group['id'];
+                }
+            }
+
+            $users = [];
+            foreach ($groupIds as $groupId) {
+                $url = 'https://graph.microsoft.com/v1.0/groups/' . rawurlencode($groupId)
+                    . '/transitiveMembers/microsoft.graph.user?$count=true&$select=' . self::DIRECTORY_USER_FIELDS . '&$top=999';
+                foreach ($this->directoryCollection($url, $token, ['ConsistencyLevel' => 'eventual']) as $user) {
+                    $users[strtolower($user['id'])] ??= $user;
+                }
+            }
+
+            // The synchronization table also needs direct memberships for its role actions.
+            foreach ($users as $user) {
+                $result['users'][] = self::directoryUser($user, $this->getUserGroups($user['id'], $token, true));
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            return ['error' => true, 'code' => (int) $e->getCode(), 'users' => [], 'unmatchedGroups' => []];
+        }
+    }
+
+    /**
+     * Return the fields shared by both directory listings, with nulls for absent attributes.
+     *
+     * @param array<string, mixed> $user Graph user
+     * @param array<int, array{id: string|null, displayName: string|null}> $groups Direct memberships
+     * @return array<string, mixed>
+     */
+    private static function directoryUser(array $user, array $groups): array
+    {
+        $fields = array_fill_keys(explode(',', self::DIRECTORY_USER_FIELDS), null);
+        return array_replace($fields, array_intersect_key($user, $fields), ['groups' => $groups]);
+    }
+
+    /**
+     * Read a complete Graph directory collection, keeping custom headers on pagination requests.
+     *
+     * @param array<string, string> $headers Extra headers for every page
+     * @return \Generator<int, array{id: string, ...}, void, void>
+     * @throws Exception If any page is rejected or invalid
+     */
+    private function directoryCollection(string $url, string $accessToken, array $headers = []): \Generator
+    {
+        $visited = [];
+        while ($url !== '') {
+            if (str_starts_with($url, 'https://graph.microsoft.com/v1.0/') === false || isset($visited[$url])) {
+                throw new \RuntimeException('Invalid Microsoft Graph continuation link.');
+            }
+            $visited[$url] = true;
+            $request = $this->provider->getAuthenticatedRequest('GET', $url, $accessToken, ['headers' => $headers]);
+            $answer = $this->provider->getParsedResponse($request);
+            if (is_array($answer) === false || is_array($answer['value'] ?? null) === false) {
+                throw new \RuntimeException('Invalid Microsoft Graph collection.');
+            }
+
+            foreach ($answer['value'] as $entry) {
+                if (is_array($entry) === false || is_string($entry['id'] ?? null) === false || $entry['id'] === '') {
+                    throw new \RuntimeException('Invalid Microsoft Graph directory object.');
+                }
+                yield $entry;
+            }
+
+            $url = $answer['@odata.nextLink'] ?? '';
+            if (is_string($url) === false) {
+                throw new \RuntimeException('Invalid Microsoft Graph continuation link.');
+            }
+        }
+    }
+
+    /**
      * Retrieve the groups a single directory user belongs to.
      *
-     * A failure on one user must not abort the whole synchronization, so the
-     * error is swallowed and an empty group list is returned for that user.
+     * The full directory listing tolerates a failure for an individual user.
+     * The filtered listing requires complete results and surfaces the error.
      *
      * @param string $userId      Directory object id of the user.
      * @param string $accessToken Access token to use for the Graph call.
+     * @param bool   $requireComplete Whether to fail the listing if the memberships cannot be read.
      * @return array<int, array{id: string|null, displayName: string|null}>
      */
-    private function getUserGroups(string $userId, string $accessToken): array
+    private function getUserGroups(string $userId, string $accessToken, bool $requireComplete = false): array
     {
         $userGroups = [];
 
         try {
             $groupsUrl = 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($userId) . '/memberOf';
-            $groupsRequest = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $accessToken);
-            $groupsResponse = $this->provider->getParsedResponse($groupsRequest);
-
-            if (isset($groupsResponse['value']) && is_array($groupsResponse['value'])) {
-                foreach ($groupsResponse['value'] as $group) {
-                    if (is_array($group) === true && ($group['@odata.type'] ?? '') === '#microsoft.graph.group') {
-                        $userGroups[] = [
-                            'id' => $group['id'] ?? null,
-                            'displayName' => $group['displayName'] ?? null,
-                        ];
-                    }
+            foreach ($this->directoryCollection($groupsUrl, $accessToken) as $group) {
+                if (($group['@odata.type'] ?? '') === '#microsoft.graph.group') {
+                    $userGroups[] = [
+                        'id' => $group['id'],
+                        'displayName' => $group['displayName'] ?? null,
+                    ];
                 }
             }
         } catch (Exception $e) {
+            if ($requireComplete) {
+                throw $e;
+            }
             error_log('TEAMPASS OAuth2 - unable to get groups of user ' . $userId . ': ' . $e->getMessage());
+            return [];
         }
 
         return $userGroups;
@@ -744,7 +830,7 @@ class OAuth2Controller
      *
      * @param string $entry       Object id or display name
      * @param string $accessToken Application token for Microsoft Graph
-     * @return array<int, array{id: mixed, displayName: mixed}>
+     * @return list<array{id: string, displayName: mixed}>
      * @throws Exception When Graph refuses the query (a group id it does not know excepted)
      */
     private function directoryGroupsNamed(string $entry, string $accessToken): array
@@ -763,24 +849,18 @@ class OAuth2Controller
                 throw $e;
             }
 
-            return is_array($group) && isset($group['id'])
+            return is_array($group) && is_string($group['id'] ?? null) && $group['id'] !== ''
                 ? [['id' => $group['id'], 'displayName' => $group['displayName'] ?? null]]
                 : [];
         }
 
-        $answer = $this->provider->getParsedResponse($this->provider->getAuthenticatedRequest(
-            'GET',
-            'https://graph.microsoft.com/v1.0/groups?$filter='
-                . rawurlencode("displayName eq '" . self::odataString($entry) . "'")
-                . '&$select=id,displayName&$top=10',
-            $accessToken
-        ));
+        $url = 'https://graph.microsoft.com/v1.0/groups?$filter='
+            . rawurlencode("displayName eq '" . self::odataString($entry) . "'")
+            . '&$select=id,displayName&$top=10';
 
         $matches = [];
-        foreach ((is_array($answer) && is_array($answer['value'] ?? null)) ? $answer['value'] : [] as $group) {
-            if (is_array($group) && isset($group['id'])) {
-                $matches[] = ['id' => $group['id'], 'displayName' => $group['displayName'] ?? null];
-            }
+        foreach ($this->directoryCollection($url, $accessToken) as $group) {
+            $matches[] = ['id' => $group['id'], 'displayName' => $group['displayName'] ?? null];
         }
 
         return $matches;

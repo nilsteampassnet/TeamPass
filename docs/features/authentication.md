@@ -344,6 +344,13 @@ TeamPass account at their first sign-in:
   self-registration refuses everybody. The log entry counts these groups as *without name*.
 * The field only concerns accounts that do not exist yet. Existing accounts sign in as before.
 
+In **Users → OAuth2 synchronization**, select **List users** to load the directory, or check
+**Show only users in groups allowed to self-register** to load only the members of the saved
+groups. The list includes members of nested groups and existing TeamPass users who belong to
+those groups. With an empty setting, the filtered list is empty. With `*`, the full directory
+is listed. Group-based listing uses the same application permissions as synchronization.
+Groups with hidden membership also require the `Member.Read.Hidden` application permission.
+
 A user who may not self-register is refused with *"You have no TeamPass account yet, and your
 groups at the identity provider do not allow it to be created automatically"*. The failed
 authentications of the `Logs` page show the login and the groups TeamPass received. The

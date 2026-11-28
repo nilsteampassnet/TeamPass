@@ -21,9 +21,10 @@ function section (source, from, to) {
   return source.slice(start, end)
 }
 
-function harness (directoryUsers) {
+function harness (directoryUsers, defer = false) {
   const elements = new Map()
   const events = new Map()
+  const requests = []
   const document = { on: (event, selector, handler) => events.set(event + selector, handler) }
   let rows = []
 
@@ -57,15 +58,20 @@ function harness (directoryUsers) {
         }
         return this
       },
-      prop (name, value) { state[name] = value },
+      prop (name, value) {
+        if (value === undefined) return state[name]
+        state[name] = value
+        return this
+      },
+      text (value) { state.text = value; return this },
       toggleClass (name, hidden) { state[name] = hidden },
       trigger (event) {
         events.get(event + selector)()
         return this
       },
       focus () { state.focused = true },
-      addClass () { return this },
-      removeClass () {},
+      addClass (name) { state[name] = true; return this },
+      removeClass (name) { state[name] = false; return this },
       closest () { return this },
       remove () {},
       tooltip () {},
@@ -77,8 +83,32 @@ function harness (directoryUsers) {
   $.each = (entries, callback) => entries.forEach((entry, i) => callback(i, entry))
   $.post = (url, payload, done) => {
     assert.equal(payload.type, 'get_list_of_users_in_oauth2')
-    done({ error: false, ad_users: directoryUsers, ad_groups: [], teampass_groups: [] })
-    return { fail () { return this }, always (callback) { callback() } }
+    const request = {
+      payload,
+      pending: true,
+      fail (callback) { this.onFail = callback; return this },
+      always (callback) {
+        this.onComplete = callback
+        if (!this.pending) callback()
+        return this
+      },
+      resolve (data = {}) {
+        if (!this.pending) return
+        this.pending = false
+        done({ error: false, ad_users: directoryUsers, ad_groups: [], teampass_groups: [], ...data })
+        this.onComplete?.()
+      },
+      abort () {
+        if (!this.pending) return
+        this.pending = false
+        this.aborted = true
+        this.onFail(this, 'abort')
+        this.onComplete()
+      }
+    }
+    requests.push(request)
+    if (!defer) request.resolve()
+    return request
   }
 
   const render = section(users, 'function refreshListUsersOAuth2()', '     * Permits to add a role')
@@ -103,7 +133,9 @@ function harness (directoryUsers) {
 
   return {
     elements,
+    requests,
     refresh: context.refreshListUsersOAuth2,
+    filterGroups: checked => $('#oauth2-users-allowed-groups').prop('checked', checked).trigger('change'),
     search: value => $('#oauth2-users-search').val(value).trigger('input'),
     clear: () => events.get('click#oauth2-users-search-clear')(),
     hidden: () => rows.map(row => row.hidden)
@@ -143,4 +175,28 @@ test('OAuth2 searches the readable directory fields and reapplies the query afte
   assert.deepEqual(page.hidden(), [false, false])
   assert.equal(page.elements.get('#oauth2-users-search-clear').disabled, true)
   assert.equal(page.elements.get('#oauth2-users-search').focused, true)
+})
+
+test('OAuth2 group filtering replaces the previous request and keeps the scope on refresh', () => {
+  const page = harness([], true)
+  page.refresh()
+  assert.equal(page.requests[0].payload.only_allowed_groups, '0')
+
+  page.filterGroups(true)
+  assert.equal(page.requests[0].aborted, true)
+  assert.equal(page.requests[1].payload.only_allowed_groups, '1')
+  page.requests[1].resolve({ group_status: 'Group R&D <Ops> was not found.' })
+  page.requests[0].resolve({ group_status: 'Old result' })
+
+  const status = page.elements.get('#oauth2-users-group-status')
+  assert.equal(status.text, 'Group R&D <Ops> was not found.')
+  assert.equal(status.hidden, false)
+
+  page.refresh()
+  assert.equal(page.requests[2].payload.only_allowed_groups, '1')
+  page.requests[2].resolve()
+  assert.equal(status.hidden, true)
+
+  page.filterGroups(false)
+  assert.equal(page.requests[3].payload.only_allowed_groups, '0')
 })
