@@ -130,3 +130,24 @@ function oauth2IdentityRefusalKey(string $decision): string
         default => '',
     };
 }
+
+/**
+ * An imported OAuth2 account still has its private key protected by its provisioning code.
+ *
+ * Older imports used the shared LDAP state, then cleared it when key distribution completed
+ * while leaving otp_provided at zero. Explicit one-time-code resets use a different state.
+ *
+ * @param array<string, mixed> $account Users row as loaded at sign-in
+ */
+function oauth2ImportedKeySetupPending(array $account): bool
+{
+    if (($account['auth_type'] ?? '') !== 'oauth2') {
+        return false;
+    }
+
+    $special = (string) ($account['special'] ?? '');
+
+    return in_array($special, ['oauth2-key-setup', 'user_added_from_ad'], true)
+        || (in_array($special, ['', 'none', 'generate-keys'], true)
+            && (int) ($account['otp_provided'] ?? 1) === 0);
+}

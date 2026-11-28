@@ -3563,6 +3563,14 @@ if (null !== $post_type) {
             // they are entitled to grant to the account they import from the directory.
             $post_roles = mergeGrantableRoleSets([], (array) $post_roles, callerGrantableRoleIds());
             $post_authType = filter_var($dataReceived['authType'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $oauth2Import = $post_authType === 'oauth2';
+            if ($oauth2Import && (int) ($SETTINGS['oauth2_enabled'] ?? 0) !== 1) {
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ], 'encode');
+                break;
+            }
 
             // Empty user
             if (empty($post_login) === true || empty($post_email) === true) {
@@ -3600,7 +3608,7 @@ if (null !== $post_type) {
                 $passwordManager = new PasswordManager();
 
                 // Prepare variables
-                $password = generateQuickPassword(12, true);
+                $password = $oauth2Import ? bin2hex(random_bytes(32)) : generateQuickPassword(12, true);
                 $hashedPassword = $passwordManager->hashPassword($password);
                 if ($passwordManager->verifyPassword($hashedPassword, $password) === false) {
                     echo prepareExchangedData(
@@ -3644,12 +3652,12 @@ if (null !== $post_type) {
                 'isAdministratedByRole' => (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false) ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0,
                 'public_key' => $userKeys['public_key'],
                 'private_key' => $userKeys['private_key'],
-                'special' => 'user_added_from_ad',
+                'special' => $oauth2Import ? 'generate-keys' : 'user_added_from_ad',
                 'auth_type' => $post_authType,
-                'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
+                'is_ready_for_usage' => $oauth2Import || (int) ($SETTINGS['enable_tasks_manager'] ?? 0) === 1 ? 0 : 1,
                 'created_at' => time(),
                 'personal_items_migrated' => 1,
-                'otp_provided' => 1,
+                'otp_provided' => $oauth2Import ? 0 : 1,
                 'encryption_version' => 3,
                 'phpseclibv3_migration_completed' => 1,
             );
@@ -3662,41 +3670,29 @@ if (null !== $post_type) {
                 $userData['last_pw_change'] = time();
             }
 
-            // Insert user in DB
-            DB::insert(
-                prefixTable('users'),
-                $userData
-            );
-            $newUserId = DB::insertId();            
+            $personalFolderEnabled = (int) ($SETTINGS['enable_pf_feature'] ?? 0) === 1;
+            DB::startTransaction();
+            try {
+                DB::insert(prefixTable('users'), $userData);
+                $newUserId = (int) DB::insertId();
+                setUserRoles($newUserId, $post_roles, 'manual');
+                insertPrivateKeyWithCurrentFlag($newUserId, $userKeys['private_key']);
 
-            // Add Groups and Roles
-            setUserRoles($newUserId, $post_roles, 'manual');
-
-            // Handle private key
-            insertPrivateKeyWithCurrentFlag(
-                $newUserId,
-                $userKeys['private_key'],        
-            );
-
-            // Create the API key
-            DB::insert(
-                prefixTable('api'),
-                array(
-                    'type' => 'user',
-                    'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['public_key']),
-                    'timestamp' => time(),
-                    'user_id' => $newUserId,
-                    'allowed_folders' => '',
-                    // API access is never granted implicitly: an administrator enables it per user
-                    'enabled' => 0,
-                )
-            );
-
-            // Create personnal folder
-            if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1) {
                 DB::insert(
-                    prefixTable('nested_tree'),
-                    array(
+                    prefixTable('api'),
+                    [
+                        'type' => 'user',
+                        'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['public_key']),
+                        'timestamp' => time(),
+                        'user_id' => $newUserId,
+                        'allowed_folders' => '',
+                        // The administrator enables API access per user.
+                        'enabled' => 0,
+                    ]
+                );
+
+                if ($personalFolderEnabled) {
+                    DB::insert(prefixTable('nested_tree'), [
                         'parent_id' => '0',
                         'title' => $newUserId,
                         'bloquer_creation' => '0',
@@ -3705,16 +3701,33 @@ if (null !== $post_type) {
                         'fa_icon' => 'fas fa-folder',
                         'fa_icon_selected' => 'fas fa-folder-open',
                         'categories' => '',
-                    )
-                );
+                    ]);
+                }
 
-                // Rebuild tree
+                if ($oauth2Import) {
+                    $processId = queueImportedOauth2KeyDistribution($newUserId, $password, $SETTINGS);
+                    DB::update(prefixTable('users'), ['ongoing_process_id' => $processId], 'id = %i', $newUserId);
+                }
+                DB::commit();
+            } catch (Throwable) {
+                DB::rollback();
+                error_log('TEAMPASS - could not provision an imported directory account.');
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('error'),
+                ], 'encode');
+                break;
+            }
+
+            // NestedTree reads the committed tree through its own connection.
+            if ($personalFolderEnabled) {
                 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
             }
 
-            // Send email to new user
-            if (isset($SETTINGS['enable_tasks_manager']) === false || (int) $SETTINGS['enable_tasks_manager'] === 0) {
+            if ($oauth2Import) {
+                triggerBackgroundHandler();
+            } elseif ((int) ($SETTINGS['enable_tasks_manager'] ?? 0) === 0) {
                 $emailSettings = new EmailSettings($SETTINGS);
                 $emailService = new EmailService();
                 $emailService->sendMail(
@@ -3734,8 +3747,9 @@ if (null !== $post_type) {
                     'error' => false,
                     'message' => '',
                     'user_id' => $newUserId,
-                    'user_code' => $password,
-                    'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
+                    'user_code' => $oauth2Import ? '' : $password,
+                    'post_action' => $oauth2Import ? 'oauth2_keys_queued'
+                        : ((int) ($SETTINGS['enable_tasks_manager'] ?? 0) === 1 ? 'prepare_tasks' : 'encrypt_keys'),
                 ),
                 'encode'
             );
@@ -5141,6 +5155,43 @@ break;
 // They had no caller: user administration goes through the "save_user_change" action and profile
 // preferences through "user_profile_update", both subject to the target-scope guard above.
 // Do not reintroduce a request-driven column write outside that guard.
+
+/**
+ * Queue sharekey distribution inside the transaction that creates an imported OAuth2 account.
+ *
+ * @param int $userId The newly imported account
+ * @param string $bootstrapPassword Server-generated protection for the new private key
+ * @param array<string, mixed> $SETTINGS TeamPass settings
+ * @return int The task ID to record on the account before committing
+ */
+function queueImportedOauth2KeyDistribution(int $userId, string $bootstrapPassword, array $SETTINGS): int
+{
+    $tpPassword = DB::queryFirstField('SELECT pw FROM ' . prefixTable('users') . ' WHERE id = %i', TP_USER_ID);
+    $protectedPassword = cryption($bootstrapPassword, '', 'encrypt', $SETTINGS);
+    if (empty($tpPassword) || $protectedPassword['string'] === '') {
+        throw new RuntimeException('Could not prepare key distribution for the imported account.');
+    }
+
+    DB::insert(prefixTable('background_tasks'), [
+        'created_at' => time(),
+        'process_type' => 'create_user_keys',
+        'arguments' => json_encode([
+            'new_user_id' => $userId,
+            'new_user_pwd' => $protectedPassword['string'],
+            'owner_id' => (int) TP_USER_ID,
+            'creator_pwd' => $tpPassword,
+            'email_body' => 'email_body_user_config_2',
+            'send_email' => 1,
+            'otp_provided_new_value' => 1,
+            'user_self_change' => 0,
+            'final_special_after_generation' => 'oauth2-key-setup',
+        ], JSON_THROW_ON_ERROR),
+    ]);
+    $taskId = (int) DB::insertId();
+    createUserTasks($taskId, max(1, (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH)));
+
+    return $taskId;
+}
 
 /**
  * Release an account from the OAuth2 identity it is bound to.

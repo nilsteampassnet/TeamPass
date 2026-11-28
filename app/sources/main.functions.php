@@ -10909,8 +10909,11 @@ function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
  * @return void
  */
 function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {    
+    $ownsTransaction = DB::transactionDepth() === 0;
     try {
-        DB::startTransaction();
+        if ($ownsTransaction === true) {
+            DB::startTransaction();
+        }
         
         // Disable is_current for existing records of the user
         DB::update(
@@ -10931,10 +10934,14 @@ function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {
             )
         );
         
-        DB::commit();
+        if ($ownsTransaction === true) {
+            DB::commit();
+        }
         
     } catch (Exception $e) {
-        DB::rollback();
+        if ($ownsTransaction === true) {
+            DB::rollback();
+        }
         throw $e;
     }
 }

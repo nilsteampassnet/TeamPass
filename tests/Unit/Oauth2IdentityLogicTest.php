@@ -115,4 +115,28 @@ final class Oauth2IdentityLogicTest extends TestCase
         self::assertSame('', oauth2IdentityRefusalKey('accept'));
         self::assertSame('', oauth2IdentityRefusalKey('bind'));
     }
+
+    /**
+     * @dataProvider importedKeySetupProvider
+     * @param array<string, mixed> $account
+     */
+    public function testOnlyImportedOauth2StatesEnterAutomaticKeySetup(array $account, bool $pending): void
+    {
+        self::assertSame($pending, oauth2ImportedKeySetupPending($account));
+    }
+
+    /** @return iterable<string, array{array<string, mixed>, bool}> */
+    public static function importedKeySetupProvider(): iterable
+    {
+        yield 'new import queued' => [['auth_type' => 'oauth2', 'special' => 'generate-keys', 'otp_provided' => 0], true];
+        yield 'new import distributed' => [['auth_type' => 'oauth2', 'special' => 'oauth2-key-setup', 'otp_provided' => 1], true];
+        yield 'old direct import' => [['auth_type' => 'oauth2', 'special' => 'user_added_from_ad', 'otp_provided' => 1], true];
+        yield 'old import distributed' => [['auth_type' => 'oauth2', 'special' => 'none', 'otp_provided' => '0'], true];
+        yield 'ready account' => [['auth_type' => 'oauth2', 'special' => 'none', 'otp_provided' => 1], false];
+        yield 'self-registration queued' => [['auth_type' => 'oauth2', 'special' => 'generate-keys', 'otp_provided' => 1], false];
+        yield 'explicit reset' => [['auth_type' => 'oauth2', 'special' => 'otc_is_required_on_next_login', 'otp_provided' => 0], false];
+        yield 'account conversion' => [['auth_type' => 'oauth2', 'special' => 'recrypt-private-key', 'otp_provided' => 0], false];
+        yield 'LDAP import' => [['auth_type' => 'ldap', 'special' => 'user_added_from_ad', 'otp_provided' => 0], false];
+        yield 'local first login' => [['auth_type' => 'local', 'special' => 'auth-pwd-change', 'otp_provided' => 0], false];
+    }
 }
