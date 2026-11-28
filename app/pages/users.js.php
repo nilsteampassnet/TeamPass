@@ -124,14 +124,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
-     * Filter the LDAP synchronization table using the identity fields already loaded.
+     * Filter a directory synchronization table using the identity fields already loaded.
      *
+     * @param {string} directory LDAP or OAuth2 selector prefix.
      * @return void
      */
-    function filterLdapUsersTable() {
-        const searchValue = ($('#ldap-users-search').val() || '').toString()
+    function filterDirectoryUsersTable(directory) {
+        const searchValue = ($('#' + directory + '-users-search').val() || '').toString()
         const criteria = searchValue.trim().toLowerCase()
-        const $rows = $('#row-ldap-body .ldap-user-row')
+        const $rows = $('#row-' + directory + '-body .' + directory + '-user-row')
         let visibleRows = 0
 
         $rows.each((index, row) => {
@@ -144,17 +145,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         })
 
-        $('#ldap-users-search-clear').prop('disabled', searchValue === '')
-        $('#ldap-users-search-no-results').toggleClass(
+        $('#' + directory + '-users-search-clear').prop('disabled', searchValue === '')
+        $('#' + directory + '-users-search-no-results').toggleClass(
             'hidden',
             criteria === '' || visibleRows > 0 || $rows.length === 0
         )
     }
 
-    $(document).on('input', '#ldap-users-search', filterLdapUsersTable)
-
-    $(document).on('click', '#ldap-users-search-clear', () => {
-        $('#ldap-users-search').val('').trigger('input').focus()
+    ['ldap', 'oauth2'].forEach(directory => {
+        const input = '#' + directory + '-users-search'
+        $(document).on('input', input, () => filterDirectoryUsersTable(directory))
+        $(document).on('click', input + '-clear', () => {
+            $(input).val('').trigger('input').focus()
+        })
     })
 
     //Launch the datatables pluggin
@@ -2175,6 +2178,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'oauth2-add-role') {
+            $('#oauth2-users-search-wrapper').addClass('hidden');
             $('#oauth2-users-table').addClass('hidden');
             $('#oauth2-new-role').removeClass('hidden');
 
@@ -2182,6 +2186,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'close-new-role-oauth2') {
+            $('#oauth2-users-search-wrapper').removeClass('hidden');
             $('#oauth2-users-table').removeClass('hidden');
             $('#oauth2-new-role').addClass('hidden');
 
@@ -2244,6 +2249,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             );
                         } else {
                             $('#oauth2-new-role-selection').val('');
+                            $('#oauth2-users-search-wrapper').removeClass('hidden');
                             $('#oauth2-users-table').removeClass('hidden');
                             $('#row-oauth2-body').html('');
                             $('#oauth2-new-role').addClass('hidden');
@@ -3529,7 +3535,7 @@ function refreshListInactiveUsers(filterValue) {
 
                     $('#row-ldap-body').html(html);
 
-                    filterLdapUsersTable()
+                    filterDirectoryUsersTable('ldap')
 
                     $('#row-ldap-body').removeClass('overlay');
 
@@ -3578,93 +3584,84 @@ function refreshListInactiveUsers(filterValue) {
     }
 
     function refreshListUsersOAuth2() {
-        // IS LDAP enabled? (#3800)
         if (parseInt(<?php echo $SETTINGS['oauth2_enabled']; ?>) === 0) {
-            console.log("OAuth2 is enabled, refreshing list of users from OAuth2 "+parseInt(<?php echo $SETTINGS['oauth2_enabled']; ?>));
             return false;
         }
 
-        // FIND ALL USERS IN LDAP
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         $('#row-oauth2-body')
             .addClass('overlay')
             .html('');
+        filterDirectoryUsersTable('oauth2');
 
         $.post(
             "sources/users.queries.php", {
                 type: "get_list_of_users_in_oauth2",
                 key: "<?php echo $session->get('key'); ?>"
             },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                if (debugJavascript === true) console.log(data)
-
-                if (data.error === true) {
-                    // ERROR
+            function(response) {
+                // The directory supplies text. Preserve symbols in names and escape them in
+                // each HTML context instead of parsing a name such as "R&D <Ops>" as markup.
+                const data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>', '', '', false);
+                if (data?.error !== false) {
                     toastr.error(
-                        data.message,
+                        htmlEncode(data?.message || <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>),
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
                     );
                 } else {
-                    // PUrify data
-                    data = purifyData(data);
-                    // Do init
-                    var html = '',
-                        groupsNumber = 0,
-                        userLogin,
-                        group;
-                    var entry;
-                    // loop on users list
+                    let html = '';
                     $.each(data.ad_users, function(i, user) {
-                        // CHeck if not empty
-                        if (userLogin !== '') {
-                            // Every value below comes from the directory, not from TeamPass.
-                            // purifyData() removes tags but keeps quotes, which is enough to
-                            // break out of the attributes used here, so encode each value.
-                            html += '<tr>' +
-                                '<td>' + htmlEncode(user.login) +
+                        const login = decodeStorageEntities(user.login ?? '');
+                        if (login !== '') {
+                            const displayName = decodeStorageEntities(user.displayName ?? '');
+                            const givenName = decodeStorageEntities(user.givenName ?? '');
+                            const surname = decodeStorageEntities(user.surname ?? '');
+                            const mail = decodeStorageEntities(user.mail ?? '');
+                            const principalName = decodeStorageEntities(user.userPrincipalName ?? '');
+                            const groupNames = user.groups.map(group => decodeStorageEntities(group.name ?? ''));
+                            const searchText = [login, displayName, givenName, surname, mail, principalName, ...groupNames].join(' ');
+                            const details = '<p class="text-left"><i class="fas fa-user mr-1"></i> ' + htmlEncode(displayName) + '</p>' +
+                                '<p class="text-left"><i class="fas fa-envelope mr-1"></i>' + htmlEncode(mail) + '</p>';
+                            const userId = Number(user.userInTeampass);
+
+                            html += '<tr class="oauth2-user-row" data-search="' + htmlEncode(searchText) + '">' +
+                                '<td>' + htmlEncode(login) +
                                 '</td>' +
                                 '<td>' +
                                 '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
-                                '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i> ' +
-                                htmlEncode(user.displayName) + '</p>' +
-                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? htmlEncode(user.mail) : '') + '</p>' +
-                                '"></i>' +
+                                htmlEncode(details) + '"></i>' +
                                 '</td><td>' +
-                                (user.userInTeampass === 0 ? '' :
-                                '<i class="fa-solid ' + (user.userAuthType === 'oauth2' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-oauth2-synchronization" data-user-id="' + user.userInTeampass + '" data-user-auth-type="' + user.userAuthType + '" infotip title="<?php echo $lang->get('toggle_user_authentification'); ?>"></i>') +
+                                (userId === 0 ? '' :
+                                '<i class="fa-solid ' + (user.userAuthType === 'oauth2' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-oauth2-synchronization" data-user-id="' + userId + '" data-user-auth-type="' + htmlEncode(user.userAuthType) + '" infotip title="<?php echo $lang->get('toggle_user_authentification'); ?>"></i>') +
                                 '</td><td>';
-                            groupsNumber = 0;
                             $.each(user.groups, function(j, group) {
                                 let icon = '';
 
                                 if (group.id === null) {
                                     // Le groupe n'existe pas dans Teampass
                                     icon = '<i class="far fa-circle-xmark text-danger ml-2 infotip" title="<?php echo $lang->get('role_not_exists_in_teampass'); ?>"></i>';
-                                } else if (user.userInTeampass !== 0) {
+                                } else if (userId !== 0) {
                                     if (group.insideGroupInTeampass === 1) {
                                         // L'utilisateur est déjà dans ce groupe dans Teampass
                                         icon = '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i>';
                                     } else if (user.userAuthType === 'oauth2') {
                                         // Proposer d'ajouter l'utilisateur au groupe
-                                        icon = '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + user.userInTeampass + '" data-role-id="' + group.id + '"></i>';
+                                        icon = '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + userId + '" data-role-id="' + Number(group.id) + '"></i>';
                                     }
                                 }
 
-                                html += htmlEncode(group.name) + icon + '<br>';
-                                groupsNumber++;
+                                html += htmlEncode(groupNames[j]) + icon + '<br>';
                             });
 
                             html += '</td><td>';
                             // Action icons
-                            html += (user.userInTeampass === 0 ? 
+                            html += (userId === 0 ?
                                  (user.mail !== null ? 
-                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + htmlEncode(user.login) + '" data-user-email="' + htmlEncode(user.mail) + '" data-user-name="' + htmlEncode(user.surname) + '" data-user-lastname="' + htmlEncode(user.givenName) + '" data-user-auth-type="oauth2"></i>'
+                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + htmlEncode(login) + '" data-user-email="' + htmlEncode(mail) + '" data-user-name="' + htmlEncode(surname) + '" data-user-lastname="' + htmlEncode(givenName) + '" data-user-auth-type="oauth2"></i>'
                                     : '<i class="fa-solid fa-user-large-slash text-danger ml-2 infotip" title="<?php echo $lang->get('oauth2_user_has_no_mail'); ?>"></i>'
                                 )
                                 : ''
@@ -3675,7 +3672,7 @@ function refreshListInactiveUsers(filterValue) {
                     });
                     
                     $('#row-oauth2-body').html(html);
-                    $('#row-oauth2-body').removeClass('overlay');
+                    filterDirectoryUsersTable('oauth2');
                     $('.infotip').tooltip('update');
 
                     // Build list box of new roles that could be created
@@ -3683,11 +3680,9 @@ function refreshListInactiveUsers(filterValue) {
                         .empty()
                         .append('<option value="">--- <?php echo $lang->get('select'); ?> ---</option>');
                     let htmlGroups = '';
-                    $.each(data.ad_groups, function(i, group) {
-                        tmp = data.teampass_groups.filter(p => p.title === group);
-                        if (tmp.length === 0) {
-                            // Already purified by purifyData() above, but that leaves plain
-                            // text with live quotes, so encode it for both sinks.
+                    const roleLists = purifyData({ adGroups: data.ad_groups, teamPassGroups: data.teampass_groups });
+                    $.each(roleLists.adGroups, function(i, group) {
+                        if (roleLists.teamPassGroups.some(role => role.title === group) === false) {
                             htmlGroups += '<option value="' + htmlEncode(group) + '">' + htmlEncode(group) + '</option>';
                         }
                     });
@@ -3700,10 +3695,17 @@ function refreshListInactiveUsers(filterValue) {
                             timeOut: 1000
                         }
                     );
-                    $('.close-toastr-progress').closest('.toast').remove();
                 }
             }
-        );
+        ).fail(function() {
+            toastr.error(
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                '<?php echo $lang->get('caution'); ?>'
+            );
+        }).always(function() {
+            $('#row-oauth2-body').removeClass('overlay');
+            $('.close-toastr-progress').closest('.toast').remove();
+        });
     }
 
     /**
