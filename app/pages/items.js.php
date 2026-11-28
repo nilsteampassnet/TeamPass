@@ -703,7 +703,7 @@ require __DIR__ . '/icon.picker.js.php';
             '</div>' +
             '<div class="tp-item-file-actions">' +
             (value.is_image === 1 ?
-                '<button type="button" class="tp-item-file-action preview-image infotip" data-file-id="' + value.id + '" title="<?php echo $lang->get('see'); ?>" aria-label="<?php echo $lang->get('see'); ?>">' +
+                '<button type="button" class="tp-item-file-action preview-image infotip" data-file-id="' + value.id + '" data-file-label="' + fileLabel + '" title="<?php echo $lang->get('see'); ?>" aria-label="<?php echo $lang->get('see'); ?>">' +
                 '<i class="fa-solid fa-eye"></i></button>' : '') +
             '<a class="tp-item-file-action infotip" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>" aria-label="<?php echo $lang->get('download'); ?>">' +
             '<i class="fa-solid fa-file-download"></i></a>' +
@@ -8382,7 +8382,7 @@ require __DIR__ . '/icon.picker.js.php';
                 // function calling image lightbox when clicking on link
                 $('a.image_dialog').click(function(event) {
                     event.preventDefault();
-                    PreviewImage($(this).attr('href'), $(this).attr('title'));
+                    previewImage($(this).attr('href'));
                 });
 
 
@@ -8921,13 +8921,14 @@ require __DIR__ . '/icon.picker.js.php';
     });
 
 
-    //calling image lightbox when clicking on link
+    // Open the attachment preview from the item view or edit form.
     $(document).on('click', '.preview-image', function(event) {
         event.preventDefault();
-        PreviewImage($(this).data('file-id'));
+        const $button = $(this);
+        previewImage($button.data('file-id'), $button.attr('data-file-label'));
     });
 
-    PreviewImage = function(fileId) {
+    function previewImage(fileId, fileLabel) {
         toastr.remove();
         toastr.info(
             '<?php echo $lang->get('loading_image'); ?>...<i class="fa-solid fa-circle-notch fa-spin fa-2x ml-2"></i>'
@@ -8940,17 +8941,13 @@ require __DIR__ . '/icon.picker.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                //decrypt data
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'image_preview_preparation');
-                if (debugJavascript === true) {
-                    console.log('DEBUG : image preview');
-                    console.log(data);
+                toastr.remove();
+                if (data === false) {
+                    return;
                 }
 
-                //check if format error
                 if (data.error === true) {
-                    // ERROR
-                    toastr.remove();
                     toastr.error(
                         data.message,
                         '', {
@@ -8958,53 +8955,36 @@ require __DIR__ . '/icon.picker.js.php';
                             progressBar: true
                         }
                     );
-                } else {
-                    $("#card-item-preview").html('<img id="image_files" src="">');
-                    //Get the HTML Elements
-                    imageDialog = $("#card-item-preview");
-                    imageTag = $('#image_files');
-
-                    //Set the image src
-                    imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
-                    imageTag.attr("class", "img-fluid");
-
-                    //When the image has loaded, display the dialog
-                    showModalDialogBox(
-                        '#warningModal',
-                        data.filename,
-                        $(imageDialog).html(),
-                        '',
-                        'Close',
-                        'modal-xl'
-                    );
-
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-
-
-                    /*
-                                        var pre = document.createElement('pre');
-                                        pre.style.textAlign = "center";
-                                        $(pre).append($(imageDialog).html());
-                                        alertify
-                                            .alert(pre)
-                                            .set({
-                                                label: '<?php echo $lang->get('close'); ?>',
-                                                closable: false,
-                                                padding: false,
-                                                title: data.filename,
-                                                resizable: true,
-                                            })
-                                            .resizeTo('90%', '250px');*/
+                    return;
                 }
+
+                const filename = fileLabel ?? data.filename;
+                const image = document.createElement('img');
+                image.className = 'img-fluid';
+                image.alt = filename;
+                image.src = 'data:' + data.file_type + ';base64,' + data.file_content;
+
+                showModalDialogBox(
+                    '#warningModal',
+                    htmlEncode(filename),
+                    image,
+                    '',
+                    <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                    true
+                );
+                $('#warningModal').one('hidden.bs.modal', function() {
+                    image.remove();
+                });
+
+                toastr.info(
+                    '<?php echo $lang->get('done'); ?>',
+                    '', {
+                        timeOut: 1000
+                    }
+                );
             }
         );
-    };
+    }
 
     function loadItemHistory(item_id, collapsed = true)
     {
