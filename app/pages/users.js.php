@@ -3960,7 +3960,11 @@ function refreshListInactiveUsers(filterValue) {
                             progressBar: true
                         }
                     );
-                } else {                    
+                } else if (data.post_action === 'oauth2_keys_queued') {
+                    $('.close-toastr-progress').closest('.toast').remove();
+                    refreshListUsersOAuth2();
+                    oTable.ajax.reload();
+                } else {
                     generateUserKeys(data, userTemporaryCode, authType);
                 }
             }

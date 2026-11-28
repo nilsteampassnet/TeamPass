@@ -991,7 +991,7 @@ trait UserHandlerTrait {
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 ),
                 false,
-                $arguments['new_user_pwd'],
+                $emailTemplateId === 'user_account_ready' ? '' : $arguments['new_user_pwd'],
                 $receiverName
             );
         }

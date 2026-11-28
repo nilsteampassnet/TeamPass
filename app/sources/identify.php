@@ -664,7 +664,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('userOauth2Info', '');
 
         // Add failed authentication log
-        if ($userOauth2['no_log_event'] !== true) {
+        if (($userOauth2['no_log_event'] ?? false) !== true) {
             addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
         }
 
@@ -698,7 +698,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     // Check user and password
-    $authResult = checkCredentials($passwordClear, $userInfo);
+    // Imported OAuth2 accounts still have a provisioning hash. Do not migrate that hash
+    // through the local-password path, which can replace the pair before MFA is complete.
+    $authResult = $userOauth2['userPasswordVerified'] === true && oauth2ImportedKeySetupPending($userInfo)
+        ? ['authenticated' => false]
+        : checkCredentials($passwordClear, $userInfo);
     if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false && $authResult['authenticated'] !== true) {
         $session->remove('mfa_primary_login_validated');
         // Log failure (wrong password on existing account) into teampass_log_system
@@ -1039,6 +1043,19 @@ function identifyFinishLogin(
             $ldapConnection
         ) === true
     ) {
+        if ($privateKeyClear === null && oauth2ImportedKeySetupPending($userInfo)) {
+            $passwordClear = oauth2KeyPasswordFromSession($session->get('userOauth2Info'), $username);
+            $completedSetup = completeImportedOauth2KeySetup($userInfo, $username, $passwordClear, $SETTINGS);
+            if ($completedSetup === null) {
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('oauth2_vault_setup_failed'),
+                ], 'encode');
+                return false;
+            }
+            $userInfo = array_replace($userInfo, $completedSetup);
+        }
+
         $session->set('pwd_attempts', 0);
 
         // Check if any unsuccessfull login tries exist
@@ -3723,8 +3740,9 @@ function oauth2PersistSessionIdentity(array $SETTINGS, int $userId, string $user
         DB::update(
             prefixTable('users'),
             ['oauth2_identity' => $identity],
-            'id = %i AND oauth2_identity IS NULL AND auth_type = %s',
+            'id = %i AND (oauth2_identity IS NULL OR oauth2_identity = %s) AND auth_type = %s',
             $userId,
+            '',
             'oauth2'
         );
         $bound = DB::affectedRows() > 0;
@@ -3735,6 +3753,105 @@ function oauth2PersistSessionIdentity(array $SETTINGS, int $userId, string $user
 
     if ($bound === true) {
         logEvents($SETTINGS, 'user_mngt', 'at_user_oauth2_identity_bound', (string) $userId, stripslashes($username), (string) $userId);
+    }
+}
+
+/**
+ * Finish key setup for an imported OAuth2 account once sign-in, including MFA, succeeds.
+ *
+ * Keep the RSA pair so that the sharekeys already distributed by the import remain valid.
+ * Recheck the account under a lock to serialize two first sign-ins and avoid racing a reset.
+ *
+ * @param array<string, mixed> $userInfo Account loaded and authenticated by the sign-in
+ * @param string $username Login bound to the provider session
+ * @param string $passwordClear Key password derived from the authenticated provider session
+ * @param array<string, mixed> $SETTINGS TeamPass settings
+ * @return array<string, mixed>|null Updated session fields, or null when setup cannot finish
+ */
+function completeImportedOauth2KeySetup(array $userInfo, string $username, string $passwordClear, array $SETTINGS): ?array
+{
+    $identity = oauth2SessionIdentity();
+    if ($passwordClear === '' || $identity === '' || (int) ($SETTINGS['oauth2_enabled'] ?? 0) !== 1
+        || isOauth2LoginBoundToUser($username) === false
+    ) {
+        return null;
+    }
+
+    $userId = (int) $userInfo['id'];
+    DB::startTransaction();
+    try {
+        $account = DB::queryFirstRow(
+            'SELECT * FROM ' . prefixTable('users') . ' WHERE id = %i AND deleted_at IS NULL FOR UPDATE',
+            $userId
+        );
+        if ($account === null || (int) $account['disabled'] === 1
+            || $account['auth_type'] !== 'oauth2' || $account['login'] !== $userInfo['login']
+            || (int) ($account['ongoing_process_id'] ?? 0) > 0
+            || oauth2AccountIsReserved($username, $account, teampassGetSystemAccountIds())
+            || oauth2CheckAccountIdentity($SETTINGS, $account, $username) !== ''
+        ) {
+            DB::rollback();
+            return null;
+        }
+
+        $privateKey = getCurrentPrivateKey($userId) ?? '';
+        $keyIsOpen = $privateKey !== '' && decryptPrivateKey($passwordClear, $privateKey) !== '';
+        if (oauth2ImportedKeySetupPending($account)) {
+            if ($keyIsOpen === false) {
+                if (empty($account['private_key_backup']) || empty($account['user_derivation_seed'])
+                    || empty($account['public_key']) || verifyKeyIntegrity($account, getServerSecret()) === false
+                ) {
+                    throw new RuntimeException('The imported key backup is unavailable or invalid.');
+                }
+                $key = decryptPrivateKeyBackup(
+                    $account['private_key_backup'],
+                    $account['user_derivation_seed'],
+                    $account['public_key'],
+                    $SETTINGS
+                );
+                $privateKey = $key === '' ? '' : encryptPrivateKey($passwordClear, base64_encode($key));
+                if ($privateKey === '') {
+                    throw new RuntimeException('The imported private key could not be protected.');
+                }
+                insertPrivateKeyWithCurrentFlag($userId, $privateKey);
+            }
+
+            oauth2PersistSessionIdentity($SETTINGS, $userId, $username);
+            $boundIdentity = DB::queryFirstField(
+                'SELECT oauth2_identity FROM ' . prefixTable('users') . ' WHERE id = %i',
+                $userId
+            );
+            if (hash_equals($identity, (string) $boundIdentity) === false) {
+                throw new RuntimeException('The imported account could not be bound to the provider identity.');
+            }
+
+            $updates = [
+                'private_key' => $privateKey,
+                'pw' => (new PasswordManager())->hashPassword($passwordClear),
+                'last_pw_change' => time(),
+                'special' => 'none',
+                'otp_provided' => 1,
+                'is_ready_for_usage' => 1,
+            ];
+            DB::update(prefixTable('users'), $updates, 'id = %i', $userId);
+        } elseif ($keyIsOpen && hash_equals($identity, (string) $account['oauth2_identity'])) {
+            // Another sign-in completed setup while this one was waiting for the row.
+            $updates = array_intersect_key($account, array_flip([
+                'pw', 'last_pw_change', 'special', 'otp_provided', 'is_ready_for_usage',
+            ]));
+            $updates['private_key'] = $privateKey;
+            $updates['public_key'] = $account['public_key'];
+        } else {
+            DB::rollback();
+            return null;
+        }
+
+        DB::commit();
+        return $updates;
+    } catch (Throwable) {
+        DB::rollback();
+        error_log('TEAMPASS OAuth2 - could not complete imported vault setup for user ' . $userId);
+        return null;
     }
 }
 
@@ -3941,17 +4058,26 @@ function checkOauth2User(
         );
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
+        $importedKeySetup = oauth2ImportedKeySetupPending($userInfo);
+        $processId = (int) ($userInfo['ongoing_process_id'] ?? 0);
         // User is in construction, please wait for email
-        if (
-            isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && 
-            $userInfo['ongoing_process_id'] !== null && (int) $userInfo['ongoing_process_id'] >= 0
-        ) {
+        if ($processId > 0 && ($importedKeySetup || (int) ($userInfo['is_ready_for_usage'] ?? 1) !== 1)) {
+            if ($importedKeySetup) {
+                $authentication = shouldUserAuthWithOauth2($SETTINGS, $userInfo, $username);
+                if ($authentication['error'] || !$authentication['oauth2Connection']) {
+                    return [
+                        'error' => true,
+                        'message' => $authentication['message'] ?: 'error_bad_credentials',
+                    ];
+                }
+            }
+
             // The account points at its own key generation (or at a personal items migration)
             $keysTask = DB::queryFirstRow(
                 'SELECT increment_id, process_type, status, arguments
                 FROM ' . prefixTable('background_tasks') . '
                 WHERE increment_id = %i',
-                (int) $userInfo['ongoing_process_id']
+                $processId
             );
 
             // A failed generation is resumed where it stopped: the account keeps its key pair
@@ -3963,7 +4089,7 @@ function checkOauth2User(
 
                 return [
                     'error' => true,
-                    'message' => 'account_in_construction_please_wait_email',
+                    'message' => $importedKeySetup ? 'oauth2_vault_preparing' : 'account_in_construction_please_wait_email',
                     'no_log_event' => true
                 ];
             }
@@ -3973,6 +4099,14 @@ function checkOauth2User(
                 && (string) $keysTask['process_type'] === 'create_user_keys'
                 && (string) $keysTask['status'] === 'failed'
             ) {
+                if ($importedKeySetup) {
+                    return [
+                        'error' => true,
+                        'message' => 'oauth2_vault_setup_failed',
+                        'no_log_event' => true,
+                    ];
+                }
+
                 $errorMessage = "The creation of user keys for user ID {$userInfo['id']} failed. Please contact your administrator to check the background tasks log for more details.";
 
                 // Refresh user info to permit retry
@@ -4013,7 +4147,7 @@ function checkOauth2User(
             } else {
                 return [
                     'error' => true,
-                    'message' => 'account_in_construction_please_wait_email',
+                    'message' => $importedKeySetup ? 'oauth2_vault_preparing' : 'account_in_construction_please_wait_email',
                     'no_log_event' => true
                 ];
             }
@@ -4049,7 +4183,7 @@ function checkOauth2User(
         $passwordManager = new PasswordManager();
 
         // Update user hash un database if needed
-        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+        if (!$importedKeySetup && !$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
             DB::update(
                 prefixTable('users'),
                 [

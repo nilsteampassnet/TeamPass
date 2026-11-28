@@ -45,8 +45,7 @@ final class Oauth2IdentityBindingWiringTest extends TestCase
     {
         $identify = $this->source('app/sources/identify.php');
 
-        // After MFA and after the session holds the private key: a sign-in stopped earlier
-        // (MFA refused, key not opened) must not bind the account to whoever tried
+        // The ordinary sign-in binds only after it has built the authenticated session.
         $finish = $this->functionBody($identify, 'identifyFinishLogin');
         $session = strpos($finish, '$sessionData = buildUserSession(');
         $keyError = strpos($finish, "\$lang->get('private_key_decryption_failed')");
@@ -59,8 +58,40 @@ final class Oauth2IdentityBindingWiringTest extends TestCase
         // Only two writers of the column: the deferred binding and the account creation
         $this->assertSame(1, substr_count($identify, "'oauth2_identity' =>"));
         $this->assertStringContainsString("['oauth2_identity' => \$identity]", $this->functionBody($identify, 'oauth2PersistSessionIdentity'));
-        $this->assertStringContainsString("'id = %i AND oauth2_identity IS NULL AND auth_type = %s'", $this->functionBody($identify, 'oauth2PersistSessionIdentity'));
+        $this->assertStringContainsString("'id = %i AND (oauth2_identity IS NULL OR oauth2_identity = %s) AND auth_type = %s'", $this->functionBody($identify, 'oauth2PersistSessionIdentity'));
         $this->assertStringContainsString("\$userData['oauth2_identity'] = \$oauth2Identity;", $this->functionBody($identify, 'externalAdCreateUser'));
+    }
+
+    /** The provisioning secret stays on the server and the worker leaves the existing pair in place. */
+    public function testTheImportQueuesKeyDistributionWithoutReturningACode(): void
+    {
+        $users = $this->source('app/sources/users.queries.php');
+        $import = $this->caseBody($users, 'add_user_from_ad');
+        $queue = $this->functionBody($users, 'queueImportedOauth2KeyDistribution');
+
+        $this->assertStringContainsString('queueImportedOauth2KeyDistribution($newUserId, $password, $SETTINGS)', $import);
+        $this->assertStringContainsString("'user_code' => \$oauth2Import ? '' : \$password", $import);
+        $this->assertStringContainsString("cryption(\$bootstrapPassword, '', 'encrypt', \$SETTINGS)", $queue);
+        $this->assertStringContainsString("'final_special_after_generation' => 'oauth2-key-setup'", $queue);
+        $this->assertStringContainsString("'email_body' => 'email_body_user_config_2'", $queue);
+    }
+
+    /** A pending import can only open and rewrap its existing key after authentication. */
+    public function testAnImportedAccountKeepsItsKeyPairAfterMfa(): void
+    {
+        $identify = $this->source('app/sources/identify.php');
+        $finish = $this->functionBody($identify, 'identifyFinishLogin');
+        $setup = $this->functionBody($identify, 'completeImportedOauth2KeySetup');
+
+        $this->assertStringContainsString("oauth2KeyPasswordFromSession(\$session->get('userOauth2Info'), \$username)", $finish);
+        $this->assertStringContainsString('completeImportedOauth2KeySetup($userInfo, $username, $passwordClear, $SETTINGS)', $finish);
+        $this->assertStringContainsString('decryptPrivateKeyBackup(', $setup);
+        $this->assertStringNotContainsString('generateUserKeys(', $setup);
+        $this->assertStringContainsString('FOR UPDATE', $setup);
+        $this->assertStringContainsString('hash_equals($identity, (string) $boundIdentity)', $setup);
+        $this->assertStringContainsString('insertPrivateKeyWithCurrentFlag($userId, $privateKey)', $setup);
+        $this->assertStringContainsString("'otp_provided' => 1", $setup);
+        $this->assertStringContainsString("'special' => 'none'", $setup);
     }
 
     public function testANewAccountIsBoundAtCreationAndNeverDuplicatesAnIdentity(): void
@@ -152,7 +183,7 @@ final class Oauth2IdentityBindingWiringTest extends TestCase
         $source = file_get_contents(self::ROOT . '/' . $path);
         $this->assertIsString($source, $path);
 
-        return $source;
+        return str_replace("\r\n", "\n", $source);
     }
 
     /** Body of a function or method, up to the next declaration. */

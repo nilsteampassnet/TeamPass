@@ -4196,6 +4196,8 @@ return array(
     'error_occurred' => 'Une erreur est survenue',
     'error_user_not_exists' => 'Cet utilisateur n’existe pas',
     'oauth2_user_created_automatically' => 'Votre compte a été créé automatiquement.',
+    'oauth2_vault_preparing' => 'TeamPass prépare votre coffre. Réessayez de vous connecter dans quelques instants.',
+    'oauth2_vault_setup_failed' => 'TeamPass n’a pas pu préparer votre coffre. Contactez votre administrateur TeamPass.',
     'admin_logs_cleaned_success' => 'Les entrées de journal de plus de 90 jours ont été supprimées.',
     'admin_encryption_key_not_found' => 'Le fichier de la clé de chiffrement est illisible.',
     'admin_encryption_test_failed' => 'Échec du test de chiffrement : la valeur déchiffrée ne correspond pas à la valeur d’origine.',

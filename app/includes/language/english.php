@@ -4255,6 +4255,8 @@ return array(
     'error_occurred' => 'An error occurred',
     'error_user_not_exists' => 'User does not exist',
     'oauth2_user_created_automatically' => 'Your account has been created automatically.',
+    'oauth2_vault_preparing' => 'TeamPass is preparing your vault. Try signing in again in a moment.',
+    'oauth2_vault_setup_failed' => 'TeamPass could not prepare your vault. Contact your TeamPass administrator for help.',
     'admin_logs_cleaned_success' => 'Log entries older than 90 days have been deleted.',
     'admin_encryption_key_not_found' => 'The encryption key file could not be read.',
     'admin_encryption_test_failed' => 'Encryption test failed: the decrypted value does not match the original one.',

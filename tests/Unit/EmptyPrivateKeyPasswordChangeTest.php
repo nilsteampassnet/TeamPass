@@ -8,6 +8,7 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use function TeamPass\Tests\SourceStructure\functionSource;
+use function TeamPass\Tests\SourceStructure\lastCatchSource;
 
 require_once __DIR__ . '/../Fixtures/php_source_structure.php';
 
@@ -196,6 +197,23 @@ final class EmptyPrivateKeyPasswordChangeTest extends TestCase
         $content = file_get_contents(dirname(__DIR__, 2) . '/app/sources/identify.php');
         self::assertIsString($content);
 
+        // The imported OAuth2 path guards the complete rewrap and write in one transaction.
+        $importedSetup = functionSource($content, 'completeImportedOauth2KeySetup');
+        $catch = lastCatchSource('<?php ' . $importedSetup);
+        $try = strpos($importedSetup, 'try {');
+        $encrypt = strpos($importedSetup, 'encryptPrivateKey(');
+        $catchStart = strpos($importedSetup, $catch);
+        self::assertIsInt($try);
+        self::assertIsInt($encrypt);
+        self::assertIsInt($catchStart);
+        self::assertGreaterThan($try, $encrypt);
+        self::assertLessThan($catchStart, $encrypt);
+        self::assertSame(1, substr_count($importedSetup, 'encryptPrivateKey('));
+        self::assertStringContainsString('catch (Throwable)', $catch);
+        self::assertStringContainsString('DB::rollback();', $catch);
+        self::assertStringContainsString('return null;', $catch);
+
+        $content = str_replace($importedSetup, '', $content);
         $calls = substr_count($content, 'encryptPrivateKey(');
         $guarded = preg_match_all(
             '/try\s*\{\s*\$\w+\s*=\s*encryptPrivateKey\([^;]*;.*?\}\s*catch\s*\(RuntimeException \$e\)/s',
