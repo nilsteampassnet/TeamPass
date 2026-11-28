@@ -108,7 +108,8 @@
   text-overflow: ellipsis;
 }
 
-#ldap-users-search-wrapper {
+#ldap-users-search-wrapper,
+#oauth2-users-search-wrapper {
     width: 260px;
     max-width: 100%;
 }

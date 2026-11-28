@@ -416,11 +416,24 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body">
-                    <div class="row col-12">
-                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="oauth2-existing-users">
+                    <div class="d-flex flex-wrap align-items-center mb-3" id="oauth2-users-toolbar">
+                        <div class="input-group input-group-sm mr-2 mb-2" id="oauth2-users-search-wrapper">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                            <input type="text" role="searchbox" class="form-control" placeholder="<?php echo htmlspecialchars($lang->get('find'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" aria-label="<?php echo htmlspecialchars($lang->get('find'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" id="oauth2-users-search">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-default" title="<?php echo htmlspecialchars($lang->get('reset'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" aria-label="<?php echo htmlspecialchars($lang->get('reset'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" id="oauth2-users-search-clear" disabled>
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2 mb-2" data-action="oauth2-existing-users">
                             <i class="fa-solid fa-sync-alt mr-2"></i><?php echo $lang->get('list_users'); ?>
                         </button>
-                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="oauth2-add-role">
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2 mb-2" data-action="oauth2-add-role">
                             <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo $lang->get('add_role_tip'); ?>
                         </button>
                     </div>
@@ -469,6 +482,9 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                                     <tbody id="row-oauth2-body">
                                     </tbody>
                                 </table>
+                                <div class="mt-2 px-3 hidden" id="oauth2-users-search-no-results" role="status">
+                                    <i class="fa-solid fa-info mr-2 text-warning" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('no_item_to_display'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
+                                </div>
                             </div>
                         </div>
                     </div>
